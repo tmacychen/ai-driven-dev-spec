@@ -1,0 +1,170 @@
+{
+  "version": "2.0",
+  "description": "ADDS Harness Configuration - Built for deletion, designed for evolution",
+  "philosophy": {
+    "principle": "Build for deletion - anticipate that new models will obsolete current logic",
+    "approach": "Modular design with clear interfaces and documented rationale"
+  },
+  "modules": {
+    "dual_agent_pattern": {
+      "enabled": true,
+      "reason": "Current models benefit from clear role separation between initialization and incremental coding",
+      "review_date": "2026-06-01",
+      "alternatives": [
+        {
+          "name": "unified_agent",
+          "trigger": "Model demonstrates ability to handle both initialization and coding in single context",
+          "benefits": "Simpler workflow, fewer handoffs"
+        }
+      ]
+    },
+    "regression_check": {
+      "enabled": true,
+      "reason": "Models still introduce breaking changes when adding new features",
+      "review_date": "2026-04-01",
+      "parameters": {
+        "num_features_to_check": "1-2",
+        "selection_criteria": "core: true AND passes: true",
+        "auto_fix": true
+      },
+      "alternatives": [
+        {
+          "name": "comprehensive_regression_suite",
+          "trigger": "Project has >50 completed features",
+          "benefits": "More thorough protection"
+        },
+        {
+          "name": "disable_regression_check",
+          "trigger": "Model demonstrates zero regression rate over 100 features",
+          "benefits": "Faster development cycles"
+        }
+      ]
+    },
+    "atomic_commits": {
+      "enabled": true,
+      "reason": "Context management still limited - single feature per session prevents scope creep",
+      "review_date": "2026-08-01",
+      "parameters": {
+        "max_features_per_session": 1,
+        "require_separate_commit": true
+      },
+      "alternatives": [
+        {
+          "name": "multi_feature_session",
+          "trigger": "Model demonstrates reliable multi-feature context management",
+          "benefits": "Faster development for related features"
+        }
+      ]
+    },
+    "environment_validation": {
+      "enabled": true,
+      "reason": "Environment consistency is still a challenge across sessions",
+      "review_date": "2026-05-01",
+      "parameters": {
+        "run_init_sh": true,
+        "check_dependencies": true,
+        "verify_services": true,
+        "deep_health_checks": {
+          "enabled": true,
+          "assertions": [
+            "Database connectivity and migrations",
+            "API endpoint reachability (external/internal)",
+            "Required environment variables presence",
+            "Disk space and write permissions"
+          ]
+        }
+      },
+      "alternatives": [
+        {
+          "name": "skip_environment_validation",
+          "trigger": "Model demonstrates perfect environment awareness",
+          "benefits": "Faster session startup"
+        }
+      ]
+    },
+    "tool_based_validation": {
+      "enabled": true,
+      "reason": "Models still need explicit evidence requirements to avoid premature completion claims",
+      "review_date": "2026-07-01",
+      "parameters": {
+        "require_test_output": true,
+        "require_screenshots_for_e2e": true,
+        "require_api_responses": true
+      },
+      "alternatives": [
+        {
+          "name": "trust_based_validation",
+          "trigger": "Model demonstrates 99%+ accuracy in completion assessment",
+          "benefits": "Reduced verification overhead"
+        }
+      ]
+    },
+    "command_whitelist": {
+      "enabled": true,
+      "reason": "Security guardrails still necessary to prevent dangerous operations",
+      "review_date": "2026-12-01",
+      "parameters": {
+        "mode": "whitelist",
+        "blocked_commands": [
+          "sudo",
+          "rm -rf /",
+          "curl | bash"
+        ],
+        "require_approval_for_new_commands": true
+      },
+      "alternatives": [
+        {
+          "name": "intelligent_command_filter",
+          "trigger": "Model demonstrates perfect safety judgment",
+          "benefits": "More flexibility for legitimate operations"
+        }
+      ]
+    },
+    "data_collection": {
+      "enabled": true,
+      "reason": "Training data collection is core value proposition of Agent Harness",
+      "review_date": "2027-01-01",
+      "parameters": {
+        "collect_failures": true,
+        "collect_successes": true,
+        "collect_timing": true,
+        "anonymize": true
+      },
+      "alternatives": [
+        {
+          "name": "enhanced_data_collection",
+          "trigger": "Infrastructure ready for model training feedback loop",
+          "benefits": "Direct contribution to model improvement"
+        }
+      ]
+    }
+  },
+  "deprecated_modules": [
+    {
+      "name": "manual_progress_logging",
+      "deprecated_date": "2026-02-26",
+      "reason": "Replaced by automated data collection",
+      "replacement": "data_collection_config.json"
+    }
+  ],
+  "future_considerations": [
+    {
+      "name": "multi_agent_collaboration",
+      "description": "Multiple agents working on independent features in parallel",
+      "dependencies": [
+        "Context isolation between agents",
+        "Conflict resolution"
+      ],
+      "estimated_readiness": "2027-Q2"
+    },
+    {
+      "name": "continuous_learning",
+      "description": "Real-time adaptation of harness based on performance metrics",
+      "dependencies": [
+        "Performance monitoring",
+        "Auto-tuning algorithms"
+      ],
+      "estimated_readiness": "2027-Q4"
+    }
+  ]
+}

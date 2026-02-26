@@ -10,12 +10,16 @@ Your task is to advance the project by implementing exactly ONE feature from the
    - Run `pwd` and `ls` to understand the current scope.
    - Read `CORE_GUIDELINES.md` for role and workflow alignment.
    - Read `progress.log` and `.ai/feature_list.json`.
+   - Check `docs/KNOWLEDGE_ITEMS/` for relevant patterns to avoid known failures.
    - Run `git log --oneline -10` to see recent context.
 
 2. **Bootstrap Environment**:
    - Execute `./init.sh` to ensure the environment is healthy.
    - Verify all dependencies are installed.
    - Verify services are running (if applicable).
+   - **Deep Health Check** ⭐:
+     - Read `harness_config.json` → `deep_health_checks`.
+     - Verify all assertions (DB, API, Env Vars) defined in the config.
    - If anything fails: **fix it first before proceeding**.
 
 3. **Regression Check** ⭐:
@@ -72,7 +76,22 @@ Your task is to advance the project by implementing exactly ONE feature from the
      - **Append** a chronological session summary with achievements, evidence, and statistics.
      - Write clear handoff notes for the next agent/session.
 
-9. **Session Summary**:
+9. **Collect Learning Data** ⭐ NEW:
+   - **On Success**: Record to `.ai/training_data/successes.jsonl`:
+     - Success factors and patterns
+     - Timing and efficiency metrics
+     - Quality metrics (test coverage, lint errors)
+   - **On Failure**: Record to `.ai/training_data/failures.jsonl`:
+     - Error type and root cause
+     - Recovery steps and resolution
+     - Learning value and prevention suggestions
+   - **Always**: Record to `.ai/training_data/performance.jsonl`:
+     - Feature ID, completion status
+     - Time metrics and context usage
+     - Quality indicators
+   - This data is the **core value** of the Agent Harness for future improvement
+
+10. **Session Summary**:
    Output a summary in this format:
    ```
    ## ✅ Session Complete
@@ -82,6 +101,7 @@ Your task is to advance the project by implementing exactly ONE feature from the
      - Files: [list of files modified/created]
      - Tests: [X/Y passed]
      - Commit: [hash]
+     - Data Collected: ✅
 
    ### Overall Progress
    ████████░░ 80% (16/20)

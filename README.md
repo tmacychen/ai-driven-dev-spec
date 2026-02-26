@@ -1,4 +1,4 @@
-# AI-Driven Development Specification (ADDS) v2.0
+# AI-Driven Development Specification (ADDS) v2.1
 
 > A complete, production-grade framework for AI agents to autonomously develop software projects across multiple sessions — with built-in safety, quality assurance, and regression protection.
 
@@ -58,23 +58,59 @@ ai-driven-dev-spec/
 4. Follow the workflows in `workflows/`
 5. Tell the AI: **"请阅读 .ai/ 目录下的文件, 按照开发规范开始工作"**
 
-## What's New in v2.0
+## What's New in v2.1
 
-| Feature | v1.0 | v2.0 |
+| Feature | v2.0 | v2.1 |
 | :--- | :---: | :---: |
 | Dual-agent pattern | ✅ | ✅ |
-| Feature list tracking | ✅ | ✅ Enhanced |
+| Feature list tracking | ✅ Enhanced | ✅ Enhanced |
 | Git integration | ✅ | ✅ |
-| Test cases in feature list | ❌ | ✅ |
-| Security command whitelist | ❌ | ✅ |
-| Environment health checks | Basic | ✅ Full |
-| Regression detection | ❌ | ✅ |
-| Core feature locking | ❌ | ✅ |
-| Browser automation (E2E) | ❌ | ✅ |
-| Session stability verification | ❌ | ✅ |
-| Multi-language support | ❌ | ✅ |
-| Detailed testing prompt | ❌ | ✅ |
-| Code review checklist | ❌ | ✅ |
+| Test cases in feature list | ✅ | ✅ |
+| Security command whitelist | ✅ | ✅ |
+| Environment health checks | ✅ Full | ✅ Full |
+| Regression detection | ✅ | ✅ |
+| Core feature locking | ✅ | ✅ |
+| Browser automation (E2E) | ✅ | ✅ |
+| Session stability verification | ✅ | ✅ |
+| Multi-language support | ✅ | ✅ |
+| Detailed testing prompt | ✅ | ✅ |
+| Code review checklist | ✅ | ✅ |
+| **Data collection infrastructure** | ❌ | ✅ **NEW** |
+| **Learning value capture** | ❌ | ✅ **NEW** |
+| **Performance metrics** | ❌ | ✅ **NEW** |
+| **Modular harness config** | ❌ | ✅ **NEW** |
+| **"Built for deletion" principle** | ❌ | ✅ **NEW** |
+| **Failure analysis tools** | ❌ | ✅ **NEW** |
+| **Automated insights generation** | ❌ | ✅ **NEW** |
+
+### Key Improvements in v2.1
+
+1. **Data Collection Infrastructure**
+   - Automated collection of failure cases, success patterns, and performance metrics
+   - Structured data storage in JSONL format
+   - Privacy-aware anonymization
+
+2. **Learning Value Capture**
+   - Every failure is training data
+   - Every success is a best practice
+   - Feedback loop for continuous improvement
+
+3. **Performance Metrics System**
+   - Reliability metrics (completion rate, regression rate, retry rate)
+   - Efficiency metrics (development time, estimation accuracy)
+   - Quality metrics (test coverage, code quality)
+
+4. **Modular Harness Configuration**
+   - "Build for deletion" philosophy
+   - Enable/disable modules based on model capabilities
+   - Document rationale for each constraint
+
+5. **Analysis Tools**
+   - `analyze_failures.py`: Identify common failure patterns
+   - `generate_metrics.py`: Generate comprehensive performance reports
+   - Automated weekly/monthly analysis
+
+**Philosophy**: ADDS is not just a development framework—it's a **data collection platform** and **infrastructure for model evolution**.
 
 ## License
 

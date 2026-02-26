@@ -1,0 +1,142 @@
+[
+  {
+    "feature_id": "F002",
+    "failure_type": "test_failure",
+    "timestamp": "2026-02-26T14:30:00Z",
+    "session_id": "sess_abc123",
+    
+    "error_details": {
+      "symptoms": "Login API returns 500 error",
+      "root_cause": "Database connection not initialized",
+      "stack_trace": "Error: Connection refused at Database.connect()...",
+      "affected_tests": ["test-002-01", "test-002-02", "test-002-03"]
+    },
+    
+    "recovery": {
+      "retry_count": 2,
+      "resolution": "Added DB health check to init.sh and created .env file",
+      "resolution_time_minutes": 15,
+      "resolution_type": "environment_fix",
+      "steps_taken": [
+        "Analyzed error stack trace",
+        "Checked database status",
+        "Updated init.sh to initialize DB",
+        "Created .env with DB credentials",
+        "Re-ran tests successfully"
+      ]
+    },
+    
+    "context": {
+      "previous_features": ["F001"],
+      "model_version": "claude-3.5-sonnet",
+      "session_length_minutes": 45,
+      "context_window_usage": "78%",
+      "time_in_session": "2/3",
+      "dependencies_met": true
+    },
+    
+    "learning_value": {
+      "pattern": "Missing environment validation",
+      "category": "environment_setup",
+      "generalizable": true,
+      "severity": "medium",
+      "frequency": "common",
+      "suggested_prevention": "Add DB health check to init.sh template for all projects using databases",
+      "related_features": [],
+      "prevention_implemented": true,
+      "updated_template": "templates/scaffold/init.sh"
+    }
+  },
+  {
+    "feature_id": "F005",
+    "failure_type": "code_error",
+    "timestamp": "2026-02-26T16:45:00Z",
+    "session_id": "sess_xyz789",
+    
+    "error_details": {
+      "symptoms": "TypeError: Cannot read property 'id' of undefined",
+      "root_cause": "User object not checked for null before accessing properties",
+      "stack_trace": "TypeError at UserController.getUser()...",
+      "affected_tests": ["test-005-01"]
+    },
+    
+    "recovery": {
+      "retry_count": 1,
+      "resolution": "Added null check and error handling for missing user",
+      "resolution_time_minutes": 5,
+      "resolution_type": "code_fix",
+      "steps_taken": [
+        "Identified line causing TypeError",
+        "Added defensive null check",
+        "Added error response for 404 case",
+        "Updated test to cover edge case"
+      ]
+    },
+    
+    "context": {
+      "previous_features": ["F001", "F002", "F003", "F004"],
+      "model_version": "claude-3.5-sonnet",
+      "session_length_minutes": 30,
+      "context_window_usage": "65%",
+      "time_in_session": "1/2",
+      "dependencies_met": true
+    },
+    
+    "learning_value": {
+      "pattern": "Missing null/undefined checks",
+      "category": "defensive_programming",
+      "generalizable": true,
+      "severity": "low",
+      "frequency": "very_common",
+      "suggested_prevention": "Add checklist item in coding_prompt.md to verify null checks for external data",
+      "related_features": ["F003", "F004"],
+      "prevention_implemented": false
+    }
+  },
+  {
+    "feature_id": "F007",
+    "failure_type": "requirement_unclear",
+    "timestamp": "2026-02-26T18:00:00Z",
+    "session_id": "sess_qrs012",
+    
+    "error_details": {
+      "symptoms": "Implementation doesn't match stakeholder expectations",
+      "root_cause": "Feature description was ambiguous about error handling",
+      "affected_tests": []
+    },
+    
+    "recovery": {
+      "retry_count": 0,
+      "resolution": "Clarified requirements with stakeholder and updated feature_list.json",
+      "resolution_time_minutes": 30,
+      "resolution_type": "requirement_clarification",
+      "steps_taken": [
+        "Analyzed gap between implementation and expectation",
+        "Documented ambiguity in feature description",
+        "Updated acceptance_criteria with specific examples",
+        "Re-implemented according to clarified spec"
+      ]
+    },
+    
+    "context": {
+      "previous_features": ["F001", "F002", "F003", "F004", "F005", "F006"],
+      "model_version": "claude-3.5-sonnet",
+      "session_length_minutes": 60,
+      "context_window_usage": "85%",
+      "time_in_session": "end",
+      "dependencies_met": true
+    },
+    
+    "learning_value": {
+      "pattern": "Ambiguous requirements",
+      "category": "requirement_quality",
+      "generalizable": true,
+      "severity": "high",
+      "frequency": "occasional",
+      "suggested_prevention": "Require concrete examples in acceptance_criteria for all features",
+      "related_features": [],
+      "prevention_implemented": true,
+      "updated_template": "templates/prompts/initializer_prompt.md"
+    }
+  }
+]

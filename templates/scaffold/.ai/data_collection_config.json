@@ -1,0 +1,74 @@
+{
+  "enabled": true,
+  "version": "1.0",
+  "description": "Agent Harness Data Collection Configuration - Capturing learning value from development sessions",
+  
+  "collect": {
+    "failures": {
+      "enabled": true,
+      "types": [
+        "test_failure",
+        "environment_error",
+        "dependency_error",
+        "code_error",
+        "requirement_unclear",
+        "beyond_capability"
+      ],
+      "capture_context": true,
+      "capture_resolution": true
+    },
+    "successes": {
+      "enabled": true,
+      "capture_patterns": true,
+      "capture_timing": true,
+      "capture_efficiency": true
+    },
+    "timing": {
+      "enabled": true,
+      "granularity": "per_feature"
+    },
+    "context_usage": {
+      "enabled": true,
+      "track_tokens": true,
+      "track_window_utilization": true
+    }
+  },
+  
+  "storage": {
+    "format": "jsonl",
+    "location": ".ai/training_data/",
+    "retention_days": 365,
+    "files": {
+      "failures": "failures.jsonl",
+      "successes": "successes.jsonl",
+      "performance": "performance.jsonl",
+      "context_metrics": "context_metrics.jsonl"
+    }
+  },
+  
+  "anonymization": {
+    "remove_sensitive_data": true,
+    "hash_user_identifiers": true,
+    "exclude_patterns": [
+      "password",
+      "token",
+      "secret",
+      "api_key",
+      "credential"
+    ]
+  },
+  
+  "analysis": {
+    "auto_analyze": true,
+    "frequency": "weekly",
+    "generate_report": true,
+    "report_location": ".ai/reports/"
+  },
+  
+  "feedback_loop": {
+    "enabled": true,
+    "update_best_practices": true,
+    "suggest_improvements": true,
+    "export_training_data": false
+  }
+}

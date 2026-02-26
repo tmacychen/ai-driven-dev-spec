@@ -55,10 +55,17 @@ Establish a clear roadmap for subsequent Coding Agents to complete this project 
   - Run smoke tests
 - Must be **idempotent** (safe to run multiple times).
 
-### 5. Git Initialization
+### 5. Data Collection Infrastructure ⭐ NEW
+- Create `.ai/data_collection_config.json` (use template from `templates/scaffold/.ai/data_collection_config.json`)
+- Create `.ai/harness_config.json` (use template from `templates/scaffold/.ai/harness_config.json`)
+- Create `.ai/training_data/` directory with README.md
+- These files enable the **core value proposition** of Agent Harness: collecting learning data
+
+### 6. Git Initialization
 - Initialize git repository.
 - Create `.gitignore` appropriate for the tech stack.
-- Commit all scaffolding files: `chore: initial project setup`
+- Add `.ai/training_data/*.jsonl` to `.gitignore` (data files should not be committed)
+- Commit all scaffolding files: `chore: initial project setup [ADDS v2.1]`
 
 ## Rules
 - ❌ DO NOT attempt to write the entire application logic now.
