@@ -7,6 +7,12 @@
     "priority": "high",
     "status": "pending",
     "dependencies": [],
+    "retry_count": 0,
+    "max_retries": 3,
+    "escalation": {
+      "trigger": "retry_count >= max_retries",
+      "action": "Mark as blocked, skip, select next feature"
+    },
     "steps": [
       "Create project directory structure",
       "Setup build system and dependencies",
@@ -25,6 +31,29 @@
         "status": "pending"
       }
     ],
+    "validation_requirements": {
+      "test_evidence": {
+        "required": true,
+        "format": "terminal_output",
+        "must_include": [
+          "PASS",
+          "✓"
+        ],
+        "description": "Test execution logs showing success"
+      },
+      "e2e_evidence": {
+        "required": false,
+        "format": "screenshot_or_video",
+        "description": "N/A for initialization"
+      }
+    },
+    "completion_criteria": [
+      "All test_cases status is passed",
+      "Tool execution evidence provided",
+      "Code committed to Git",
+      "progress.log updated",
+      "init.sh is idempotent"
+    ],
     "security_checks": [],
     "acceptance_criteria": [
       "Project structure created",
@@ -32,6 +61,8 @@
       "init.sh runs without errors"
     ],
     "estimated_complexity": "low",
+    "estimated_effort": "1h",
+    "actual_time_spent": "0h",
     "passes": false,
     "last_worked_on": null,
     "notes": ""

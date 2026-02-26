@@ -57,6 +57,12 @@
         "priority": "high",
         "status": "pending",
         "dependencies": ["F001"],
+        "retry_count": 0,
+        "max_retries": 3,
+        "escalation": {
+            "trigger": "retry_count >= max_retries",
+            "action": "Mark as blocked, skip, select next feature"
+        },
         "steps": [
             "Create login UI component",
             "Implement POST /api/login endpoint",
@@ -105,6 +111,46 @@
                 ],
                 "status": "pending"
             }
+        ],
+        "validation_requirements": {
+            "test_evidence": {
+                "required": true,
+                "format": "terminal_output",
+                "must_include": ["PASS", "✓", "Tests: X passed"],
+                "description": "Test execution logs showing all tests passed"
+            },
+            "e2e_evidence": {
+                "required": true,
+                "format": "screenshot_or_video",
+                "description": "Browser screenshot or video showing complete user operation flow",
+                "must_show": [
+                    "Login form filled",
+                    "Submit button clicked",
+                    "Page navigation result",
+                    "Welcome message displayed"
+                ]
+            },
+            "api_response": {
+                "required_for_api": true,
+                "format": "json",
+                "must_match_schema": true,
+                "description": "API response matches expected format",
+                "example": {
+                    "status": 200,
+                    "body": {
+                        "token": "string",
+                        "user": "object"
+                    }
+                }
+            }
+        },
+        "completion_criteria": [
+            "All test_cases status is passed",
+            "Tool execution evidence provided (screenshot/log)",
+            "Code committed to Git",
+            "progress.log updated",
+            "All acceptance_criteria satisfied",
+            "All security_checks addressed"
         ],
         "security_checks": [
             "Password must not be logged in plaintext",

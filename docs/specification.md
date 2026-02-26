@@ -49,7 +49,13 @@
 每个项目必须包含以下"自描述"文件：
 
 - **`.ai/feature_list.json`**：功能的单一事实来源 (Single Source of Truth)。
-  每个功能必须包含 `id`, `category`, `description`, `steps`, `passes`, `priority`, `core`, `test_cases`, `security_checks` 字段。
+  每个功能必须包含：
+  - `id`, `category`, `description`, `priority`, `core`
+  - `status`, `dependencies`, `steps`, `test_cases`, `security_checks`, `passes`
+  - **`validation_requirements` (新)**：定义完成功能所需的具体工具证据（日志、截图等）。
+  - **`completion_criteria` (新)**：原子化的完成清单。
+  - **`retry_count`, `max_retries`, `escalation` (新)**：自动错误恢复机制配置。
+  - **`time_spent`, `estimated_effort` (新)**：可选字段，用于后续效率分析。
 - **`progress.log`**：面向人类/Agent 的自然语言进度总结。
   采用增量追加模式，记录"已完成"、"进行中"、"待办事项"及下一步交接说明。
 - **`CORE_GUIDELINES.md`**：(新) 极简自引导说明书。放置在项目根目录，供 AI 瞬间启动并对齐开发流程。
@@ -95,7 +101,8 @@
 
 ### 4.6 质量保证 (QA)
 - 使用工具（如模拟器、浏览器、单元测试）验证功能。
-- **拒绝"自认为完成"**：Agent 必须提供工具执行结果（断言、日志、截图）作为完成证据。
+- **证据驱动**：Agent **必须** 满足 `validation_requirements` 中定义的证据要求。
+- 只有当所有 `test_cases` 状态为 `passed` 且满足 `completion_criteria` 时，方可标记为完成。
 - 根据项目类型选择验证方式（详见第 5 节）。
 
 ### 4.7 持久化 (Persist)
@@ -220,6 +227,17 @@ AI 在执行任何命令前**必须**验证安全性。
 3. 执行 `git log` 查看最近提交。
 4. 运行环境验证和回归测试。
 5. 继续下一个待处理功能。
+
+### 8.4 标准化错误恢复 (Retry & Escalation) ⭐ 新增
+当 Agent 遇到执行错误或测试失败时，应遵循以下协议：
+1. **自动分类**：判断是环境问题（运行 `init.sh`）、代码问题（自动修复）还是需求问题（查阅文档）。
+2. **重试计数**：在 `feature_list.json` 中跟踪 `retry_count`。
+3. **退避回退**：如果达到 `max_retries`，Agent 必须：
+   - 执行 `git reset --hard` 到上一个稳定状态。
+   - 将状态标记为 `"blocked"`。
+   - 记录具体的 `blocked_reason`。
+   - 跳过该任务，尝试队列中的下一个任务。
+   - 在 `progress.log` 中记录该决策。
 
 ---
 

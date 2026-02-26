@@ -18,8 +18,16 @@ Establish a clear roadmap for subsequent Coding Agents to complete this project 
   - `priority`: `"high"`, `"medium"`, `"low"`
   - `status`: `"pending"` (initial)
   - `dependencies`: Array of feature IDs this depends on
+  - `retry_count`: `0` (initial)
+  - `max_retries`: `3` (default)
+  - `escalation`: Object with `trigger` and `action` for retry limit reached
   - `steps`: How to test manually or via tool
   - `test_cases`: Array of concrete test cases with `id`, `description`, `type` (unit/integration/e2e), `steps`, `status`
+  - `validation_requirements`: Object defining required evidence:
+    - `test_evidence`: Required test output format and content
+    - `e2e_evidence`: Required E2E test evidence (screenshots/videos)
+    - `api_response`: Required API response format (for API projects)
+  - `completion_criteria`: Array of specific criteria for marking feature complete
   - `security_checks`: Array of security considerations (can be empty)
   - `acceptance_criteria`: Specific criteria for completion
   - `estimated_complexity`: `"low"`, `"medium"`, `"high"`

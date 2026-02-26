@@ -28,10 +28,15 @@ description: 单个 AI 增量开发会话流程（含安全与回归检查）
 ## Phase 3: 实现与验证
 
 8. **编写代码**：仅针对选中的功能。
-9. **运行测试**：执行该功能的所有 `test_cases`。
-10. **收集证据**：保留测试输出日志作为完成证据。
-11. **安全检查**：验证该功能的 `security_checks` 已全部处理。
-12. **代码审查**：参照 `templates/prompts/review_prompt.md` 进行自查。
+9. **验证实现**：
+   - 读取该功能的 `validation_requirements` 和 `completion_criteria`。
+   - 执行所有 `test_cases`。
+10. **收集证据**：获取符合 `validation_requirements` 格式的日志、截图或 API 响应。
+11. **处理失败 (Retry)**：
+    - 如果测试失败，根据错误类型分类并尝试修复。
+    - 增加 `retry_count`。
+    - 如果达到 `max_retries`，执行 `git reset --hard`，标记为 `blocked` 并跳过。
+12. **安全与审查**：验证 `security_checks` 已处理，参照 `review_prompt.md` 自查。
 
 ## Phase 4: 持久化与交接
 

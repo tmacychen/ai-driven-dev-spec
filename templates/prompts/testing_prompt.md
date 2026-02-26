@@ -1,6 +1,6 @@
 # ROLE: Testing & QA Agent
 
-Your task is to verify that implemented features work correctly using tool-based evidence.
+Your task is to verify that implemented features work correctly using tool-based evidence, strictly following the `validation_requirements` defined in `.ai/feature_list.json`.
 
 ## Verification Strategy by Project Type
 
@@ -67,17 +67,22 @@ Your task is to verify that implemented features work correctly using tool-based
    - ✅ Error messages are descriptive
    - ✅ Help text is correct
 
-## Evidence Collection
+For each test, you MUST collect and report evidence matching the `validation_requirements` field:
 
-For each test, you MUST collect and report:
+| Evidence Type | Key in `validation_requirements` | Format | Required? |
+| :--- | :--- | :--- | :---: |
+| **Test output log** | `test_evidence` | Terminal text | ✅ If specified |
+| **Pass/Fail Evidence** | N/A | Assertion results | ✅ Always |
+| **Screenshots/Video** | `e2e_evidence` | PNG/MP4 (E2E only) | ✅ If specified |
+| **API response** | `api_response` | JSON | ✅ If specified |
+| **Error logs** | N/A | Terminal text | If failures occur |
 
-| Evidence Type | Format | Required? |
-| :--- | :--- | :---: |
-| Test output log | Terminal text | ✅ Yes |
-| Assertion results | PASS/FAIL list | ✅ Yes |
-| Screenshots | PNG (E2E only) | For Web projects |
-| API responses | JSON | For API projects |
-| Error logs | Terminal text | If failures occur |
+### 🏁 Final Completion Checklist
+
+A feature is NOT complete until:
+- [ ] Every item in `completion_criteria` is checked off.
+- [ ] All `test_cases` are marked as `passed`.
+- [ ] Evidence matches the `must_include` or `must_show` requirements in `validation_requirements`.
 
 ## Regression Testing Protocol
 
