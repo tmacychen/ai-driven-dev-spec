@@ -1,0 +1,174 @@
+[
+    {
+        "id": "F001",
+        "category": "core",
+        "core": true,
+        "description": "Project initialization and environment setup",
+        "priority": "high",
+        "status": "completed",
+        "dependencies": [],
+        "steps": [
+            "Create project directory structure",
+            "Setup build system and dependencies",
+            "Write init.sh for automation",
+            "Run init.sh and verify output",
+            "Initial git commit"
+        ],
+        "test_cases": [
+            {
+                "id": "test-001-01",
+                "description": "init.sh runs without errors",
+                "type": "integration",
+                "steps": [
+                    "Run: bash init.sh",
+                    "Assert: exit code is 0",
+                    "Assert: 'Setup Complete' appears in stdout"
+                ],
+                "status": "passed"
+            },
+            {
+                "id": "test-001-02",
+                "description": "Project structure is correct",
+                "type": "unit",
+                "steps": [
+                    "Assert: src/ directory exists",
+                    "Assert: tests/ directory exists",
+                    "Assert: .ai/feature_list.json exists"
+                ],
+                "status": "passed"
+            }
+        ],
+        "security_checks": [],
+        "acceptance_criteria": [
+            "Project structure matches architecture.md",
+            "init.sh bootstraps environment successfully",
+            "All core dependencies installed"
+        ],
+        "estimated_complexity": "low",
+        "passes": true,
+        "last_worked_on": "2026-02-26T21:40:00Z",
+        "notes": "Foundation feature, must never be removed."
+    },
+    {
+        "id": "F002",
+        "category": "auth",
+        "core": true,
+        "description": "Implement basic user login with hardcoded credentials",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": ["F001"],
+        "steps": [
+            "Create login UI component",
+            "Implement POST /api/login endpoint",
+            "Verify 'Invalid Credentials' error on wrong login",
+            "Verify redirection to dashboard on correct login"
+        ],
+        "test_cases": [
+            {
+                "id": "test-002-01",
+                "description": "Successful login flow (E2E)",
+                "type": "e2e",
+                "steps": [
+                    "Navigate to http://localhost:3000/login",
+                    "Fill #username with 'admin'",
+                    "Fill #password with 'password123'",
+                    "Click #login-button",
+                    "Assert: URL changes to /dashboard",
+                    "Assert: welcome message is visible"
+                ],
+                "status": "pending"
+            },
+            {
+                "id": "test-002-02",
+                "description": "Failed login shows error",
+                "type": "e2e",
+                "steps": [
+                    "Navigate to http://localhost:3000/login",
+                    "Fill #username with 'wrong'",
+                    "Fill #password with 'wrong'",
+                    "Click #login-button",
+                    "Assert: error message 'Invalid Credentials' is displayed",
+                    "Assert: URL remains /login"
+                ],
+                "status": "pending"
+            },
+            {
+                "id": "test-002-03",
+                "description": "Login API responds correctly",
+                "type": "integration",
+                "steps": [
+                    "POST /api/login with valid credentials",
+                    "Assert: response status is 200",
+                    "Assert: response body contains token",
+                    "POST /api/login with invalid credentials",
+                    "Assert: response status is 401"
+                ],
+                "status": "pending"
+            }
+        ],
+        "security_checks": [
+            "Password must not be logged in plaintext",
+            "Token must have expiration time",
+            "Rate limiting on login endpoint"
+        ],
+        "acceptance_criteria": [
+            "User can login with correct credentials",
+            "User sees error with wrong credentials",
+            "Login redirects to dashboard"
+        ],
+        "estimated_complexity": "medium",
+        "passes": false,
+        "last_worked_on": null,
+        "notes": ""
+    },
+    {
+        "id": "F003",
+        "category": "ui",
+        "core": false,
+        "description": "Main Dashboard layout with sidebar navigation",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": ["F002"],
+        "steps": [
+            "Create Layout component with children nesting",
+            "Add Sidebar items corresponding to app routes",
+            "Verify responsive menu behavior on mobile view"
+        ],
+        "test_cases": [
+            {
+                "id": "test-003-01",
+                "description": "Dashboard renders with sidebar",
+                "type": "e2e",
+                "steps": [
+                    "Login and navigate to /dashboard",
+                    "Assert: sidebar element is visible",
+                    "Assert: at least 3 navigation items exist"
+                ],
+                "status": "pending"
+            },
+            {
+                "id": "test-003-02",
+                "description": "Responsive sidebar collapses on mobile",
+                "type": "e2e",
+                "steps": [
+                    "Set viewport to 375x812 (mobile)",
+                    "Navigate to /dashboard",
+                    "Assert: sidebar is collapsed by default",
+                    "Click menu toggle button",
+                    "Assert: sidebar becomes visible"
+                ],
+                "status": "pending"
+            }
+        ],
+        "security_checks": [],
+        "acceptance_criteria": [
+            "Dashboard layout renders correctly",
+            "Sidebar navigation works",
+            "Responsive on mobile devices"
+        ],
+        "estimated_complexity": "medium",
+        "passes": false,
+        "last_worked_on": null,
+        "notes": ""
+    }
+]

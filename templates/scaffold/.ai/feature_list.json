@@ -1,0 +1,39 @@
+[
+  {
+    "id": "F001",
+    "category": "core",
+    "core": true,
+    "description": "Project initialization and environment setup",
+    "priority": "high",
+    "status": "pending",
+    "dependencies": [],
+    "steps": [
+      "Create project directory structure",
+      "Setup build system and dependencies",
+      "Write init.sh for automation",
+      "Initial git commit"
+    ],
+    "test_cases": [
+      {
+        "id": "test-001-01",
+        "description": "init.sh runs successfully",
+        "type": "integration",
+        "steps": [
+          "Run: bash init.sh",
+          "Assert: exit code is 0"
+        ],
+        "status": "pending"
+      }
+    ],
+    "security_checks": [],
+    "acceptance_criteria": [
+      "Project structure created",
+      "Dependencies installed",
+      "init.sh runs without errors"
+    ],
+    "estimated_complexity": "low",
+    "passes": false,
+    "last_worked_on": null,
+    "notes": ""
+  }
+]
