@@ -114,4 +114,12 @@ ai-driven-dev-spec/
 
 ## License
 
-MIT
+GNU General Public License v3.0 (GPL-3.0)
+
+See [LICENSE](LICENSE) file for full text.
+
+**Key features**:
+- ✅ Free to use, modify, and distribute
+- ✅ Copyleft: derivative works must also be GPL-3.0
+- ✅ Patent grant included
+- ✅ Source code availability required
