@@ -13,6 +13,32 @@ Your task is to advance the project by implementing exactly ONE feature from the
    - Check `docs/KNOWLEDGE_ITEMS/` for relevant patterns to avoid known failures.
    - Run `git log --oneline -10` to see recent context.
 
+1.5. **Auto Context Injection** ⭐ NEW (Middleware Pattern):
+   - **Directory Context**: Auto-inject current directory structure
+     ```bash
+     find . -type f -name "*.py" -o -name "*.js" -o -name "*.ts" | head -50
+     ls -la
+     ```
+   - **Tool Context**: Auto-detect available tools
+     ```bash
+     which python node npm pytest black mypy 2>/dev/null
+     python --version 2>/dev/null; node --version 2>/dev/null
+     ```
+   - **Failure Pattern Context**: Auto-inject recent failure patterns
+     ```bash
+     # Read last 5 failure patterns from training data
+     tail -5 .ai/training_data/failures.jsonl 2>/dev/null | jq -r '.learning_value.pattern' 2>/dev/null
+     ```
+   - **Context Summary**: Generate a structured context summary before starting work
+     ```
+     ## 📋 Context Summary
+     - Project Type: [Web/API/CLI/Library]
+     - Primary Language: [Python/Node.js/Go/Rust]
+     - Available Tools: [pytest, black, mypy, npm...]
+     - Recent Failures: [pattern1, pattern2...]
+     - Current Feature: [F00X]
+     ```
+
 2. **Bootstrap Environment**:
    - Execute `./init.sh` to ensure the environment is healthy.
    - Verify all dependencies are installed.
@@ -61,12 +87,47 @@ Your task is to advance the project by implementing exactly ONE feature from the
 
 ### Phase 4: Persistence & Handoff
 
-7. **Git Commit**:
+7. **Pre-Completion Checklist** ⭐ NEW (Middleware Pattern):
+   
+   **⚠️ MANDATORY EXIT GATE** - Before ending ANY session, ALL checks MUST pass:
+   
+   ```markdown
+   ## 🚪 Pre-Completion Checklist (Auto-Triggered)
+   
+   ### Evidence Verification
+   - [ ] All `test_cases` have `status: "passed"`
+   - [ ] Tool evidence recorded in `progress.log` (logs, screenshots, API responses)
+   - [ ] All `validation_requirements` satisfied
+   - [ ] All `completion_criteria` checked off
+   
+   ### Code Quality
+   - [ ] No lint errors (`npm run lint` / `flake8` / etc.)
+   - [ ] No type errors (`tsc --noEmit` / `mypy` / etc.)
+   - [ ] Code follows project conventions
+   
+   ### State Persistence
+   - [ ] Git commit created with proper message format
+   - [ ] `feature_list.json` updated (`passes: true`, `status: "completed"`)
+   - [ ] `progress.log` appended with session summary
+   - [ ] Learning data collected (successes.jsonl / failures.jsonl)
+   
+   ### Environment Health
+   - [ ] No broken tests in other features
+   - [ ] Services still running (if applicable)
+   - [ ] No uncommitted changes outside current feature
+   ```
+   
+   **⛔ BLOCKING RULE**: If ANY check fails, you MUST continue working until all pass.
+   You are NOT allowed to end the session with incomplete checks.
+   
+   This is similar to a "Ralph Wiggum Loop" where a hook forces the agent to continue executing on exit.
+
+8. **Git Commit**:
    - Message format: `feat(<scope>): <description> [Closes #feature_id]`
    - Include implementation details in the commit body.
    - Each feature = exactly one commit.
 
-8. **Update State Files**:
+9. **Update State Files**:
    - `.ai/feature_list.json`:
      - Set `passes: true`
      - Set `status: "completed"`
@@ -76,7 +137,7 @@ Your task is to advance the project by implementing exactly ONE feature from the
      - **Append** a chronological session summary with achievements, evidence, and statistics.
      - Write clear handoff notes for the next agent/session.
 
-9. **Collect Learning Data** ⭐ NEW:
+10. **Collect Learning Data** ⭐ NEW:
    - **On Success**: Record to `.ai/training_data/successes.jsonl`:
      - Success factors and patterns
      - Timing and efficiency metrics
@@ -91,7 +152,7 @@ Your task is to advance the project by implementing exactly ONE feature from the
      - Quality indicators
    - This data is the **core value** of the Agent Harness for future improvement
 
-10. **Session Summary**:
+11. **Session Summary**:
    Output a summary in this format:
    ```
    ## ✅ Session Complete

@@ -5,6 +5,53 @@ All notable changes to the AI-Driven Development Specification (ADDS) project wi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-03-04
+
+### Added - Middleware Pattern Implementation ⭐
+
+**Reference**: [LangChain Blog - Improving Deep Agents with Harness Engineering](https://blog.langchain.com/improving-deep-agents-with-harness-engineering/)
+
+Inspired by LangChain's approach to harness engineering, which improved their coding agent from Top 30 to Top 5 on Terminal Bench 2.0.
+
+- **Pre-Completion Checklist Middleware**
+  - Mandatory exit gate before ending any session
+  - Blocks session termination until all checks pass
+  - Similar to "Ralph Wiggum Loop" pattern
+  - Categories: Evidence Verification, Code Quality, State Persistence, Environment Health
+  - Prevents premature session termination without proper verification
+
+- **Auto Context Injection Middleware**
+  - Directory Context: Auto-inject current directory structure
+  - Tool Context: Auto-detect available tools (python, node, pytest, etc.)
+  - Failure Pattern Context: Auto-inject recent failure patterns from training data
+  - Context Summary: Generate structured context summary before starting work
+  - Deterministic context injection helps agents verify their work
+
+### Changed - Enhanced Session Flow
+
+- **Phase 1** now includes step 1.5 "Auto Context Injection"
+- **Phase 4** now includes step 7 "Pre-Completion Checklist"
+- Renumbered subsequent steps (8-11) to accommodate new middleware steps
+
+### Key Insights from Reference Article
+
+1. **Self-Verification Loop**: Models don't naturally enter build-verify loops, so we force it via middleware
+2. **Deterministic Context Injection**: Helps agents verify their work with structured context
+3. **PreCompletionChecklistMiddleware**: Intercepts agent before exit and reminds it to run verification
+4. **LocalContextMiddleware**: Maps cwd, parent/children directories, and discovers available tools
+
+### Influences
+
+This release is influenced by:
+
+1. **LangChain Blog**: "Improving Deep Agents with Harness Engineering"
+   - URL: https://blog.langchain.com/improving-deep-agents-with-harness-engineering/
+   - Key insight: Self-verification & tracing help a lot
+   - Concept: PreCompletionChecklistMiddleware and LocalContextMiddleware patterns
+   - Result: 13.7 point improvement on Terminal Bench 2.0 (Top 30 → Top 5)
+
+---
+
 ## [2.1.0] - 2026-02-26
 
 ### Added - Data Collection Infrastructure ⭐

@@ -1,4 +1,4 @@
-# AI-Driven Development Specification (ADDS) v2.1
+# AI-Driven Development Specification (ADDS) v2.2
 
 > A complete, production-grade framework for AI agents to autonomously develop software projects across multiple sessions — with built-in safety, quality assurance, and regression protection.
 
@@ -57,6 +57,42 @@ ai-driven-dev-spec/
 3. Customize prompts from `templates/prompts/`
 4. Follow the workflows in `workflows/`
 5. Tell the AI: **"请阅读 .ai/ 目录下的文件, 按照开发规范开始工作"**
+
+## What's New in v2.2
+
+| Feature | v2.1 | v2.2 |
+| :--- | :---: | :---: |
+| Data collection infrastructure | ✅ | ✅ |
+| Learning value capture | ✅ | ✅ |
+| Performance metrics | ✅ | ✅ |
+| Modular harness config | ✅ | ✅ |
+| Failure analysis tools | ✅ | ✅ |
+| **Pre-Completion Checklist Middleware** | ❌ | ✅ **NEW** |
+| **Auto Context Injection Middleware** | ❌ | ✅ **NEW** |
+| **Deterministic context injection** | ❌ | ✅ **NEW** |
+| **Ralph Wiggum Loop pattern** | ❌ | ✅ **NEW** |
+
+### Key Improvements in v2.2
+
+Inspired by [LangChain's Harness Engineering approach](https://blog.langchain.com/improving-deep-agents-with-harness-engineering/):
+
+1. **Pre-Completion Checklist Middleware**
+   - Mandatory exit gate before ending any session
+   - Blocks session termination until all checks pass
+   - Forces build-verify loop that models don't naturally enter
+
+2. **Auto Context Injection Middleware**
+   - Directory Context: Auto-inject current directory structure
+   - Tool Context: Auto-detect available tools
+   - Failure Pattern Context: Auto-inject recent failure patterns
+   - Deterministic context injection helps agents verify their work
+
+3. **Ralph Wiggum Loop Pattern**
+   - Hook forces agent to continue executing on exit
+   - Ensures verification pass against task spec
+   - Prevents premature session termination
+
+---
 
 ## What's New in v2.1
 
