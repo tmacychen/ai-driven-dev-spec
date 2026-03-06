@@ -25,7 +25,7 @@ Inspired by [Anthropic's research on effective harnesses for long-running agents
 ai-driven-dev-spec/
 ├── README.md                        # This file
 ├── docs/
-│   └── specification.md            # Core specification (详细规范)
+│   └── specification.md            # Core specification (detailed specification)
 ├── templates/
 │   ├── scaffold/                    # Project scaffold templates
 │   │   ├── .ai/
@@ -56,7 +56,7 @@ ai-driven-dev-spec/
 2. Copy `templates/scaffold/` into your new project
 3. Customize prompts from `templates/prompts/`
 4. Follow the workflows in `workflows/`
-5. Tell the AI: **"请阅读 .ai/ 目录下的文件, 按照开发规范开始工作"**
+5. Tell the AI: **"Please read the files in the .ai/ directory and start working according to the development specifications"**
 
 ## What's New in v2.2
 

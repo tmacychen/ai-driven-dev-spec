@@ -1,334 +1,334 @@
-# AI 自主开发规范 (ADDS) v2.0 核心指南
+# AI-Driven Development Specification (ADDS) v2.0 Core Guide
 
-> 本指南定义了一套结构化方法，旨在帮助 AI Agent 在长周期的软件开发任务中，能够跨越多个上下文窗口（Context Window）持续、稳定、安全地推进项目。
-
----
-
-## 1. 核心挑战：上下文断裂
-
-长周期 AI 任务（Long-running Agent Tasks）面临的最大问题是**上下文断裂**：
-- **状态丢失**：每个新会话（Session）开始时，Agent 都是"失忆"的。
-- **过度冒进**：Agent 倾向于一次性完成（One-shot）所有功能，导致代码质量下降或上下文超出。
-- **过早完工**：Agent 看到已有代码，容易误判任务已完成。
-- **环境碎片**：未配置的环境或丢失的依赖导致新会话无法立即开始工作。
-- **回归盲区**：新功能破坏旧功能, Agent 毫无察觉地继续前进。
-- **安全失控**：Agent 执行危险命令而没有任何约束。
+> This guide defines a structured approach to help AI Agents continuously, stably, and safely advance projects across multiple context windows in long-cycle software development tasks.
 
 ---
 
-## 2. 双 Agent 角色模型
+## 1. Core Challenge: Context Fragmentation
 
-我们将任务分解为两个核心阶段，由两个不同的提示词（或 Agent）执行：
-
-### 2.1 初始化 Agent (Initializer Agent)
-- **职责**：项目启动。
-- **触发条件**：项目首次启动，或不存在 `.ai/feature_list.json` 文件。
-- **任务**：
-    - 阅读原始需求（`app_spec.md` 或 `app_spec.txt`）。
-    - 拆解功能清单，生成 `.ai/feature_list.json`（包含 50-200 个原子测试用例）。
-    - 搭建基础目录结构。
-    - 生成 `.ai/architecture.md` 记录技术选型和架构决策。
-    - 编写 `init.sh` 自动化环境配置。
-    - 提交初始 Git Commit。
-
-### 2.2 编码 Agent (Coding Agent)
-- **职责**：增量迭代。
-- **触发条件**：后续所有会话。
-- **任务**：
-    - 读取进度文件（`progress.log`）和功能清单。
-    - **执行环境验证**（运行 `init.sh` 或冒烟测试）。
-    - **运行 1-2 个核心功能的回归测试**。
-    - 运行测试确定当前状态。
-    - **每次只选择一个**功能进行开发。
-    - 完成开发、自测、Git 提交并更新进度。
+The biggest problem facing long-running AI tasks is **context fragmentation**:
+- **State Loss**: At the start of each new session, the Agent is "amnesiac".
+- **Overreaching**: Agents tend to complete all features in one shot, leading to decreased code quality or context overflow.
+- **Premature Completion**: Agents seeing existing code may mistakenly believe tasks are complete.
+- **Environment Fragmentation**: Unconfigured environments or missing dependencies prevent new sessions from starting work immediately.
+- **Regression Blind Spots**: New features break old ones, and Agents continue without noticing.
+- **Security Out of Control**: Agents execute dangerous commands without any constraints.
 
 ---
 
-## 3. 标准项目骨架 (`.ai/` 目录)
+## 2. Dual Agent Role Model
 
-每个项目必须包含以下"自描述"文件：
+We decompose tasks into two core phases, executed by two different prompts (or Agents):
 
-- **`.ai/feature_list.json`**：功能的单一事实来源 (Single Source of Truth)。
-  每个功能必须包含：
+### 2.1 Initializer Agent
+- **Responsibility**: Project startup.
+- **Trigger Condition**: Project first launch, or when `.ai/feature_list.json` file does not exist.
+- **Tasks**:
+    - Read original requirements (`app_spec.md` or `app_spec.txt`).
+    - Break down feature list, generate `.ai/feature_list.json` (containing 50-200 atomic test cases).
+    - Set up basic directory structure.
+    - Generate `.ai/architecture.md` to record technology selection and architecture decisions.
+    - Write `init.sh` for automated environment configuration.
+    - Submit initial Git Commit.
+
+### 2.2 Coding Agent
+- **Responsibility**: Incremental iteration.
+- **Trigger Condition**: All subsequent sessions.
+- **Tasks**:
+    - Read progress files (`progress.log`) and feature list.
+    - **Execute environment verification** (run `init.sh` or smoke tests).
+    - **Run regression tests for 1-2 core features**.
+    - Run tests to determine current status.
+    - **Select only one** feature for development at a time.
+    - Complete development, self-test, Git commit, and update progress.
+
+---
+
+## 3. Standard Project Skeleton (`.ai/` Directory)
+
+Every project must contain the following "self-descriptive" files:
+
+- **`.ai/feature_list.json`**: Single Source of Truth for features.
+  Each feature must include:
   - `id`, `category`, `description`, `priority`, `core`
   - `status`, `dependencies`, `steps`, `test_cases`, `security_checks`, `passes`
-  - **`validation_requirements` (新)**：定义完成功能所需的具体工具证据（日志、截图等）。
-  - **`completion_criteria` (新)**：原子化的完成清单。
-  - **`retry_count`, `max_retries`, `escalation` (新)**：自动错误恢复机制配置。
-  - **`time_spent`, `estimated_effort` (新)**：可选字段，用于后续效率分析。
-- **`progress.log`**：面向人类/Agent 的自然语言进度总结。
-  采用增量追加模式，记录"已完成"、"进行中"、"待办事项"及下一步交接说明。
-- **`CORE_GUIDELINES.md`**：(新) 极简自引导说明书。放置在项目根目录，供 AI 瞬间启动并对齐开发流程。
-- **`.ai/architecture.md`**：记录项目架构、技术栈选择和核心数据流。
-- **`.ai/session_log.jsonl`**：机器可读的会话历史记录（每行一个 JSON 对象）。
-- **`init.sh`**：脚本化环境。运行此脚本后，任何 Agent 应该能立即执行测试或启动开发。
-- **`.ai/data_collection_config.json` (新 ⭐)**：数据收集配置，定义如何捕获学习数据。
-- **`.ai/harness_config.json` (新 ⭐)**：Harness 模块化配置，支持"为删除而构建"理念。
-- **`.ai/training_data/` (新 ⭐)**：训练数据目录，存储失败案例、成功模式和性能指标。
-  - `failures.jsonl`：失败案例和解决方案
-  - `successes.jsonl`：成功模式和效率指标
-  - `performance.jsonl`：性能指标数据
-  - `context_metrics.jsonl`：上下文使用模式
-- **`docs/KNOWLEDGE_ITEMS/` (新 ⭐)**：从失败数据中自动生成的知识库，记录已验证的解决方案。
+  - **`validation_requirements` (new)**: Define specific tool evidence (logs, screenshots, etc.) required to complete the feature.
+  - **`completion_criteria` (new)**: Atomized completion checklist.
+  - **`retry_count`, `max_retries`, `escalation` (new)**: Automatic error recovery mechanism configuration.
+  - **`time_spent`, `estimated_effort` (new)**: Optional fields for subsequent efficiency analysis.
+- **`progress.log`**: Human/Agent-oriented natural language progress summary.
+  Uses incremental append mode, recording "completed", "in progress", "to-do items", and next handoff instructions.
+- **`CORE_GUIDELINES.md`**: (New) Minimal self-boosting manual. Placed in project root directory for AI to instantly start and align development process.
+- **`.ai/architecture.md`**: Records project architecture, technology stack selection, and core data flow.
+- **`.ai/session_log.jsonl`**: Machine-readable session history (one JSON object per line).
+- **`init.sh`**: Scripted environment. After running this script, any Agent should be able to immediately execute tests or start development.
+- **`.ai/data_collection_config.json` (New ⭐)**: Data collection configuration, defining how to capture learning data.
+- **`.ai/harness_config.json` (New ⭐)**: Harness modular configuration, supporting the "built for deletion" philosophy.
+- **`.ai/training_data/` (New ⭐)**: Training data directory, storing failure cases, success patterns, and performance metrics.
+  - `failures.jsonl`: Failure cases and solutions
+  - `successes.jsonl`: Success patterns and efficiency metrics
+  - `performance.jsonl`: Performance metrics data
+  - `context_metrics.jsonl`: Context usage patterns
+- **`docs/KNOWLEDGE_ITEMS/` (New ⭐)**: Knowledge base automatically generated from failure data, recording verified solutions.
 
 ---
 
-## 4. 增量开发流程 (SDLC for AI)
+## 4. Incremental Development Process (SDLC for AI)
 
-每个开发会话必须遵循以下严格步骤：
+Every development session must follow these strict steps:
 
-### 4.1 环境对齐 (Align)
-- 执行 `pwd`, `ls` 熟悉结构。
-- 读取 `CORE_GUIDELINES.md` (极速启动)。
-- 读取 `progress.log` 和 `.ai/feature_list.json`。
-- 查看 `git log --oneline -10` 了解最近的变更。
+### 4.1 Environment Alignment (Align)
+- Execute `pwd`, `ls` to familiarize with structure.
+- Read `CORE_GUIDELINES.md` (quick start).
+- Read `progress.log` and `.ai/feature_list.json`.
+- Check `git log --oneline -10` to understand recent changes.
 
-### 4.2 环境验证 (Bootstrap)
-- 执行 `init.sh` 或现有测试，确保 Agent 接手的是一个正常的项目。
-- 检查依赖是否安装（`node_modules/`, `venv/`, etc.）。
-- 检查服务是否运行（`curl localhost:3000/health` etc.）。
-- **执行深度健康检查**：验证 `harness_config.json` 中定义的所有深度断言（数据库、API 等）。
-- 如果发现问题，**先修复再继续**。
+### 4.2 Environment Verification (Bootstrap)
+- Execute `init.sh` or existing tests to ensure Agent takes over a normal project.
+- Check if dependencies are installed (`node_modules/`, `venv/`, etc.).
+- Check if services are running (`curl localhost:3000/health` etc.).
+- **Execute deep health check**: Verify all deep assertions defined in `harness_config.json` (database, API, etc.).
+- If problems are found, **fix first before continuing**.
 
-### 4.3 回归验证 (Regression Check) ⭐ 新增
-- 从已完成的功能中挑选 1-2 个核心功能，运行其测试。
-- 如果已有功能被破坏：
-  1. 🛑 **立即停止**新功能开发。
-  2. 🔧 **优先修复**回归问题。
-  3. 在 `feature_list.json` 中将受影响功能标记为 `"status": "regression"`。
-  4. 📝 **记录**到 `progress.log`。
+### 4.3 Regression Verification (Regression Check) ⭐ New
+- Select 1-2 core features from completed features and run their tests.
+- If existing features are broken:
+  1. 🛑 **Immediately stop** new feature development.
+  2. 🔧 **Prioritize fixing** regression issues.
+  3. Mark affected features as `"status": "regression"` in `feature_list.json`.
+  4. 📝 **Record** in `progress.log`.
 
-### 4.4 选择任务 (Select)
-- 从 `feature_list.json` 中挑选最高优先级的 `passes: false` 任务。
-- 确保其所有 `dependencies` 均已完成。
-- 将状态更新为 `"status": "in_progress"`。
+### 4.4 Task Selection (Select)
+- Select the highest priority `passes: false` task from `feature_list.json`.
+- Ensure all its `dependencies` are completed.
+- Update status to `"status": "in_progress"`.
 
-### 4.5 执行实现 (Execute)
-- 编写代码。**严禁**超出当前选定的任务范围。
-- 遵循项目编码规范，添加必要注释。
-- 编写相应的测试用例。
+### 4.5 Implementation Execution (Execute)
+- Write code. **Strictly prohibit** exceeding the scope of the currently selected task.
+- Follow project coding standards, add necessary comments.
+- Write corresponding test cases.
 
-### 4.6 质量保证 (QA)
-- 使用工具（如模拟器、浏览器、单元测试）验证功能。
-- **证据驱动**：Agent **必须** 满足 `validation_requirements` 中定义的证据要求。
-- 只有当所有 `test_cases` 状态为 `passed` 且满足 `completion_criteria` 时，方可标记为完成。
-- 根据项目类型选择验证方式（详见第 5 节）。
+### 4.6 Quality Assurance (QA)
+- Use tools (such as simulators, browsers, unit tests) to verify functionality.
+- **Evidence-driven**: Agent **must** meet the evidence requirements defined in `validation_requirements`.
+- Only when all `test_cases` status are `passed` and `completion_criteria` are met can it be marked as complete.
+- Choose verification method based on project type (see Section 5 for details).
 
-### 4.7 持久化 (Persist)
-- 执行 `git add` / `git commit`，备注信息需详尽。
-- 更新 `feature_list.json` 中的 `passes` 状态。
-- 在 `progress.log` 中留下"下一位开发者"的交接说明。
-
----
-
-## 5. 测试与验证标准
-
-### 5.1 通用规则
-- **原子性测试**：每个功能点必须能够独立测试。
-- **证据驱动**：所有功能必须提供工具执行结果（日志、断言输出、截图）作为完成证据。
-- **测试用例内嵌**：每个功能在 `feature_list.json` 中必须包含 `test_cases` 字段。
-
-### 5.2 Web 项目 (E2E 优先)
-- 必须使用 Playwright/Cypress 等工具进行端到端模拟。
-- 模拟真实用户操作（点击、输入、滚动）。
-- 验证页面跳转、错误消息显示、UI 渲染。
-- **禁止**使用 API 调用绕过 UI 验证。
-
-### 5.3 API 项目
-- 验证响应状态码、数据格式、错误处理。
-- 验证数据库状态正确。
-- 使用 pytest / Newman 等工具执行自动化测试。
-
-### 5.4 CLI 项目
-- 测试命令行输入/输出。
-- 验证退出码正确。
-- 测试异常参数处理。
+### 4.7 Persistence (Persist)
+- Execute `git add` / `git commit` with detailed commit messages.
+- Update `passes` status in `feature_list.json`.
+- Leave handoff instructions for "next developer" in `progress.log`.
 
 ---
 
-## 6. 安全执行规范 ⭐ 新增
+## 5. Testing and Verification Standards
 
-### 6.1 命令白名单
+### 5.1 General Rules
+- **Atomic Testing**: Each feature point must be independently testable.
+- **Evidence-driven**: All features must provide tool execution results (logs, assertion outputs, screenshots) as completion evidence.
+- **Test Case Embedding**: Each feature must include `test_cases` field in `feature_list.json`.
 
-AI 在执行任何命令前**必须**验证安全性。
+### 5.2 Web Projects (E2E Priority)
+- Must use tools like Playwright/Cypress for end-to-end simulation.
+- Simulate real user operations (clicks, inputs, scrolling).
+- Verify page transitions, error message display, UI rendering.
+- **Prohibit** using API calls to bypass UI verification.
 
-#### ✅ 允许的命令
+### 5.3 API Projects
+- Verify response status codes, data formats, error handling.
+- Verify database status is correct.
+- Use pytest / Newman and other tools for automated testing.
 
-| 类别 | 命令 |
+### 5.4 CLI Projects
+- Test command line input/output.
+- Verify exit codes are correct.
+- Test exception parameter handling.
+
+---
+
+## 6. Secure Execution Specifications ⭐ New
+
+### 6.1 Command Whitelist
+
+AI **must** verify safety before executing any command.
+
+#### ✅ Allowed Commands
+
+| Category | Commands |
 | :--- | :--- |
-| **文件操作** | `ls`, `cat`, `head`, `tail`, `wc`, `grep`, `find`, `cp`, `mv` |
+| **File Operations** | `ls`, `cat`, `head`, `tail`, `wc`, `grep`, `find`, `cp`, `mv` |
 | **Node.js** | `npm`, `node`, `npx`, `yarn` |
 | **Python** | `pip`, `python`, `pytest`, `black`, `flake8`, `mypy` |
 | **Go** | `go`, `gofmt` |
 | **Rust** | `cargo`, `rustc`, `rustfmt` |
-| **版本控制** | `git` (all subcommands) |
-| **进程管理** | `ps`, `lsof`, `sleep` |
+| **Version Control** | `git` (all subcommands) |
+| **Process Management** | `ps`, `lsof`, `sleep` |
 
-#### ❌ 禁止的命令
+#### ❌ Prohibited Commands
 
-| 类别 | 命令 | 原因 |
+| Category | Commands | Reason |
 | :--- | :--- | :--- |
-| **提权** | `sudo`, `su` | 系统级风险 |
-| **权限** | `chmod`, `chown` (除非明确必要) | 权限变更 |
-| **破坏性** | `rm -rf /`, `mkfs`, `fdisk` | 数据不可恢复 |
-| **网络后门** | `nc`, `netcat`, `telnet` | 安全隐患 |
-| **防火墙** | `iptables`, `route` | 网络配置变更 |
-| **盲目下载** | `curl \| bash`, `wget \| sh` | 不受审查的脚本 |
-| **系统杀进程** | `kill -9` (系统进程) | 系统稳定性 |
+| **Privilege Escalation** | `sudo`, `su` | System-level risk |
+| **Permissions** | `chmod`, `chown` (unless explicitly necessary) | Permission changes |
+| **Destructive** | `rm -rf /`, `mkfs`, `fdisk` | Irrecoverable data |
+| **Network Backdoors** | `nc`, `netcat`, `telnet` | Security risks |
+| **Firewall** | `iptables`, `route` | Network configuration changes |
+| **Blind Downloads** | `curl \| bash`, `wget \| sh` | Unreviewed scripts |
+| **System Process Killing** | `kill -9` (system processes) | System stability |
 
-### 6.2 执行前检查清单
+### 6.2 Pre-Execution Checklist
 
-每个命令执行前必须验证：
+Each command execution must verify:
 
-1. ✅ 命令在白名单中？
-2. ✅ 参数安全？
-3. ✅ 不影响系统文件？
-4. ✅ 不可逆操作已备份？
-5. ✅ 如有疑问，先询问用户。
-
----
-
-## 7. 功能管理与锁定 ⭐ 新增
-
-### 7.1 核心功能 (core: true)
-- ❌ **不可删除**
-- ⚠️ 修改需要明确理由，并记录变更原因
-- ✅ 可以调整优先级
-
-### 7.2 扩展功能 (core: false)
-- ✅ 可以删除（须记录原因）
-- ✅ 可以修改描述/步骤
-- ✅ 可以推迟
-
-### 7.3 需求变更流程
-1. 更新 `app_spec.md` 反映新需求。
-2. 评估对现有功能的影响。
-3. 更新 `feature_list.json`（添加/修改/推迟）。
-4. 在 `progress.log` 记录变更理由。
+1. ✅ Is the command in the whitelist?
+2. ✅ Are the parameters safe?
+3. ✅ Does it not affect system files?
+4. ✅ Are irreversible operations backed up?
+5. ✅ If in doubt, ask the user first.
 
 ---
 
-## 8. 特殊情况处理
+## 7. Feature Management and Locking ⭐ New
 
-### 8.1 回归问题 (Regression)
+### 7.1 Core Features (core: true)
+- ❌ **Cannot be deleted**
+- ⚠️ Modifications require clear justification and change reasons must be recorded
+- ✅ Can adjust priority
+
+### 7.2 Extended Features (core: false)
+- ✅ Can be deleted (must record reason)
+- ✅ Can modify description/steps
+- ✅ Can be postponed
+
+### 7.3 Requirement Change Process
+1. Update `app_spec.md` to reflect new requirements.
+2. Evaluate impact on existing features.
+3. Update `feature_list.json` (add/modify/postpone).
+4. Record change reasons in `progress.log`.
+
+---
+
+## 8. Special Case Handling
+
+### 8.1 Regression Issues (Regression)
 ```json
 {
   "id": "F005",
   "status": "regression",
   "regression_details": {
     "detected_at": "2026-02-26T14:00:00Z",
-    "symptoms": "登录功能返回 500 错误",
-    "likely_cause": "F010 的数据库迁移破坏了用户表",
+    "symptoms": "Login functionality returns 500 error",
+    "likely_cause": "F010's database migration broke the user table",
     "affected_tests": ["test-005-01"]
   }
 }
 ```
-- 优先修复回归问题，再继续新功能。
+- Prioritize fixing regression issues before continuing with new features.
 
-### 8.2 阻塞问题 (Blocked)
-- 更新功能状态为 `"status": "blocked"`，记录 `blocked_reason`。
-- 跳过该功能，选择下一个可执行功能。
-- 在 `progress.log` 记录阻塞详情。
+### 8.2 Blocking Issues (Blocked)
+- Update feature status to `"status": "blocked"`, record `blocked_reason`.
+- Skip the feature, select next executable feature.
+- Record blocking details in `progress.log`.
 
-### 8.3 项目中断恢复
-1. 读取 `progress.log` 了解历史。
-2. 读取 `.ai/feature_list.json` 查看当前状态。
-3. 执行 `git log` 查看最近提交。
-4. 运行环境验证和回归测试。
-5. 继续下一个待处理功能。
+### 8.3 Project Interruption Recovery
+1. Read `progress.log` to understand history.
+2. Read `.ai/feature_list.json` to check current status.
+3. Execute `git log` to see recent commits.
+4. Run environment verification and regression tests.
+5. Continue with next pending feature.
 
-### 8.4 标准化错误恢复 (Retry & Escalation) ⭐ 新增
-当 Agent 遇到执行错误或测试失败时，应遵循以下协议：
-1. **自动分类**：判断是环境问题（运行 `init.sh`）、代码问题（自动修复）还是需求问题（查阅文档）。
-2. **重试计数**：在 `feature_list.json` 中跟踪 `retry_count`。
-3. **退避回退**：如果达到 `max_retries`，Agent 必须：
-   - 执行 `git reset --hard` 到上一个稳定状态。
-   - 将状态标记为 `"blocked"`。
-   - 记录具体的 `blocked_reason`。
-   - 跳过该任务，尝试队列中的下一个任务。
-   - 在 `progress.log` 中记录该决策。
+### 8.4 Standardized Error Recovery (Retry & Escalation) ⭐ New
+When an Agent encounters execution errors or test failures, it should follow this protocol:
+1. **Automatic Classification**: Determine if it's an environment issue (run `init.sh`), code issue (auto-fix), or requirement issue (consult documentation).
+2. **Retry Count**: Track `retry_count` in `feature_list.json`.
+3. **Backoff and Rollback**: If `max_retries` is reached, Agent must:
+   - Execute `git reset --hard` to last stable state.
+   - Mark status as `"blocked"`.
+   - Record specific `blocked_reason`.
+   - Skip the task, try next task in queue.
+   - Record the decision in `progress.log`.
 
 ---
 
-## 9. Git 提交规范
+## 9. Git Commit Standards
 
-- 每次功能完成**必须**提交。
-- **严禁**一次提交多个功能。
-- 提交信息格式：
+- Each feature completion **must** be committed.
+- **Strictly prohibit** committing multiple features at once.
+- Commit message format:
 
 ```
 <type>(<scope>): <description> [Closes #feature-id]
 
-- 实现内容 1
-- 实现内容 2
-- 添加测试用例
+- Implementation detail 1
+- Implementation detail 2
+- Add test cases
 ```
 
-**Type 类型**：
-- `feat:` 新功能
-- `fix:` Bug 修复
-- `refactor:` 代码重构
-- `test:` 测试相关
-- `docs:` 文档更新
-- `chore:` 构建/工具相关
+**Type Categories**:
+- `feat:` New feature
+- `fix:` Bug fix
+- `refactor:` Code refactoring
+- `test:` Test related
+- `docs:` Documentation update
+- `chore:` Build/tool related
 
 ---
 
-## 10. 项目完成标准
+## 10. Project Completion Standards
 
-| 维度 | 要求 |
+| Dimension | Requirement |
 | :--- | :--- |
-| **功能完成** | 所有功能 `passes: true`，无 `blocked` 或 `regression` |
-| **测试覆盖** | 测试覆盖率 ≥ 70% |
-| **代码质量** | 无 lint 错误, 通过类型检查 |
-| **文档** | README 完整, API 文档清晰, 代码注释充分 |
-| **Git 历史** | 每个功能一个提交, 消息清晰, 无冗余 |
+| **Feature Completion** | All features `passes: true`, no `blocked` or `regression` |
+| **Test Coverage** | Test coverage ≥ 70% |
+| **Code Quality** | No lint errors, passes type checking |
+| **Documentation** | Complete README, clear API documentation, sufficient code comments |
+| **Git History** | One commit per feature, clear messages, no redundancy |
 
 ---
 
-## 11. 最佳实践
+## 11. Best Practices
 
-### 功能拆分
-- **粒度适中**：一个功能 1-4 小时完成
-- **独立可测**：不依赖未完成的功能
-- **价值明确**：每个功能有清晰的业务价值
-- **边界清晰**：功能之间职责分明
+### Feature Splitting
+- **Moderate Granularity**: One feature completed in 1-4 hours
+- **Independent Testability**: No dependencies on unfinished features
+- **Clear Value**: Each feature has clear business value
+- **Clear Boundaries**: Distinct responsibilities between features
 
-### 代码质量
-- **测试驱动**：先写测试，再写实现
-- **持续重构**：保持代码整洁
-- **文档同步**：代码和文档保持一致
-- **版本控制**：小步提交，频繁提交
+### Code Quality
+- **Test-Driven**: Write tests first, then implementation
+- **Continuous Refactoring**: Keep code clean
+- **Documentation Synchronization**: Code and documentation remain consistent
+- **Version Control**: Small, frequent commits
 
-### 状态管理
-- **及时更新**：完成功能后立即更新状态。
-- **人性化日志**：在 `progress.log` 增量记录每个会话的决策与成果。
-- **定期回顾**：检查进度和剩余工作
+### State Management
+- **Timely Updates**: Update status immediately after completing features.
+- **Humanized Logs**: Incrementally record each session's decisions and achievements in `progress.log`.
+- **Regular Review**: Check progress and remaining work
 
 ---
 
-## 12. 数据收集与学习机制 ⭐ 新增
+## 12. Data Collection and Learning Mechanism ⭐ New
 
-### 12.1 核心理念
+### 12.1 Core Concept
 
-根据 Phil Schmid 的洞察：**"将 Harness 视为数据集"**
+Based on Phil Schmid's insight: **"Treat the Harness as a dataset"**
 
-- 每次失败都是训练数据
-- 每个成功模式都是最佳实践
-- 收集的数据用于改进 Harness 和训练模型
+- Every failure is training data
+- Every success pattern is a best practice
+- Collected data is used to improve Harness and train models
 
-### 12.2 数据收集配置
+### 12.2 Data Collection Configuration
 
-通过 `.ai/data_collection_config.json` 配置数据收集行为：
+Configure data collection behavior through `.ai/data_collection_config.json`:
 
 ```json
 {
   "enabled": true,
   "collect": {
-    "failures": true,      // 失败案例
-    "successes": true,     // 成功模式
-    "timing": true,        // 时间指标
-    "context_usage": true  // 上下文使用
+    "failures": true,      // Failure cases
+    "successes": true,     // Success patterns
+    "timing": true,        // Time metrics
+    "context_usage": true  // Context usage
   },
   "storage": {
     "format": "jsonl",
@@ -337,11 +337,11 @@ AI 在执行任何命令前**必须**验证安全性。
 }
 ```
 
-### 12.3 数据格式
+### 12.3 Data Format
 
-#### 失败数据 (`failures.jsonl`)
+#### Failure Data (`failures.jsonl`)
 
-每个失败案例记录：
+Each failure case records:
 
 ```json
 {
@@ -363,9 +363,9 @@ AI 在执行任何命令前**必须**验证安全性。
 }
 ```
 
-#### 成功数据 (`successes.jsonl`)
+#### Success Data (`successes.jsonl`)
 
-每个成功案例记录：
+Each success case records:
 
 ```json
 {
@@ -386,36 +386,36 @@ AI 在执行任何命令前**必须**验证安全性。
 }
 ```
 
-### 12.4 数据分析
+### 12.4 Data Analysis
 
-使用脚本自动分析：
+Use scripts for automatic analysis:
 
-- **`scripts/analyze_failures.py`**：识别常见失败模式
-- **`scripts/extract_ki.py` (新 ⭐)**：将失败模式自动转化为 `docs/KNOWLEDGE_ITEMS/`
-- **`scripts/generate_metrics.py`**：生成性能报告
-- **定期报告**：每周/每月自动生成分析报告
+- **`scripts/analyze_failures.py`**: Identify common failure patterns
+- **`scripts/extract_ki.py` (New ⭐)**: Automatically convert failure patterns to `docs/KNOWLEDGE_ITEMS/`
+- **`scripts/generate_metrics.py`**: Generate performance reports
+- **Regular Reports**: Automatically generate analysis reports weekly/monthly
 
-### 12.5 反馈循环
+### 12.5 Feedback Loop
 
-数据收集后的改进流程：
+Improvement process after data collection:
 
-1. **分析**：识别失败模式和成功模式
-2. **提炼**：提取通用教训
-3. **改进**：更新 Harness 规范和最佳实践
-4. **验证**：通过新会话验证改进效果
-5. **训练**：（可选）导出数据用于模型微调
+1. **Analysis**: Identify failure patterns and success patterns
+2. **Extraction**: Extract general lessons
+3. **Improvement**: Update Harness specifications and best practices
+4. **Verification**: Verify improvement effects through new sessions
+5. **Training**: (Optional) Export data for model fine-tuning
 
 ---
 
-## 13. Harness 模块化配置 ⭐ 新增
+## 13. Harness Modular Configuration ⭐ New
 
-### 13.1 "为删除而构建"原则
+### 13.1 "Built for Deletion" Principle
 
-核心理念：预见到新的模型会取代当前逻辑，架构必须模块化，随时可以"撕掉"旧代码。
+Core concept: Anticipating that new models will replace current logic, the architecture must be modular and ready to "rip out" old code at any time.
 
-### 13.2 模块配置文件
+### 13.2 Module Configuration File
 
-通过 `.ai/harness_config.json` 管理模块：
+Manage modules through `.ai/harness_config.json`:
 
 ```json
 {
@@ -435,90 +435,90 @@ AI 在执行任何命令前**必须**验证安全性。
 }
 ```
 
-### 13.3 模块生命周期
+### 13.3 Module Lifecycle
 
-每个模块包含：
+Each module includes:
 
-- **enabled**：当前是否启用
-- **reason**：为什么需要这个模块
-- **review_date**：何时重新评估
-- **alternatives**：未来可能的替代方案
+- **enabled**: Whether currently enabled
+- **reason**: Why this module is needed
+- **review_date**: When to re-evaluate
+- **alternatives**: Possible future alternatives
 
-### 13.4 模块演进示例
+### 13.4 Module Evolution Example
 
 ```markdown
-## 当前（2026-02）
-- dual_agent_pattern: enabled（模型需要角色分离）
-- regression_check: enabled（模型仍会引入回归）
+## Current (2026-02)
+- dual_agent_pattern: enabled (models need role separation)
+- regression_check: enabled (models still introduce regressions)
 
-## 未来可能（2026-06）
-- dual_agent_pattern: disabled（模型已能处理完整流程）
-- regression_check: enabled（仍然需要）
+## Future Possibilities (2026-06)
+- dual_agent_pattern: disabled (models can handle complete flow)
+- regression_check: enabled (still needed)
 
-## 长期（2027+）
-- multi_agent_collaboration: enabled（多 Agent 并行开发）
+## Long-term (2027+)
+- multi_agent_collaboration: enabled (multi-agent parallel development)
 ```
 
 ---
 
-## 14. 性能评估指标 ⭐ 新增
+## 14. Performance Evaluation Metrics ⭐ New
 
-### 14.1 可靠性指标
+### 14.1 Reliability Metrics
 
-| 指标 | 定义 | 目标 |
+| Metric | Definition | Target |
 |------|------|------|
-| **任务完成率** | 成功完成的功能 / 总功能数 | ≥ 90% |
-| **回归率** | 引入的回归问题 / 完成的功能数 | ≤ 5% |
-| **阻塞率** | 被阻塞的功能 / 总功能数 | ≤ 10% |
-| **重试率** | 需要重试的功能 / 总功能数 | ≤ 50% |
+| **Task Completion Rate** | Successfully completed features / total features | ≥ 90% |
+| **Regression Rate** | Introduced regression issues / completed features | ≤ 5% |
+| **Blocking Rate** | Blocked features / total features | ≤ 10% |
+| **Retry Rate** | Features requiring retries / total features | ≤ 50% |
 
-### 14.2 效率指标
+### 14.2 Efficiency Metrics
 
-| 指标 | 定义 | 目标 |
+| Metric | Definition | Target |
 |------|------|------|
-| **平均开发时间** | 每个功能的实际耗时 | 符合预估 |
-| **预估准确性** | 实际时间 / 预估时间 | 0.8 - 1.2 |
-| **上下文利用率** | 有效操作 / 总 token 使用 | 优化中 |
+| **Average Development Time** | Actual time per feature | As estimated |
+| **Estimation Accuracy** | Actual time / estimated time | 0.8 - 1.2 |
+| **Context Utilization** | Effective operations / total token usage | Optimizing |
 
-### 14.3 质量指标
+### 14.3 Quality Metrics
 
-| 指标 | 定义 | 目标 |
+| Metric | Definition | Target |
 |------|------|------|
-| **测试覆盖率** | 测试代码行 / 总代码行 | ≥ 70% |
-| **代码质量** | Lint 错误数、类型错误数 | 0 |
-| **文档完整性** | 有文档的功能 / 总功能数 | 100% |
+| **Test Coverage** | Test code lines / total code lines | ≥ 70% |
+| **Code Quality** | Number of lint errors, type errors | 0 |
+| **Documentation Completeness** | Documented features / total features | 100% |
 
-### 14.4 系统级评估
+### 14.4 System-Level Evaluation
 
-**长期稳定性**：
-- **上下文持久性**：跨会话的状态保持准确率
-- **环境一致性**：init.sh 成功率
-- **恢复能力**：从错误中自动恢复的成功率
+**Long-term Stability**:
+- **Context Persistence**: Cross-session state retention accuracy
+- **Environment Consistency**: init.sh success rate
+- **Recovery Capability**: Success rate of automatic recovery from errors
 
-### 14.5 评估报告
+### 14.5 Evaluation Reports
 
-使用 `scripts/generate_metrics.py` 生成报告：
+Generate reports using `scripts/generate_metrics.py`:
 
 ```bash
 python scripts/generate_metrics.py --project-dir /path/to/project
 ```
 
-报告包含：
-- 📊 整体性能评分
-- 🎯 可靠性指标分析
-- ⚡ 效率指标分析
-- 🔬 质量指标分析
-- 💡 改进建议
-- 📈 项目进度可视化
+Reports include:
+- 📊 Overall performance score
+- 🎯 Reliability metrics analysis
+- ⚡ Efficiency metrics analysis
+- 🔬 Quality metrics analysis
+- 💡 Improvement suggestions
+- 📈 Project progress visualization
 
 ---
 
-## 📚 开始使用
+## 📚 Getting Started
 
-1. **检查项目状态** — 查看是否已存在 `.ai/feature_list.json`
-2. **确定当前模式** — 初始化代理 or 编码代理
-3. **按照流程执行** — 严格遵循上述规范
+1. **Check Project Status** — See if `.ai/feature_list.json` already exists
+2. **Determine Current Mode** — Initializer Agent or Coding Agent
+3. **Follow the Process** — Strictly follow the above specifications
 
-**记住**：你的目标是高质量、可持续、安全地完成项目开发。遵循规范，减少犯错，确保每个功能都经过充分验证。
+**Remember**: Your goal is to complete project development with high quality, sustainability, and safety. Follow the specifications, reduce mistakes, and ensure each feature is fully verified.
 
-**开始吧!** 🚀
+**Let's start!** 🚀
