@@ -102,3 +102,77 @@ Each test case should:
 - [ ] Be repeatable (no side effects between runs)
 - [ ] Include both happy path and error cases
 - [ ] Run in under 30 seconds (individual test)
+
+---
+
+## 🎯 Quality Testing Guidelines
+
+### ❌ Prohibited Practices
+
+**Never add tests solely to increase coverage**:
+- ❌ DO NOT write meaningless tests just to hit coverage targets
+- ❌ DO NOT add tests for trivial getters/setters or simple data structures
+- ❌ DO NOT generate test cases automatically without reviewing their value
+
+**Never duplicate existing tests**:
+- ❌ DO NOT write tests that verify the same behavior already covered by existing tests
+- ❌ DO NOT copy-paste test logic with only minor variations
+- ❌ DO NOT test the same code path through different entry points without justification
+
+**Never test implementation details**:
+- ❌ DO NOT test private methods or internal functions
+- ❌ DO NOT test Debug traits or display formatting (unless it's a public API)
+- ❌ DO NOT assert on internal state or private variables
+- ❌ DO NOT test how a feature is implemented, only test what it does
+
+### ✅ Recommended Practices
+
+**Test critical business logic**:
+- ✅ DO test core algorithms and decision-making logic
+- ✅ DO test boundary conditions and edge cases
+- ✅ DO test error handling and exception paths
+- ✅ DO test data validation and sanitization
+
+**Test integration points**:
+- ✅ DO test interactions between components
+- ✅ DO test API contracts and data flow
+- ✅ DO test database operations and transactions
+- ✅ DO test external service integrations (with mocks)
+
+**Test security-critical functionality**:
+- ✅ DO test authentication and authorization flows
+- ✅ DO test input validation and SQL injection prevention
+- ✅ DO test XSS and CSRF protections
+- ✅ DO test access control and permission checks
+- ✅ DO test sensitive data handling and encryption
+
+### 📊 Coverage Philosophy
+
+**Target: ≥70% high-value test coverage**
+
+**Quality > Quantity**:
+- 20 meaningful tests > 100 redundant tests
+- Focus on testing behaviors that matter to users
+- Prioritize critical paths over edge cases
+- A test that catches a real bug is worth 100 tests that never fail
+
+**When coverage is low, ask**:
+- "Which critical behaviors are untested?" (NOT "How do I add more tests?")
+- "What are the highest-risk areas of the codebase?"
+- "What would happen if this feature failed in production?"
+
+**Coverage is a metric, not a goal**:
+- High coverage with meaningless tests provides false confidence
+- Low coverage with high-value tests provides real confidence
+- The goal is to prevent regressions, not to hit a number
+
+**Example of high-value vs low-value tests**:
+
+| Test Type | High Value ✅ | Low Value ❌ |
+|-----------|--------------|--------------|
+| **Business Logic** | Test payment calculation with edge cases | Test getter returns correct value |
+| **Integration** | Test user registration flow end-to-end | Test database connection string format |
+| **Security** | Test SQL injection prevention | Test error message text exactly |
+| **Edge Cases** | Test handling of empty/invalid input | Test loop runs exactly N times |
+
+**Remember**: The purpose of testing is to prevent bugs and provide confidence in the code. Every test should have a clear justification for why it exists.
