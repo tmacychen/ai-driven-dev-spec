@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional
 
 ADDS_VERSION = "2.3"
-ADDS_REPO = "https://github.com/your-repo/ai-driven-dev-spec.git"
+ADDS_REPO = "https://github.com/tmacychen/ai-driven-dev-spec.git"
 TEMP_DIR = "adds-temp-install"
 
 

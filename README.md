@@ -1,110 +1,149 @@
 # AI-Driven Development Specification (ADDS)
-## Overview
 
-This specification defines a structured approach for AI agents to build complete software projects incrementally, solving the core challenge of **context window fragmentation** in long-running development tasks.
+> Agent-driven development framework - enabling AI Agents to autonomously complete project development
 
-Inspired by [Anthropic's research on effective harnesses for long-running agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents).
+Inspired by [Anthropic's research](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents) and [LangChain's harness engineering](https://blog.langchain.com/improving-deep-agents-with-harness-engineering/).
 
 ## Core Principles
 
 1. **Two-Phase Agent Pattern** — Initializer Agent + Coding Agent
-2. **Structured State Management** — Progress files, feature lists, git history
+2. **State-Driven** — `.ai/feature_list.md` is the single source of truth
 3. **Incremental Development** — One feature at a time, never one-shot
-4. **Clean Handoffs** — Every session leaves a mergeable, documented state
-5. **Test-Driven Verification** — Prove features work with tool-based evidence
-6. **Rapid Onboarding** — Standard startup procedure for every new session
-7. **Security by Default** — Command whitelist & safe execution guardrails
-8. **Regression Protection** — Detect and fix broken features before adding new ones
-> Agent-driven development framework - enabling AI Agents to autonomously complete project development
+4. **Clean Handoffs** — Every session leaves a mergeable state
+5. **Evidence-First** — Prove features work with tool-based evidence
+6. **Regression Protection** — Verify existing features before adding new ones
 
-
-## Core Concepts
-
-- **State-Driven**: `.ai/feature_list.md` is the single source of truth for all features
-- **Incremental Development**: Complete one feature per session to ensure maintainability
-- **Evidence-First**: Must provide test execution results as completion evidence
-
-## Project Structure
-
-```
-ai-driven-dev-spec/
-├── README.md                        # This file
-├── docs/
-│   └── specification.md            # Core specification (AI complete specification)
-├── scripts/
-│   ├── init-adds.py                # Cross-platform installer (Python)
-│   └── compress_context.py         # Context compression tool
-├── templates/
-│   ├── scaffold/                   # Project scaffold templates
-│   │   ├── .ai/
-│   │   │   ├── feature_list.md    # Feature tracking (truth source)
-│   │   │   ├── progress.md         # Progress log
-│   │   │   └── architecture.md     # Architecture decisions
-│   │   └── CORE_GUIDELINES.md      # AI behavior guide
-│   └── prompts/
-│       ├── initializer_prompt.md   # System prompt for Phase 1
-│       ├── coding_prompt.md        # System prompt for Phase 2
-│       ├── testing_prompt.md       # Testing & QA guide
-│       └── review_prompt.md        # Code review checklist
-```
+---
 
 ## Quick Start
 
-### Installation (All Platforms)
-
-**Python (Recommended - Windows/Linux/macOS):**
+### Option 1: New Empty Project
 
 ```bash
-# Install to current directory
+# Create project directory
+mkdir my-project && cd my-project
+
+# Clone ADDS as template
+git clone https://github.com/tmacychen/ai-driven-dev-spec.git .adds-temp
+cp -r .adds-temp/* .
+cp -r .adds-temp/.* . 2>/dev/null || true
+rm -rf .adds-temp
+
+# Run installer
 python scripts/init-adds.py
 
-# Or run with pipx standalone
-pipx run init-adds.py
+# Tell AI to start
+"Please read the files in the .ai directory and start development."
 ```
 
-**Or run directly from GitHub:**
+### Option 2: Existing Project
 
 ```bash
-# Linux/Mac
-python -m pip install adds-ai
-adds-init
+cd your-existing-project
 
-# Windows
-pip install adds-ai
-adds-init
+# Run installer (will prompt for existing file handling)
+python /path/to/ai-driven-dev-spec/scripts/init-adds.py --from-local /path/to/ai-driven-dev-spec
+
+# Tell AI to start
+"Please read the files in the .ai directory and start development."
 ```
 
-## Workflow
+### Option 3: Clone + Run (Recommended for First Time)
 
-### Phase 1: Initialization
+```bash
+# Clone the full repository
+git clone https://github.com/tmacychen/ai-driven-dev-spec.git adds-temp
 
-1. Create `app_spec.md` describing project requirements
-2. Run Initializer Agent: `python scripts/init-adds.py`
-3. Tell AI: "Please read the files in the .ai directory and start initialization"
+# Go to your project directory
+cd your-project
 
-### Phase 2: Development
+# Run installer from the cloned repo
+python ../adds-temp/scripts/init-adds.py --from-local ../adds-temp
 
-1. Tell AI: "Please read the files in the .ai directory and continue development"
-2. AI will:
-   - Run environment checks
-   - Execute regression tests
-   - Select next feature
-   - Implement and test
-   - Update state files
+# Tell AI to start
+"Please read the files in the .ai directory and start development."
+```
 
-## Core Files
+---
 
-| File | Purpose |
-|------|---------|
-| `.ai/feature_list.md` | Feature list, AI's task list |
-| `.ai/progress.md` | Progress log |
-| `app_spec.md` | Project requirements specification |
-| `CORE_GUIDELINES.md` | AI behavior constraints |
+## After Installation
+
+The installer generates this structure in your project:
+
+```
+your-project/
+├── .ai/                         # ADDS state (generated)
+│   ├── feature_list.md          # Feature tracking (truth source)
+│   ├── progress.md              # Session progress log
+│   ├── architecture.md          # Architecture decisions
+│   └── prompts/                # AI system prompts
+│       ├── initializer_prompt.md
+│       ├── coding_prompt.md
+│       ├── testing_prompt.md
+│       └── review_prompt.md
+├── app_spec.md                  # Your project requirements (edit this!)
+├── CORE_GUIDELINES.md          # AI behavior constraints
+└── [your project files]        # Your existing code
+```
+
+---
+
+## Development Workflow
+
+### First Session (Initializer)
+
+1. You: "Please read the files in the .ai directory and start initialization"
+2. AI reads `app_spec.md` 
+3. AI generates `feature_list.md` with 50-200 features
+4. AI creates architecture and initial structure
+
+### Subsequent Sessions (Coding)
+
+1. You: "Please read the files in the .ai directory and continue development"
+2. AI runs environment health check
+3. AI runs regression tests (verify existing features)
+4. AI selects next feature from `feature_list.md`
+5. AI implements, tests, and commits
+
+---
+
+## Project Structure (ADDS Template)
+
+```
+ai-driven-dev-spec/
+├── docs/
+│   └── specification.md        # Complete specification
+├── scripts/
+│   ├── init-adds.py           # Cross-platform installer
+│   └── compress_context.py     # Context compression tool
+├── templates/
+│   ├── scaffold/
+│   │   ├── .ai/               # Templates for generated files
+│   │   │   ├── feature_list.md
+│   │   │   ├── progress.md
+│   │   │   └── architecture.md
+│   │   └── CORE_GUIDELINES.md
+│   └── prompts/                # AI system prompts
+│       ├── initializer_prompt.md
+│       ├── coding_prompt.md
+│       ├── testing_prompt.md
+│       └── review_prompt.md
+├── README.md
+├── CHANGELOG.md
+└── LICENSE
+```
+
+---
 
 ## Documentation
 
-- [specification.md](docs/specification.md) - Complete specification
-- [templates/prompts/](templates/prompts/) - AI prompts
+| File | Purpose |
+|------|---------|
+| `docs/specification.md` | Complete ADDS specification |
+| `templates/prompts/` | AI system prompts |
+| `templates/scaffold/CORE_GUIDELINES.md` | AI behavior constraints |
+
+---
 
 ## License
 
