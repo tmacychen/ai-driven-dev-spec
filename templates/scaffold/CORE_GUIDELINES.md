@@ -4,12 +4,45 @@
 
 ---
 
-## 📋 Dual Agent Mode
+## 📋 Multi-Agent Team Mode
+
+> **LangChain Pattern**: "The purpose of the harness engineer: prepare and deliver context so agents can autonomously complete work."
+
+ADDS uses a multi-agent team approach where each agent has a specific role:
 
 | Agent | Trigger Condition | Core Responsibilities |
 |-------|-------------------|----------------------|
-| **Initializer** | Project first start, missing `.ai/feature_list.md` | Analyze app_spec.md → Split features → Create structure → Generate init.sh → Git initial commit |
-| **Coding** | Project initialized | Verify environment → Regression check → Implement feature → Test verification → Update state → Git commit |
+| **Project Manager** | Project first start, requirements change | Analyze requirements → Decompose features → Track progress |
+| **Architect** | PM completes analysis | Design architecture → Select tech stack → Create init.sh |
+| **Developer** | Architecture approved | Implement features → Write tests → Self-verify |
+| **Tester** | Developer completes feature | Run tests → Regression check → Verify acceptance criteria |
+| **Reviewer** | Tests pass | Code review → Security audit → Quality gate |
+
+### Agent Workflow
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│     PM      │───▶│  Architect  │───▶│  Developer  │───▶│   Tester    │───▶│  Reviewer   │
+│             │    │             │    │             │    │             │    │             │
+│ Requirements│    │ Architecture│    │ Feature     │    │ Test        │    │ Code Review │
+│ Decomposition│    │ Design      │    │ Implementation│   │ Verification│   │ Security    │
+└──────┬──────┘    └──────┬──────┘    └──────┬──────┘    └──────┬──────┘    └──────┬──────┘
+       │                  │                  │                  │                  │
+       ▼                  ▼                  ▼                  ▼                  ▼
+ feature_list.md    architecture.md    source code       test_report       review_report
+```
+
+### Agent Prompts
+
+Each agent has a dedicated prompt file in `.ai/prompts/`:
+
+| Prompt File | Agent Role |
+|-------------|------------|
+| `pm_prompt.md` | Project Manager |
+| `architect_prompt.md` | Architect |
+| `developer_prompt.md` | Developer |
+| `tester_prompt.md` | Tester |
+| `reviewer_prompt.md` | Reviewer |
 
 ---
 
@@ -19,18 +52,29 @@
 |------|---------|
 | `.ai/feature_list.md` | Feature list (truth source): 50-200 discrete features, each with test cases |
 | `.ai/progress.md` | Progress log: incremental session output |
+| `.ai/architecture.md` | Architecture design: tech stack, structure, decisions |
 | `app_spec.md` | Application specification: original requirements source |
 
 ---
 
 ## 🚀 Development Workflow
 
+### Feature Lifecycle
+
 ```
-1. Prepare → bash init.sh verify environment → Run core feature tests (regression check)
-2. Select → Choose highest priority pending task from feature_list.md
-3. Implement → Write code + test cases
-4. Verify → Execute tests, must provide execution evidence
-5. Persist → Update feature_list.md → Append progress.md → Git commit
+pending → in_progress → testing → completed
+                    ↓
+                  bug → in_progress (fix)
+```
+
+### Session Flow
+
+```
+1. Orient → Read CORE_GUIDELINES.md → Read progress.md → Read feature_list.md
+2. Check → Environment health → Regression test (core features)
+3. Work → Implement ONE feature → Run tests → Verify acceptance criteria
+4. Persist → Update feature_list.md → Append progress.md → Git commit
+5. Handoff → Clear message to next agent
 ```
 
 ---
@@ -68,30 +112,36 @@
 
 ## ⚡ Core Rules
 
+- **One Feature Per Session**: Never work on multiple features
 - **Regression First**: If old features break → Fix immediately → Never continue developing new features
 - **Atomic Commits**: One Git Commit per feature
 - **Evidence Required**: All tests must provide execution results as completion evidence
+- **Clear Handoff**: Always leave clear handoff notes for the next agent
 
 ---
 
 ## 📝 Progress Log Template
 
 ```markdown
-## [YYYY-MM-DD HH:MM] Completed: Feature Name
+## [YYYY-MM-DD HH:MM] Session: [Agent Role]
 
-### Implementation Results
-- [Change points]
+### Completed
+- [Feature ID]: [Description]
+  - Files: [list]
+  - Tests: [X/Y passed]
+  - Commit: [hash]
 
-### Verification Evidence
-- ✅ Tests passed (logs)
+### Evidence
+- ✅ Test logs: [link]
+- ✅ Screenshots: [link]
 
 ### Status Changes
-- feat-XXX: pending → completed
+- [Feature ID]: pending → in_progress → testing → completed
 
-### Handoff Notes
-- Next steps: XXX
+### Handoff
+→ [Next Agent]: [Message]
 ```
 
 ---
 
-**Now, please check the current project state and start working.**
+**Now, identify your role and start working according to your agent prompt.**

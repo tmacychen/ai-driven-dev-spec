@@ -1,4 +1,4 @@
-# AI-Driven Development Specification (ADDS) v2.0 Core Guide
+# AI-Driven Development Specification (ADDS) v3.0 Core Guide
 
 > This guide defines a structured approach to help AI Agents continuously, stably, and safely advance projects across multiple context windows in long-cycle software development tasks.
 
@@ -16,31 +16,80 @@ The biggest problem facing long-running AI tasks is **context fragmentation**:
 
 ---
 
-## 2. Dual Agent Role Model
+## 2. Multi-Agent Team Model
 
-We decompose tasks into two core phases, executed by two different prompts (or Agents):
+> **LangChain Pattern**: "The purpose of the harness engineer: prepare and deliver context so agents can autonomously complete work."
 
-### 2.1 Initializer Agent
-- **Responsibility**: Project startup.
+We decompose tasks into specialized roles, each executed by a dedicated agent prompt:
+
+### 2.1 Project Manager Agent
+- **Responsibility**: Requirements analysis and task decomposition.
 - **Trigger Condition**: Project first launch, or when `.ai/feature_list.md` file does not exist.
 - **Tasks**:
     - Read original requirements (`app_spec.md` or `app_spec.txt`).
     - Break down feature list, generate `.ai/feature_list.md` (containing 50-200 atomic test cases).
-    - Set up basic directory structure.
+    - Assign priorities and dependencies.
+    - Track progress and manage scope.
+- **Prompt File**: `.ai/prompts/pm_prompt.md`
+
+### 2.2 Architect Agent
+- **Responsibility**: Technical design and architecture.
+- **Trigger Condition**: PM completes requirement analysis.
+- **Tasks**:
+    - Design system architecture.
+    - Select technology stack.
     - Generate `.ai/architecture.md` to record technology selection and architecture decisions.
     - Write `init.sh` for automated environment configuration.
-    - Submit initial Git Commit.
+- **Prompt File**: `.ai/prompts/architect_prompt.md`
 
-### 2.2 Coding Agent
-- **Responsibility**: Incremental iteration.
-- **Trigger Condition**: All subsequent sessions.
+### 2.3 Developer Agent
+- **Responsibility**: Feature implementation.
+- **Trigger Condition**: Architecture approved, feature assigned.
 - **Tasks**:
-    - Read progress files (`progress.md`) and feature list.
-    - **Execute environment verification** (run `init.sh` or smoke tests).
-    - **Run regression tests for 1-2 core features**.
-    - Run tests to determine current status.
-    - **Select only one** feature for development at a time.
-    - Complete development, self-test, Git commit, and update progress.
+    - Implement ONE feature per session.
+    - Write unit tests.
+    - Self-verify implementation.
+    - Update feature status to `testing`.
+- **Prompt File**: `.ai/prompts/developer_prompt.md`
+
+### 2.4 Tester Agent
+- **Responsibility**: Test verification and quality assurance.
+- **Trigger Condition**: Developer completes feature (status: `testing`).
+- **Tasks**:
+    - Run all test cases.
+    - Verify acceptance criteria.
+    - Run regression tests.
+    - Document test results.
+- **Prompt File**: `.ai/prompts/tester_prompt.md`
+
+### 2.5 Reviewer Agent
+- **Responsibility**: Code review and security audit.
+- **Trigger Condition**: Tests pass.
+- **Tasks**:
+    - Review code quality.
+    - Check security vulnerabilities.
+    - Verify architecture compliance.
+    - Approve or reject feature.
+- **Prompt File**: `.ai/prompts/reviewer_prompt.md`
+
+### 2.6 Agent Workflow
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│     PM      │───▶│  Architect  │───▶│  Developer  │───▶│   Tester    │───▶│  Reviewer   │
+│             │    │             │    │             │    │             │    │             │
+│ Requirements│    │ Architecture│    │ Feature     │    │ Test        │    │ Code Review │
+│ Decomposition│    │ Design      │    │ Implementation│   │ Verification│   │ Security    │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+```
+
+### 2.7 Feature Lifecycle
+
+```
+pending → in_progress → testing → completed
+                    ↓
+                  bug → in_progress (fix)
+```
 
 ---
 

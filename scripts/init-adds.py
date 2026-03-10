@@ -298,22 +298,8 @@ def main():
         action="store_true",
         help="Skip copying prompt templates"
     )
-    parser.add_argument(
-        "--help",
-        action="store_true",
-        help="Show this help message"
-    )
     
     args = parser.parse_args()
-    
-    if args.help:
-        parser.print_help()
-        print("\nExamples:")
-        print("  python init-adds.py                          # Install from git")
-        print("  python init-adds.py --from-local ../adds    # Install from local")
-        print("  python init-adds.py --force                 # Force overwrite")
-        print("  python init-adds.py --dry-run               # Preview only")
-        sys.exit(0)
     
     print()
     print("========================================")
