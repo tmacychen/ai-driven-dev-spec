@@ -2,6 +2,8 @@
 
 Your task is to advance the project by implementing exactly ONE feature from the feature list.
 
+> **LangChain Pattern**: "The purpose of the harness engineer: prepare and deliver context so agents can autonomously complete work."
+
 ## Guiding Procedures
 
 ### Phase 1: Onboarding & Environment (MANDATORY)
@@ -18,7 +20,7 @@ Your task is to advance the project by implementing exactly ONE feature from the
    - Verify services are running (if applicable).
    - **If anything fails: FIX IT FIRST before proceeding with any feature work.**
    
-   > **Anthropic Pattern**: "Start the session by running a basic test on the development server to catch any undocumented bugs. If the agent had instead started implementing a new feature, it would likely make the problem worse."
+   > **Anthropic Pattern**: "Start the session by running a basic test on the development server to catch any undocumented bugs."
 
 3. **Regression Check** ⭐ CRITICAL:
    - Pick 2-3 completed core features (where `core: true` and `status: completed`).
@@ -30,6 +32,30 @@ Your task is to advance the project by implementing exactly ONE feature from the
      - Record the incident in `progress.md`
      - Re-run regression check until all pass
      - Only then proceed to new features
+
+4. **Local Context Discovery** ⭐ NEW (LangChain Pattern):
+   
+   > **LangChain Pattern**: "Context discovery and search are error prone, so injecting context reduces this error surface and helps onboard the agent into its environment."
+   
+   Discover and document the environment context:
+   - **Directory Structure**: Map cwd, parent directories, key subdirectories
+   - **Available Tools**: Detect installed tools (python, node, npm, pytest, go, cargo, etc.)
+   - **Project Config**: Read package.json, requirements.txt, Cargo.toml, go.mod, etc.
+   - **Coding Standards**: Check for .eslintrc, .prettierrc, pyproject.toml, etc.
+   - **Test Framework**: Identify testing framework (jest, pytest, go test, etc.)
+   
+   This context should be noted and used throughout the session to ensure compliance with project conventions.
+
+### Phase 1.5: Time Budget (LangChain Pattern)
+
+> **LangChain Pattern**: "Agents are famously bad at time estimation so this heuristic helps. Time budgeting nudges the agent to finish work and shift to verification."
+
+- Set a mental time budget for this session (e.g., 15-20 minutes per feature)
+- If you approach the time limit:
+  - Complete current atomic operation
+  - Run validation tests
+  - Prioritize committing work over perfect implementation
+  - Leave clear handoff notes in `progress.md`
 
 ### Phase 2: Task Selection
 
@@ -46,6 +72,14 @@ Your task is to advance the project by implementing exactly ONE feature from the
    - Add necessary comments and documentation.
    - Create/update test files as needed.
 
+   > **LangChain Pattern**: "Forcing models to conform to testing standards is a powerful strategy to avoid 'slop buildup' over time."
+   
+   **Write Testable Code**:
+   - Follow exact file paths as specified in acceptance criteria
+   - Test both happy paths AND edge cases
+   - Write assertions that match automated scoring
+   - Consider boundary conditions: empty inputs, max values, error states
+
 6. **Validate** ⭐ CRITICAL:
    - Run ALL `test_cases` defined for this feature.
    - Do NOT mark a feature as complete unless you've seen **tool-based evidence**:
@@ -56,7 +90,20 @@ Your task is to advance the project by implementing exactly ONE feature from the
    - Verify ALL `acceptance_criteria` are met.
    - Check all `security_checks` are addressed.
    
-   > **Anthropic Pattern**: "Once explicitly prompted to use browser automation tools and do all testing as a human user would. Providing Claude with these kinds of testing tools dramatically improved performance."
+   > **Anthropic Pattern**: "Once explicitly prompted to use browser automation tools and do all testing as a human user would."
+   
+   > **LangChain Pattern**: "Verify: Run tests, read the FULL output, compare against what was asked (not against your own code)."
+
+6.1 **Loop Detection** ⭐ NEW (LangChain Pattern):
+   
+   > **LangChain Pattern**: "Agents can be myopic once they've decided on a plan which results in 'doom loops' that make small variations to the same broken approach (10+ times in some traces)."
+   
+   Monitor your work:
+   - If you've edited the same file 5+ times without success:
+     - 🛑 **STOP** and reconsider your approach
+     - Document what you've tried in `progress.md`
+     - Ask for help or try a completely different strategy
+     - Consider if the task is blocked by a dependency
 
 ### Phase 4: Persistence & Handoff
 

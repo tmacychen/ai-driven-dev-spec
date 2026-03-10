@@ -103,23 +103,68 @@ Every development session must follow these strict steps:
   5. Re-run regression check until all pass
   6. Only then proceed to new features
 
-### 4.4 Task Selection (Select)
+### 4.4 Local Context Discovery ⭐ NEW (LangChain Pattern)
+
+> **LangChain Pattern**: "Context discovery and search are error prone, so injecting context reduces this error surface and helps onboard the agent into its environment."
+
+- **Directory Structure**: Map cwd, parent directories, key subdirectories
+- **Available Tools**: Detect installed tools (python, node, npm, pytest, go, cargo, etc.)
+- **Project Config**: Read package.json, requirements.txt, Cargo.toml, go.mod, etc.
+- **Coding Standards**: Check for .eslintrc, .prettierrc, pyproject.toml, etc.
+- **Test Framework**: Identify testing framework (jest, pytest, go test, etc.)
+
+This context should be noted and used throughout the session to ensure compliance with project conventions.
+
+### 4.5 Time Budget ⭐ NEW (LangChain Pattern)
+
+> **LangChain Pattern**: "Agents are famously bad at time estimation so this heuristic helps. Time budgeting nudges the agent to finish work and shift to verification."
+
+- Set a mental time budget for this session (e.g., 15-20 minutes per feature)
+- If you approach the time limit:
+  - Complete current atomic operation
+  - Run validation tests
+  - Prioritize committing work over perfect implementation
+  - Leave clear handoff notes in `progress.md`
+
+### 4.6 Task Selection (Select)
 - Select the highest priority `pending` task from `feature_list.md`.
 - Ensure all its `dependencies` are completed.
 - Update status to `"status": "in_progress"`.
 
-### 4.5 Implementation Execution (Execute)
+### 4.7 Implementation Execution (Execute)
+
+> **LangChain Pattern**: "Forcing models to conform to testing standards is a powerful strategy to avoid 'slop buildup' over time."
+
 - Write code. **Strictly prohibit** exceeding the scope of the currently selected task.
 - Follow project coding standards, add necessary comments.
 - Write corresponding test cases.
+- **Write Testable Code**:
+  - Follow exact file paths as specified in acceptance criteria
+  - Test both happy paths AND edge cases
+  - Write assertions that match automated scoring
+  - Consider boundary conditions: empty inputs, max values, error states
 
-### 4.6 Quality Assurance (QA)
+### 4.8 Quality Assurance (QA)
+
+> **LangChain Pattern**: "Verify: Run tests, read the FULL output, compare against what was asked (not against your own code)."
+
 - Use tools (such as simulators, browsers, unit tests) to verify functionality.
 - **Evidence-driven**: Agent **must** provide tool execution evidence.
 - Only when all `test_cases` status are `passed` and `acceptance_criteria` are met can it be marked as complete.
 - Choose verification method based on project type (see Section 5 for details).
 
-### 4.7 Persistence (Persist)
+### 4.9 Loop Detection ⭐ NEW (LangChain Pattern)
+
+> **LangChain Pattern**: "Agents can be myopic once they've decided on a plan which results in 'doom loops' that make small variations to the same broken approach (10+ times in some traces)."
+
+- Monitor your work during implementation
+- If you've edited the same file 5+ times without success:
+  - 🛑 **STOP** and reconsider your approach
+  - Document what you've tried in `progress.md`
+  - Ask for help or try a completely different strategy
+  - Consider if the task is blocked by a dependency
+
+### 4.10 Persistence (Persist)
 - Execute `git add` / `git commit` with detailed commit messages.
 - Update status in `feature_list.md`.
 - Leave handoff instructions for "next developer" in `progress.md`.
