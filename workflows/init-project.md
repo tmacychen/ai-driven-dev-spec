@@ -8,7 +8,7 @@ description: Initialization workflow for AI-driven development projects
 
 1. Create project directory and enter it.
 2. Copy `templates/scaffold/` template folder to current project root directory.
-3. Create `app_spec.md`, describing the application you want to build in detailed natural language (refer to `examples/app_spec_example.md`).
+3. Create `app_spec.md`, describing the application you want to build in detailed natural language.
 4. Load `templates/prompts/initializer_prompt.md` as system prompt (context).
 5. Run AI command, requesting to start "Initializer Agent" mode, generating:
     - `CORE_GUIDELINES.md` (self-guiding core guide)

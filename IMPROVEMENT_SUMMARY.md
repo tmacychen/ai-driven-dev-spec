@@ -44,7 +44,7 @@
    - 数据格式文档
    - 使用指南
 
-3. **`examples/data_collection_examples.json`**
+3. **`.ai/training_data/README.md`**
    - 失败案例示例
    - 成功模式示例
    - 性能指标示例
@@ -180,7 +180,7 @@
 
 #### 修改文件
 
-**`examples/feature_list_example.json`**
+**`.ai/feature_list.md`**
 
 为每个功能增加:
 

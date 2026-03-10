@@ -45,10 +45,6 @@ ai-driven-dev-spec/
 │   ├── dev-session.md              # Single dev session workflow
 │   ├── test-verify.md              # Testing & verification workflow
 │   └── handoff.md                  # Session handoff checklist
-├── examples/
-    ├── feature_list_example.md   # Full-featured example
-    ├── data_collection_examples.json  # Data collection examples
-    └── app_spec_example.md         # Sample app specification
 ```
 
 ## Quick Start
