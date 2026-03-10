@@ -14,7 +14,7 @@ After completing an incremental feature, the AI Agent must execute this process 
 - [ ] No untracked key files.
 
 ### 2. Status Synchronization
-- [ ] `.ai/feature_list.json` has been updated.
+- [ ] `.ai/feature_list.md` has been updated.
 - [ ] `progress.log` has been updated:
   - Updated the top "Overall Status".
   - **Appended** human-readable history for this session.

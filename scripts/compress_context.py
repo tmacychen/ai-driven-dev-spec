@@ -178,7 +178,7 @@ def generate_summary(entries: List[Dict], keep_recent: int = 10) -> str:
         "",
         "## 📋 Next Steps",
         "",
-        "See `.ai/feature_list.json` for remaining features and priorities.",
+        "See `.ai/feature_list.md` for remaining features and priorities.",
         "",
         "For detailed session history, see `progress.log.archive` (if available).",
         ""

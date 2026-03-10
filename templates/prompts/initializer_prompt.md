@@ -7,33 +7,22 @@ Establish a clear roadmap for subsequent Coding Agents to complete this project 
 
 ## Mandatory Deliverables
 
-### 1. `.ai/feature_list.json`
+### 1. `.ai/feature_list.md`
 - Break down the app into **50-200 discrete features/test cases**.
 - Categories: `core`, `feature`, `fix`, `refactor`, `chore`, `test`, `docs`.
-- Each entry MUST include ALL of these fields:
-  - `id`: Unique ID (F001, F002, ...)
-  - `category`: Feature category
-  - `core`: `true` for essential features that cannot be deleted, `false` for optional
-  - `description`: What this feature does
-  - `priority`: `"high"`, `"medium"`, `"low"`
-  - `status`: `"pending"` (initial)
-  - `dependencies`: Array of feature IDs this depends on
-  - `retry_count`: `0` (initial)
-  - `max_retries`: `3` (default)
-  - `escalation`: Object with `trigger` and `action` for retry limit reached
-  - `steps`: How to test manually or via tool
-  - `test_cases`: Array of concrete test cases with `id`, `description`, `type` (unit/integration/e2e), `steps`, `status`
-  - `validation_requirements`: Object defining required evidence:
-    - `test_evidence`: Required test output format and content
-    - `e2e_evidence`: Required E2E test evidence (screenshots/videos)
-    - `api_response`: Required API response format (for API projects)
-  - `completion_criteria`: Array of specific criteria for marking feature complete
-  - `security_checks`: Array of security considerations (can be empty)
-  - `acceptance_criteria`: Specific criteria for completion
-  - `estimated_complexity`: `"low"`, `"medium"`, `"high"`
-  - `passes`: `false` (initial)
-  - `last_worked_on`: `null` (initial)
-  - `notes`: Any additional context
+- Each feature MUST include:
+  - **ID**: Unique ID (F001, F002, ...)
+  - **Category**: Feature category
+  - **Core**: `true` for essential features that cannot be deleted
+  - **Description**: What this feature does
+  - **Priority**: `high`, `medium`, `low`
+  - **Status**: `pending` (initial)
+  - **Dependencies**: Feature IDs this depends on
+  - **Complexity**: `low`, `medium`, `high`
+  - **Steps**: Implementation steps
+  - **Test Cases**: Table with ID, description, type (unit/integration/e2e), status
+  - **Acceptance Criteria**: Checklist of completion criteria
+  - **Security Checks**: Security considerations (if applicable)
 
 ### 2. `.ai/architecture.md`
 - Define technical stack with rationale for each choice.
@@ -55,9 +44,8 @@ Establish a clear roadmap for subsequent Coding Agents to complete this project 
   - Run smoke tests
 - Must be **idempotent** (safe to run multiple times).
 
-### 5. Data Collection Infrastructure ⭐ NEW
-- Create `.ai/data_collection_config.json` (use template from `templates/scaffold/.ai/data_collection_config.json`)
-- Create `.ai/harness_config.json` (use template from `templates/scaffold/.ai/harness_config.json`)
+### 5. Harness Configuration
+- Create `.ai/harness.md` (use template from `templates/scaffold/.ai/harness.md`)
 - Create `.ai/training_data/` directory with README.md
 - These files enable the **core value proposition** of Agent Harness: collecting learning data
 

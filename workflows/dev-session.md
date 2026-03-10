@@ -9,7 +9,7 @@ description: Single AI incremental development session workflow (including secur
 ## Phase 1: Environment and Stability (Must execute first)
 
 1. Run `bash init.sh` to ensure environment is ready, dependencies are installed, and services are started.
-2. Read `CORE_GUIDELINES.md` to align role, read `progress.log` and `.ai/feature_list.json` to get latest context.
+2. Read `CORE_GUIDELINES.md` to align role, read `progress.log` and `.ai/feature_list.md` to get latest context.
 3. Run `git log --oneline -5` to check recent changes.
 4. **Regression Check**: Select 1-2 core features from completed features and run their `test_cases`.
    - If all pass → continue.
@@ -18,9 +18,8 @@ description: Single AI incremental development session workflow (including secur
 ## Phase 2: Task Selection and Development
 
 5. Load `templates/prompts/coding_prompt.md` as system prompt.
-6. **Task Selection**: Find first eligible task in `.ai/feature_list.json`:
-   - `passes: false`
-   - `status: "pending"`
+6. **Task Selection**: Find first eligible task in `.ai/feature_list.md`:
+   - status: `pending`
    - All `dependencies` completed
    - Sorted by `priority` (high > medium > low)
 7. Update the feature's `status` to `"in_progress"`.
@@ -29,9 +28,8 @@ description: Single AI incremental development session workflow (including secur
 
 8. **Write code**: Only for the selected feature.
 9. **Verify implementation**:
-   - Read the feature's `validation_requirements` and `completion_criteria`.
    - Execute all `test_cases`.
-10. **Collect evidence**: Obtain logs, screenshots, or API responses that meet `validation_requirements` format.
+10. **Collect evidence**: Obtain logs, screenshots, or API responses.
 11. **Handle failures (Retry)**:
     - If tests fail, classify by error type and attempt to fix.
     - Increase `retry_count`.
@@ -41,8 +39,8 @@ description: Single AI incremental development session workflow (including secur
 ## Phase 4: Persistence and Handoff
 
 13. Git commit.
-14. Update `.ai/feature_list.json`:
-    - `passes: true`, `status: "completed"`, `last_worked_on: <timestamp>`
+14. Update `.ai/feature_list.md`:
+    - status: `completed`
 15. Update `progress.log`:
     - **Append** human-readable summary of this session, verification evidence, handoff instructions.
     - Update top-level statistics.

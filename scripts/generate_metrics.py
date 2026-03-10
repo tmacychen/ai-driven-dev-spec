@@ -14,13 +14,13 @@ import argparse
 
 
 def load_feature_list(project_dir: Path) -> Dict[str, Any]:
-    """Load feature list."""
-    feature_file = project_dir / '.ai' / 'feature_list.json'
+    """Load feature list from Markdown file."""
+    feature_file = project_dir / '.ai' / 'feature_list.md'
     if not feature_file.exists():
         return {}
     
     with open(feature_file, 'r') as f:
-        return json.load(f)
+        return f.read()
 
 
 def load_performance_data(training_data_dir: Path) -> List[Dict[str, Any]]:
@@ -342,7 +342,7 @@ def main():
     args = parser.parse_args()
     
     training_data_dir = args.project_dir / '.ai' / 'training_data'
-    feature_file = args.project_dir / '.ai' / 'feature_list.json'
+    feature_file = args.project_dir / '.ai' / 'feature_list.md'
     
     # Load data
     feature_list = load_feature_list(args.project_dir)

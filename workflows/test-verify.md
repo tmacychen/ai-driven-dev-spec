@@ -35,13 +35,13 @@ description: Test and verification workflow
    - If E2E tests, confirm page behavior meets expectations
 
 5. **Regression Testing** (at session start):
-   - Filter `core: true` and `passes: true` features from `.ai/feature_list.json`
+   - Filter `core: true` and `completed` features from `.ai/feature_list.md`
    - Run their `test_cases`
    - If any fail, follow regression handling process
 
 6. **Update Test Status**:
-   - Update each `test_cases[].status` in `.ai/feature_list.json`
-   - `"passed"` | `"failed"` | `"pending"`
+   - Update each test case status in `.ai/feature_list.md`
+   - `passed` | `failed` | `pending`
 
 7. **Quality Review**:
    ```bash

@@ -49,7 +49,7 @@ Model (CPU) + Context Window (RAM) + Agent Harness (OS) + Agent (App)
 AI Model (计算能力)
   ↓
 Context Management (RAM管理)
-  - feature_list.json (状态卸载)
+  - feature_list.md (状态卸载)
   - progress.log (历史记录)
   - architecture.md (架构文档)
   ↓
@@ -123,7 +123,7 @@ Development Agent (App)
 #### ADDS 的实现层级
 ```
 具体实现：软件开发专用 Harness
-  ├─ 提供具体模板（feature_list.json, init.sh）
+  ├─ 提供具体模板（feature_list.md, init.sh）
   ├─ 定义详细流程（SDLC for AI）
   ├─ 集成工具链（Git, 测试框架）
   └─ 实现状态管理（JSON 文件, 日志）
@@ -323,7 +323,7 @@ Development Agent (App)
 #### ADDS 已实现和可改进
 
 **已实现** ✅：
-- 状态卸载：`feature_list.json`, `progress.log`, `architecture.md`
+- 状态卸载：`feature_list.md`, `progress.log`, `architecture.md`
 - 任务隔离：每次只处理一个功能
 
 **可改进** ⚠️：
@@ -416,7 +416,7 @@ Development Agent (App)
 
 #### 1. 数据收集机制
 
-**新增文件**：`templates/scaffold/.ai/data_collection_config.json`
+**新增文件**：`templates/scaffold/.ai/harness.md`
 
 ```json
 {
@@ -441,7 +441,7 @@ Development Agent (App)
 
 #### 2. "为删除而构建"配置
 
-**新增文件**：`templates/scaffold/.ai/harness_config.json`
+**新增文件**：`templates/scaffold/.ai/harness.md`（合并配置）
 
 ```json
 {

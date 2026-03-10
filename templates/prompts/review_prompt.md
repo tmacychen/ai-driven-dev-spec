@@ -5,7 +5,7 @@ Use this checklist before marking any feature as complete.
 ## Pre-Commit Review Checklist
 
 ### 1. Functional Correctness
-- [ ] All `acceptance_criteria` from `feature_list.json` are met
+- [ ] All `acceptance_criteria` from `feature_list.md` are met
 - [ ] All `test_cases` pass with tool-based evidence
 - [ ] Edge cases are handled (empty inputs, boundary values, nulls)
 - [ ] Error messages are clear and helpful
@@ -44,11 +44,9 @@ Use this checklist before marking any feature as complete.
 - [ ] `.gitignore` is up to date
 
 ### 7. State Management
-- [ ] `.ai/feature_list.json` updated:
-  - `passes: true`
-  - `status: "completed"`
-  - `last_worked_on` set
-  - All `test_cases[].status` updated
+- [ ] `.ai/feature_list.md` updated:
+  - status: `completed`
+  - All test cases updated
 - [ ] `.ai/progress.md` updated with session summary and handoff notes
 
 ## Review Outcome

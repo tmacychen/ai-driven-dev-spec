@@ -38,8 +38,8 @@ if [ ! -d ".ai" ]; then
     exit 1
 fi
 
-if [ ! -f ".ai/feature_list.json" ]; then
-    echo "  ⚠ .ai/feature_list.json not found."
+if [ ! -f ".ai/feature_list.md" ]; then
+    echo "  ⚠ .ai/feature_list.md not found."
     exit 1
 fi
 

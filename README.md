@@ -29,7 +29,7 @@ ai-driven-dev-spec/
 ├── templates/
 │   ├── scaffold/                    # Project scaffold templates
 │   │   ├── .ai/
-│   │   │   ├── feature_list.json   # Feature tracking (truth source)
+│   │   │   ├── feature_list.md     # Feature tracking (truth source)
 │   │   │   ├── progress.md         # Human-readable progress log
 │   │   │   ├── architecture.md     # Architecture decisions
 │   │   │   └── session_log.jsonl   # Machine-readable session log
@@ -45,8 +45,9 @@ ai-driven-dev-spec/
 │   ├── dev-session.md              # Single dev session workflow
 │   ├── test-verify.md              # Testing & verification workflow
 │   └── handoff.md                  # Session handoff checklist
-└── examples/
-    ├── feature_list_example.json   # Full-featured example
+├── examples/
+    ├── feature_list_example.md   # Full-featured example
+    ├── data_collection_examples.json  # Data collection examples
     └── app_spec_example.md         # Sample app specification
 ```
 

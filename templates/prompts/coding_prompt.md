@@ -9,7 +9,7 @@ Your task is to advance the project by implementing exactly ONE feature from the
 1. **Orient**:
    - Run `pwd` and `ls` to understand the current scope.
    - Read `CORE_GUIDELINES.md` for role and workflow alignment.
-   - Read `progress.log` and `.ai/feature_list.json`.
+   - Read `progress.log` and `.ai/feature_list.md`.
    - Check `docs/KNOWLEDGE_ITEMS/` for relevant patterns to avoid known failures.
    - Run `git log --oneline -10` to see recent context.
 
@@ -44,7 +44,7 @@ Your task is to advance the project by implementing exactly ONE feature from the
    - Verify all dependencies are installed.
    - Verify services are running (if applicable).
    - **Deep Health Check** ⭐:
-     - Read `harness_config.json` → `deep_health_checks`.
+     - Read `harness.md` → `deep_health_checks`.
      - Verify all assertions (DB, API, Env Vars) defined in the config.
    - If anything fails: **fix it first before proceeding**.
 
@@ -53,7 +53,7 @@ Your task is to advance the project by implementing exactly ONE feature from the
    - Run their test cases to verify the system is stable.
    - If a regression is detected:
      - 🛑 STOP all new development.
-     - Mark the broken feature as `"status": "regression"` in feature_list.json.
+     - Mark the broken feature as status: `regression` in feature_list.md.
      - Fix the regression first.
      - Record the incident in `progress.log`.
      - Only then proceed to new features.
@@ -61,10 +61,9 @@ Your task is to advance the project by implementing exactly ONE feature from the
 ### Phase 2: Task Selection
 
 4. **Select Feature**:
-   - Find the highest-priority feature where `passes` is `false` and `status` is `pending`.
-   - Verify all `dependencies` are satisfied (their `passes` must be `true`).
-   - Update the feature's `status` to `"in_progress"` and `last_worked_on` to current timestamp.
-   - If multiple features have the same priority, pick the one with the smallest ID.
+   - Find the highest-priority feature where status is `pending`.
+   - Verify all `dependencies` are satisfied (their status must be `completed`).
+   - Update the feature's status to `in_progress`.
 
 ### Phase 3: Implementation & Validation
 
@@ -75,14 +74,13 @@ Your task is to advance the project by implementing exactly ONE feature from the
    - Create/update test files as needed.
 
 6. **Validate** ⭐:
-   - Read the `validation_requirements` for this feature in `feature_list.json`.
    - Run ALL `test_cases` defined for this feature.
-   - Do NOT mark a feature as passing unless you've seen **tool-based evidence** matching the `validation_requirements`:
-     - ✅ `test_evidence`: Logs showing exact patterns required (e.g., "PASS", "✓").
-     - ✅ `e2e_evidence`: Browser screenshot/video showing specific UI states.
-     - ✅ `api_response`: JSON output matching the expected schema.
+   - Do NOT mark a feature as complete unless you've seen **tool-based evidence**:
+     - ✅ Test logs showing PASS/✓
+     - ✅ E2E: Browser screenshot/video showing specific UI states
+     - ✅ API: JSON output matching expected schema
    - Run lint/type checks if applicable.
-   - Verify ALL `acceptance_criteria` and `completion_criteria` are met.
+   - Verify ALL `acceptance_criteria` are met.
    - Check all `security_checks` are addressed.
 
 ### Phase 4: Persistence & Handoff
@@ -107,7 +105,7 @@ Your task is to advance the project by implementing exactly ONE feature from the
    
    ### State Persistence
    - [ ] Git commit created with proper message format
-   - [ ] `feature_list.json` updated (`passes: true`, `status: "completed"`)
+   - [ ] `feature_list.md` updated (status: `completed`)
    - [ ] `progress.log` appended with session summary
    - [ ] Learning data collected (successes.jsonl / failures.jsonl)
    
@@ -128,11 +126,9 @@ Your task is to advance the project by implementing exactly ONE feature from the
    - Each feature = exactly one commit.
 
 9. **Update State Files**:
-   - `.ai/feature_list.json`:
-     - Set `passes: true`
-     - Set `status: "completed"`
-     - Update `last_worked_on`
-     - Update all `test_cases[].status` to `"passed"`
+   - `.ai/feature_list.md`:
+     - Set status to `completed`
+     - Update all test cases status to `passed`
    - `progress.log`:
      - **Append** a chronological session summary with achievements, evidence, and statistics.
      - Write clear handoff notes for the next agent/session.
@@ -185,7 +181,7 @@ The following behaviors are **STRICTLY FORBIDDEN** under any circumstances:
 
 - ❌ **WRONG**: "This change is small, no need to test"
 - ✅ **CORRECT**: Run relevant tests for ANY code change
-- 🔍 **Detection**: Check if all test_cases in feature_list.json have status: "passed"
+- 🔍 **Detection**: Check if all test cases in feature_list.md have status: `passed`
 
 ### 🚫 Prohibit Modifying Completed Features
 

@@ -34,7 +34,7 @@
 
 #### 新增文件
 
-1. **`.ai/data_collection_config.json`**
+1. **`.ai/harness.md`**
    - 配置数据收集行为
    - 定义存储格式和位置
    - 设置隐私保护规则
@@ -70,7 +70,7 @@
 
 #### 新增文件
 
-**`.ai/harness_config.json`**
+**`.ai/harness.md`**
 - 7 个可配置模块
 - 每个模块包含启用原因、评估日期、替代方案
 - 支持动态启用/禁用
@@ -280,8 +280,7 @@ cp -r templates/scaffold/.ai ./
 
 # 2. 初始化项目
 # AI Agent 会自动创建:
-# - .ai/data_collection_config.json
-# - .ai/harness_config.json
+# - .ai/harness.md
 # - .ai/training_data/
 
 # 3. 开始开发
@@ -295,8 +294,7 @@ cp -r templates/scaffold/.ai ./
 
 ```bash
 # 1. 添加配置文件
-cp templates/scaffold/.ai/data_collection_config.json .ai/
-cp templates/scaffold/.ai/harness_config.json .ai/
+cp templates/scaffold/.ai/harness.md .ai/
 
 # 2. 创建数据目录
 mkdir -p .ai/training_data

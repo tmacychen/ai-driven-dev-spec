@@ -13,7 +13,7 @@ description: Initialization workflow for AI-driven development projects
 5. Run AI command, requesting to start "Initializer Agent" mode, generating:
     - `CORE_GUIDELINES.md` (self-guiding core guide)
     - `progress.log` (human-readable progress log)
-    - `.ai/feature_list.json` (including test_cases, security_checks, core markers)
+    - `.ai/feature_list.md` (including test_cases, security_checks, core markers)
     - `.ai/architecture.md` (technology stack, architecture, data flow)
 6. Verify `init.sh` can run correctly: `chmod +x init.sh && bash init.sh`.
 7. Initialize Git repository and make initial commit:
@@ -22,5 +22,5 @@ description: Initialization workflow for AI-driven development projects
    git add .
    git commit -m "chore: initial project setup"
    ```
-8. Verify each feature in `.ai/feature_list.json` includes `test_cases` field.
+8. Verify each feature in `.ai/feature_list.md` includes `test_cases` field.
 9. Output initialization report: total features, high/medium/low priority distribution, number of core features.

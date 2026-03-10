@@ -59,7 +59,7 @@ This release is influenced by:
 **Core Value Proposition**: Treat Harness as a Dataset (Phil Schmid's insight)
 
 - **Data Collection Configuration**
-  - `.ai/data_collection_config.json`: Configure what data to collect
+  - `.ai/harness.md`: Configure harness modules and data collection
   - Automated collection of failures, successes, timing, and context usage
   - Privacy-aware anonymization of sensitive data
 
@@ -79,7 +79,7 @@ This release is influenced by:
 **"Build for Deletion" Philosophy**: Anticipate that new models will obsolete current logic
 
 - **Harness Configuration**
-  - `.ai/harness_config.json`: Modular configuration with enable/disable flags
+  - `.ai/harness.md`: Modular configuration with enable/disable flags
   - Document rationale for each module
   - Set review dates for re-evaluation
   - Define alternatives for future models
@@ -127,7 +127,7 @@ This release is influenced by:
   - Defined recovery procedures for each error type
   - Established autonomous decision principles
 
-- **Validation Requirements** in `feature_list.json`
+- **Test Cases** in `feature_list.md`
   - Added `validation_requirements` field with specific evidence types
   - Added `completion_criteria` for unambiguous completion definition
   - Added `retry_count`, `max_retries`, `escalation` for error recovery
@@ -164,8 +164,7 @@ None. All changes are additive and backward compatible.
 
 For existing ADDS v2.0 projects:
 
-1. Add `.ai/data_collection_config.json` (copy from `templates/scaffold/.ai/`)
-2. Add `.ai/harness_config.json` (copy from `templates/scaffold/.ai/`)
+1. Add `.ai/harness.md` (copy from `templates/scaffold/.ai/`)
 3. Create `.ai/training_data/` directory
 4. Update `.gitignore` to exclude `.ai/training_data/*.jsonl`
 5. Optional: Run `python scripts/generate_metrics.py` to establish baseline metrics

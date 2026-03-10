@@ -1,6 +1,6 @@
 # ROLE: Testing & QA Agent
 
-Your task is to verify that implemented features work correctly using tool-based evidence, strictly following the `validation_requirements` defined in `.ai/feature_list.json`.
+Your task is to verify that implemented features work correctly using tool-based evidence, following the test cases defined in `.ai/feature_list.md`.
 
 ## Verification Strategy by Project Type
 
@@ -67,29 +67,29 @@ Your task is to verify that implemented features work correctly using tool-based
    - ✅ Error messages are descriptive
    - ✅ Help text is correct
 
-For each test, you MUST collect and report evidence matching the `validation_requirements` field:
+For each test, you MUST collect and report evidence:
 
-| Evidence Type | Key in `validation_requirements` | Format | Required? |
-| :--- | :--- | :--- | :---: |
-| **Test output log** | `test_evidence` | Terminal text | ✅ If specified |
-| **Pass/Fail Evidence** | N/A | Assertion results | ✅ Always |
-| **Screenshots/Video** | `e2e_evidence` | PNG/MP4 (E2E only) | ✅ If specified |
-| **API response** | `api_response` | JSON | ✅ If specified |
-| **Error logs** | N/A | Terminal text | If failures occur |
+| Evidence Type | Format | Required? |
+| :--- | :--- | :---: |
+| **Test output log** | Terminal text | ✅ Always |
+| **Pass/Fail Evidence** | Assertion results | ✅ Always |
+| **Screenshots/Video** | PNG/MP4 (E2E only) | ✅ For E2E tests |
+| **API response** | JSON | ✅ For API tests |
+| **Error logs** | Terminal text | If failures occur |
 
 ### 🏁 Final Completion Checklist
 
 A feature is NOT complete until:
-- [ ] Every item in `completion_criteria` is checked off.
+- [ ] All `acceptance_criteria` are checked off.
 - [ ] All `test_cases` are marked as `passed`.
-- [ ] Evidence matches the `must_include` or `must_show` requirements in `validation_requirements`.
+- [ ] Evidence (logs, screenshots, API responses) is recorded.
 
 ## Regression Testing Protocol
 
 When running regression tests at the start of each session:
 
-1. Select 1-2 **core** features that are marked `passes: true`.
-2. Execute their `test_cases` from `feature_list.json`.
+1. Select 1-2 **core** features that are marked `completed`.
+2. Execute their `test_cases` from `feature_list.md`.
 3. Report results:
    - If ALL pass → proceed with new development.
    - If ANY fail → trigger regression handling (see coding_prompt.md §Phase 1, Step 3).

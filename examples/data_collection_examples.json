@@ -107,7 +107,7 @@
     
     "recovery": {
       "retry_count": 0,
-      "resolution": "Clarified requirements with stakeholder and updated feature_list.json",
+      "resolution": "Clarified requirements with stakeholder and updated feature_list.md",
       "resolution_time_minutes": 30,
       "resolution_type": "requirement_clarification",
       "steps_taken": [

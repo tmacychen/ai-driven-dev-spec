@@ -25,7 +25,7 @@
 | 维度 | 实现状态 | 说明 |
 |------|---------|------|
 | **双 Agent 模式** | ✅ 完善 | Initializer + Coding Agent，职责清晰 |
-| **结构化状态管理** | ✅ 完善 | feature_list.json, progress.log, architecture.md |
+| **结构化状态管理** | ✅ 完善 | feature_list.md, progress.log, architecture.md |
 | **增量开发流程** | ✅ 完善 | 每次一个功能，原子提交 |
 | **测试驱动验证** | ✅ 完善 | test_cases 内嵌，要求工具证据 |
 | **安全执行规范** | ✅ 完善 | 命令白名单，安全检查 |
@@ -78,7 +78,7 @@
 ### 禁止跳过测试
 - ❌ **错误示例**："这个改动很小，不需要测试"
 - ✅ **正确做法**：任何代码变更必须运行相关测试
-- 🔍 **检测机制**：检查 feature_list.json 中 test_cases 是否全部 status: "passed"
+- 🔍 **检测机制**：检查 feature_list.md 中 test_cases 是否全部 status: `passed`
 
 ### 禁止修改已完成功能
 - ❌ **错误示例**：发现 F001 的小问题，顺手修复
@@ -109,7 +109,7 @@
 
 #### 当前状态
 
-`feature_list.json` 中有 `test_cases` 和 `acceptance_criteria`，但缺少具体的验证证据要求：
+`feature_list.md` 中有 `test_cases` 和 `acceptance_criteria`，但缺少具体的验证证据要求：
 
 ```json
 {
@@ -128,7 +128,7 @@
 
 #### 改进方案
 
-在 `feature_list.json` 中增加 **`validation_requirements`** 字段：
+在 `feature_list.md` 中增加 **验证证据要求** 字段：
 
 ```json
 {
@@ -207,7 +207,7 @@
 
 #### 改进方案
 
-#### 3.1 在 `feature_list.json` 中增加重试字段
+#### 3.1 在 `feature_list.md` 中增加重试字段
 
 ```json
 {
@@ -398,7 +398,7 @@ AI Agent 应该能够在没有人类干预的情况下持续工作。
 ### 低优先级 ⭐（可选）
 
 6. **性能监控**
-   - 在 `feature_list.json` 中增加 `time_spent` 字段
+   - 在 `feature_list.md` 中增加 `time_spent` 字段
    - 在 `progress.log` 中记录每个功能的开发时间
    - 用于后续优化 AI 效率
 

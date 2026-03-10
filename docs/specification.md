@@ -22,10 +22,10 @@ We decompose tasks into two core phases, executed by two different prompts (or A
 
 ### 2.1 Initializer Agent
 - **Responsibility**: Project startup.
-- **Trigger Condition**: Project first launch, or when `.ai/feature_list.json` file does not exist.
+- **Trigger Condition**: Project first launch, or when `.ai/feature_list.md` file does not exist.
 - **Tasks**:
     - Read original requirements (`app_spec.md` or `app_spec.txt`).
-    - Break down feature list, generate `.ai/feature_list.json` (containing 50-200 atomic test cases).
+    - Break down feature list, generate `.ai/feature_list.md` (containing 50-200 atomic test cases).
     - Set up basic directory structure.
     - Generate `.ai/architecture.md` to record technology selection and architecture decisions.
     - Write `init.sh` for automated environment configuration.
@@ -48,22 +48,18 @@ We decompose tasks into two core phases, executed by two different prompts (or A
 
 Every project must contain the following "self-descriptive" files:
 
-- **`.ai/feature_list.json`**: Single Source of Truth for features.
+- **`.ai/feature_list.md`**: Single Source of Truth for features.
   Each feature must include:
   - `id`, `category`, `description`, `priority`, `core`
-  - `status`, `dependencies`, `steps`, `test_cases`, `security_checks`, `passes`
-  - **`validation_requirements` (new)**: Define specific tool evidence (logs, screenshots, etc.) required to complete the feature.
-  - **`completion_criteria` (new)**: Atomized completion checklist.
-  - **`retry_count`, `max_retries`, `escalation` (new)**: Automatic error recovery mechanism configuration.
-  - **`time_spent`, `estimated_effort` (new)**: Optional fields for subsequent efficiency analysis.
+  - `status`, `dependencies`, `steps`, `test_cases`, `security_checks`
+  - **`acceptance_criteria`**: Atomized completion checklist.
 - **`progress.log`**: Human/Agent-oriented natural language progress summary.
   Uses incremental append mode, recording "completed", "in progress", "to-do items", and next handoff instructions.
 - **`CORE_GUIDELINES.md`**: (New) Minimal self-boosting manual. Placed in project root directory for AI to instantly start and align development process.
 - **`.ai/architecture.md`**: Records project architecture, technology stack selection, and core data flow.
 - **`.ai/session_log.jsonl`**: Machine-readable session history (one JSON object per line).
 - **`init.sh`**: Scripted environment. After running this script, any Agent should be able to immediately execute tests or start development.
-- **`.ai/data_collection_config.json` (New ⭐)**: Data collection configuration, defining how to capture learning data.
-- **`.ai/harness_config.json` (New ⭐)**: Harness modular configuration, supporting the "built for deletion" philosophy.
+- **`.ai/harness.md`**: Harness modular configuration, supporting the "built for deletion" philosophy.
 - **`.ai/training_data/` (New ⭐)**: Training data directory, storing failure cases, success patterns, and performance metrics.
   - `failures.jsonl`: Failure cases and solutions
   - `successes.jsonl`: Success patterns and efficiency metrics
@@ -80,14 +76,14 @@ Every development session must follow these strict steps:
 ### 4.1 Environment Alignment (Align)
 - Execute `pwd`, `ls` to familiarize with structure.
 - Read `CORE_GUIDELINES.md` (quick start).
-- Read `progress.log` and `.ai/feature_list.json`.
+- Read `progress.log` and `.ai/feature_list.md`.
 - Check `git log --oneline -10` to understand recent changes.
 
 ### 4.2 Environment Verification (Bootstrap)
 - Execute `init.sh` or existing tests to ensure Agent takes over a normal project.
 - Check if dependencies are installed (`node_modules/`, `venv/`, etc.).
 - Check if services are running (`curl localhost:3000/health` etc.).
-- **Execute deep health check**: Verify all deep assertions defined in `harness_config.json` (database, API, etc.).
+- **Execute deep health check**: Verify all deep assertions defined in `harness.md` (database, API, etc.).
 - If problems are found, **fix first before continuing**.
 
 ### 4.3 Regression Verification (Regression Check) ⭐ New
@@ -95,11 +91,11 @@ Every development session must follow these strict steps:
 - If existing features are broken:
   1. 🛑 **Immediately stop** new feature development.
   2. 🔧 **Prioritize fixing** regression issues.
-  3. Mark affected features as `"status": "regression"` in `feature_list.json`.
+  3. Mark affected features as status: `regression` in `feature_list.md`.
   4. 📝 **Record** in `progress.log`.
 
 ### 4.4 Task Selection (Select)
-- Select the highest priority `passes: false` task from `feature_list.json`.
+- Select the highest priority `pending` task from `feature_list.md`.
 - Ensure all its `dependencies` are completed.
 - Update status to `"status": "in_progress"`.
 
@@ -110,13 +106,13 @@ Every development session must follow these strict steps:
 
 ### 4.6 Quality Assurance (QA)
 - Use tools (such as simulators, browsers, unit tests) to verify functionality.
-- **Evidence-driven**: Agent **must** meet the evidence requirements defined in `validation_requirements`.
-- Only when all `test_cases` status are `passed` and `completion_criteria` are met can it be marked as complete.
+- **Evidence-driven**: Agent **must** provide tool execution evidence.
+- Only when all `test_cases` status are `passed` and `acceptance_criteria` are met can it be marked as complete.
 - Choose verification method based on project type (see Section 5 for details).
 
 ### 4.7 Persistence (Persist)
 - Execute `git add` / `git commit` with detailed commit messages.
-- Update `passes` status in `feature_list.json`.
+- Update status in `feature_list.md`.
 - Leave handoff instructions for "next developer" in `progress.log`.
 
 ---
@@ -126,7 +122,7 @@ Every development session must follow these strict steps:
 ### 5.1 General Rules
 - **Atomic Testing**: Each feature point must be independently testable.
 - **Evidence-driven**: All features must provide tool execution results (logs, assertion outputs, screenshots) as completion evidence.
-- **Test Case Embedding**: Each feature must include `test_cases` field in `feature_list.json`.
+- **Test Case Embedding**: Each feature must include `test_cases` field in `feature_list.md`.
 
 ### 5.2 Web Projects (E2E Priority)
 - Must use tools like Playwright/Cypress for end-to-end simulation.
@@ -203,7 +199,7 @@ Each command execution must verify:
 ### 7.3 Requirement Change Process
 1. Update `app_spec.md` to reflect new requirements.
 2. Evaluate impact on existing features.
-3. Update `feature_list.json` (add/modify/postpone).
+3. Update `feature_list.md` (add/modify/postpone).
 4. Record change reasons in `progress.log`.
 
 ---
@@ -232,7 +228,7 @@ Each command execution must verify:
 
 ### 8.3 Project Interruption Recovery
 1. Read `progress.log` to understand history.
-2. Read `.ai/feature_list.json` to check current status.
+2. Read `.ai/feature_list.md` to check current status.
 3. Execute `git log` to see recent commits.
 4. Run environment verification and regression tests.
 5. Continue with next pending feature.
@@ -240,7 +236,7 @@ Each command execution must verify:
 ### 8.4 Standardized Error Recovery (Retry & Escalation) ⭐ New
 When an Agent encounters execution errors or test failures, it should follow this protocol:
 1. **Automatic Classification**: Determine if it's an environment issue (run `init.sh`), code issue (auto-fix), or requirement issue (consult documentation).
-2. **Retry Count**: Track `retry_count` in `feature_list.json`.
+2. **Retry Count**: Track retry attempts in `feature_list.md`.
 3. **Backoff and Rollback**: If `max_retries` is reached, Agent must:
    - Execute `git reset --hard` to last stable state.
    - Mark status as `"blocked"`.
@@ -278,7 +274,7 @@ When an Agent encounters execution errors or test failures, it should follow thi
 
 | Dimension | Requirement |
 | :--- | :--- |
-| **Feature Completion** | All features `passes: true`, no `blocked` or `regression` |
+| **Feature Completion** | All features `completed`, no `blocked` or `regression` |
 | **Test Coverage** | Test coverage ≥ 70% |
 | **Code Quality** | No lint errors, passes type checking |
 | **Documentation** | Complete README, clear API documentation, sufficient code comments |
@@ -319,7 +315,7 @@ Based on Phil Schmid's insight: **"Treat the Harness as a dataset"**
 
 ### 12.2 Data Collection Configuration
 
-Configure data collection behavior through `.ai/data_collection_config.json`:
+Configure data collection behavior through `.ai/harness.md`.
 
 ```json
 {
@@ -415,7 +411,7 @@ Core concept: Anticipating that new models will replace current logic, the archi
 
 ### 13.2 Module Configuration File
 
-Manage modules through `.ai/harness_config.json`:
+Manage modules through `.ai/harness.md`.
 
 ```json
 {
@@ -515,7 +511,7 @@ Reports include:
 
 ## 📚 Getting Started
 
-1. **Check Project Status** — See if `.ai/feature_list.json` already exists
+1. **Check Project Status** — See if `.ai/feature_list.md` already exists
 2. **Determine Current Mode** — Initializer Agent or Coding Agent
 3. **Follow the Process** — Strictly follow the above specifications
 

@@ -121,7 +121,7 @@ def generate_recommendations(analysis: Dict) -> List[Dict[str, str]]:
                 "priority": "high",
                 "category": "failure_type",
                 "issue": f"High frequency of {most_common_type[0]} failures ({most_common_type[1]} occurrences)",
-                "recommendation": f"Consider adding preventive measures for {most_common_type[0]} in harness_config.json",
+                "recommendation": f"Consider adding preventive measures for {most_common_type[0]} in harness.md",
                 "data_source": "failure_type_frequency"
             })
     
