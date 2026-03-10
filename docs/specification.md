@@ -35,7 +35,7 @@ We decompose tasks into two core phases, executed by two different prompts (or A
 - **Responsibility**: Incremental iteration.
 - **Trigger Condition**: All subsequent sessions.
 - **Tasks**:
-    - Read progress files (`progress.log`) and feature list.
+    - Read progress files (`progress.md`) and feature list.
     - **Execute environment verification** (run `init.sh` or smoke tests).
     - **Run regression tests for 1-2 core features**.
     - Run tests to determine current status.
@@ -53,7 +53,7 @@ Every project must contain the following "self-descriptive" files:
   - `id`, `category`, `description`, `priority`, `core`
   - `status`, `dependencies`, `steps`, `test_cases`, `security_checks`
   - **`acceptance_criteria`**: Atomized completion checklist.
-- **`progress.log`**: Human/Agent-oriented natural language progress summary.
+- **`progress.md`**: Human/Agent-oriented natural language progress summary.
   Uses incremental append mode, recording "completed", "in progress", "to-do items", and next handoff instructions.
 - **`CORE_GUIDELINES.md`**: (New) Minimal self-boosting manual. Placed in project root directory for AI to instantly start and align development process.
 - **`.ai/architecture.md`**: Records project architecture, technology stack selection, and core data flow.
@@ -76,23 +76,32 @@ Every development session must follow these strict steps:
 ### 4.1 Environment Alignment (Align)
 - Execute `pwd`, `ls` to familiarize with structure.
 - Read `CORE_GUIDELINES.md` (quick start).
-- Read `progress.log` and `.ai/feature_list.md`.
+- Read `progress.md` and `.ai/feature_list.md`.
 - Check `git log --oneline -10` to understand recent changes.
 
-### 4.2 Environment Verification (Bootstrap)
-- Execute `init.sh` or existing tests to ensure Agent takes over a normal project.
+### 4.2 Environment Verification (Bootstrap) ⭐ CRITICAL
+
+> **Anthropic Pattern**: "Start the session by running a basic test on the development server to catch any undocumented bugs. If the agent had instead started implementing a new feature, it would likely make the problem worse."
+
+- Execute `init.sh` or run smoke tests to verify environment is healthy.
 - Check if dependencies are installed (`node_modules/`, `venv/`, etc.).
 - Check if services are running (`curl localhost:3000/health` etc.).
-- **Execute deep health check**: Verify all deep assertions defined in `harness.md` (database, API, etc.).
-- If problems are found, **fix first before continuing**.
+- **If anything fails: FIX IT FIRST before proceeding with any feature work.**
+- This step is MANDATORY - do not skip even for small changes.
 
-### 4.3 Regression Verification (Regression Check) ⭐ New
-- Select 1-2 core features from completed features and run their tests.
+### 4.3 Regression Verification (Regression Check) ⭐ CRITICAL
+
+> **Anthropic Pattern**: Every session must verify the system hasn't regressed before starting new work.
+
+- Select 2-3 core features from completed features and run their tests.
+- This prevents the "agent tends to try to do too much at once" problem.
 - If existing features are broken:
-  1. 🛑 **Immediately stop** new feature development.
-  2. 🔧 **Prioritize fixing** regression issues.
-  3. Mark affected features as status: `regression` in `feature_list.md`.
-  4. 📝 **Record** in `progress.log`.
+  1. 🛑 **STOP** - Do NOT proceed with new feature development
+  2. 🔧 **Prioritize fixing** regression issues BEFORE any new features
+  3. Mark affected features as status: `regression` in `feature_list.md`
+  4. 📝 **Record** in `progress.md`
+  5. Re-run regression check until all pass
+  6. Only then proceed to new features
 
 ### 4.4 Task Selection (Select)
 - Select the highest priority `pending` task from `feature_list.md`.
@@ -113,7 +122,7 @@ Every development session must follow these strict steps:
 ### 4.7 Persistence (Persist)
 - Execute `git add` / `git commit` with detailed commit messages.
 - Update status in `feature_list.md`.
-- Leave handoff instructions for "next developer" in `progress.log`.
+- Leave handoff instructions for "next developer" in `progress.md`.
 
 ---
 
@@ -200,7 +209,7 @@ Each command execution must verify:
 1. Update `app_spec.md` to reflect new requirements.
 2. Evaluate impact on existing features.
 3. Update `feature_list.md` (add/modify/postpone).
-4. Record change reasons in `progress.log`.
+4. Record change reasons in `progress.md`.
 
 ---
 
@@ -224,10 +233,10 @@ Each command execution must verify:
 ### 8.2 Blocking Issues (Blocked)
 - Update feature status to `"status": "blocked"`, record `blocked_reason`.
 - Skip the feature, select next executable feature.
-- Record blocking details in `progress.log`.
+- Record blocking details in `progress.md`.
 
 ### 8.3 Project Interruption Recovery
-1. Read `progress.log` to understand history.
+1. Read `progress.md` to understand history.
 2. Read `.ai/feature_list.md` to check current status.
 3. Execute `git log` to see recent commits.
 4. Run environment verification and regression tests.
@@ -242,7 +251,7 @@ When an Agent encounters execution errors or test failures, it should follow thi
    - Mark status as `"blocked"`.
    - Record specific `blocked_reason`.
    - Skip the task, try next task in queue.
-   - Record the decision in `progress.log`.
+   - Record the decision in `progress.md`.
 
 ---
 
@@ -298,7 +307,7 @@ When an Agent encounters execution errors or test failures, it should follow thi
 
 ### State Management
 - **Timely Updates**: Update status immediately after completing features.
-- **Humanized Logs**: Incrementally record each session's decisions and achievements in `progress.log`.
+- **Humanized Logs**: Incrementally record each session's decisions and achievements in `progress.md`.
 - **Regular Review**: Check progress and remaining work
 
 ---

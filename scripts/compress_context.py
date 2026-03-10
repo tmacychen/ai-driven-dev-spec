@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Compress progress.log to maintain context efficiency.
+Compress progress.md to maintain context efficiency.
 
 This script addresses the "context window is RAM" insight from Phil Schmid:
-When progress.log grows too large, compress it to a summary to reduce
+When progress.md grows too large, compress it to a summary to reduce
 context load for new sessions.
 """
 
@@ -15,7 +15,7 @@ import argparse
 
 
 def parse_progress_log(progress_file: Path) -> List[Dict[str, Any]]:
-    """Parse progress.log into structured entries."""
+    """Parse progress.md into structured entries."""
     if not progress_file.exists():
         return []
     
@@ -180,7 +180,7 @@ def generate_summary(entries: List[Dict], keep_recent: int = 10) -> str:
         "",
         "See `.ai/feature_list.md` for remaining features and priorities.",
         "",
-        "For detailed session history, see `progress.log.archive` (if available).",
+        "For detailed session history, see `progress.md.archive` (if available).",
         ""
     ])
     
@@ -189,11 +189,11 @@ def generate_summary(entries: List[Dict], keep_recent: int = 10) -> str:
 
 def compress_progress_log(project_dir: Path, keep_recent: int = 10, 
                           threshold_lines: int = 1000) -> None:
-    """Compress progress.log if it exceeds threshold."""
-    progress_file = project_dir / 'progress.log'
+    """Compress progress.md if it exceeds threshold."""
+    progress_file = project_dir / 'progress.md'
     
     if not progress_file.exists():
-        print("No progress.log found. Nothing to compress.")
+        print("No progress.md found. Nothing to compress.")
         return
     
     # Check file size
@@ -201,27 +201,27 @@ def compress_progress_log(project_dir: Path, keep_recent: int = 10,
         lines = f.readlines()
     
     if len(lines) < threshold_lines:
-        print(f"progress.log has {len(lines)} lines (threshold: {threshold_lines}). No compression needed.")
+        print(f"progress.md has {len(lines)} lines (threshold: {threshold_lines}). No compression needed.")
         return
     
-    print(f"Compressing progress.log ({len(lines)} lines)...")
+    print(f"Compressing progress.md ({len(lines)} lines)...")
     
     # Parse entries
     entries = parse_progress_log(progress_file)
     
     if not entries:
-        print("No valid entries found in progress.log. Skipping compression.")
+        print("No valid entries found in progress.md. Skipping compression.")
         return
     
     # Generate summary
     summary = generate_summary(entries, keep_recent)
     
     # Archive original
-    archive_file = project_dir / 'progress.log.archive'
+    archive_file = project_dir / 'progress.md.archive'
     if archive_file.exists():
         # Append timestamp to existing archive
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        archive_file = project_dir / f'progress.log.archive.{timestamp}'
+        archive_file = project_dir / f'progress.md.archive.{timestamp}'
     
     print(f"Archiving original to: {archive_file}")
     with open(archive_file, 'w', encoding='utf-8') as f:
@@ -233,14 +233,14 @@ def compress_progress_log(project_dir: Path, keep_recent: int = 10,
     with open(summary_file, 'w', encoding='utf-8') as f:
         f.write(summary)
     
-    # Replace progress.log with recent entries only
+    # Replace progress.md with recent entries only
     recent_entries = entries[-keep_recent:] if len(entries) > keep_recent else entries
     
-    print(f"Writing recent {len(recent_entries)} entries to progress.log...")
+    print(f"Writing recent {len(recent_entries)} entries to progress.md...")
     with open(progress_file, 'w', encoding='utf-8') as f:
         f.write("# Progress Log\n\n")
         f.write(f"> **Last {len(recent_entries)} sessions**. ")
-        f.write(f"For full history, see `progress.log.archive` or `progress_summary.md`.\n\n")
+        f.write(f"For full history, see `progress.md.archive` or `progress_summary.md`.\n\n")
         
         for entry in recent_entries:
             f.write(f"## [{entry['timestamp_str']}]\n\n")
@@ -253,7 +253,7 @@ def compress_progress_log(project_dir: Path, keep_recent: int = 10,
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Compress ADDS progress.log to maintain context efficiency")
+    parser = argparse.ArgumentParser(description="Compress ADDS progress.md to maintain context efficiency")
     parser.add_argument(
         '--project-dir',
         type=Path,

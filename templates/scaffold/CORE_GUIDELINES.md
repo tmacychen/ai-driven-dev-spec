@@ -1,73 +1,97 @@
-# AI 编程开发规范 (CORE_GUIDELINES)
+# AI Development Specification (CORE_GUIDELINES)
 
-> **重要指令**：你是一个专业的 AI 编程助手。在本项目中，你必须严格遵循以下规范。任何操作前，请先根据当前项目状态（是否存在 `.ai/feature_list.md`）确定你的角色。
-
----
-
-## 📋 双代理模式 (Dual-Agent Mode)
-
-### 1. 初始化代理 (Initializer Agent)
-- **触发条件**：项目首次启动或缺失 `.ai/feature_list.md`。
-- **核心职责**：分析 `app_spec.md` -> 拆分功能清单 (F001, F002...) -> 建立目录结构 -> 编写 `init.sh` -> 初始 Git 提交。
-
-### 2. 编码代理 (Coding Agent)
-- **触发条件**：项目已初始化。
-- **核心职责**：验证环境 -> 执行回归检查 -> **选择一个功能** -> 实现与验证 (E2E/单元测试) -> 更新状态与日志 -> Git 提交。
+> **Important**: You are a professional AI programming assistant. In this project, you must strictly follow the guidelines below.
 
 ---
 
-## 📂 核心状态文件 (State Management)
+## 📋 Dual Agent Mode
 
-- **`.ai/feature_list.md` (真相源)**：记录所有功能、优先级、依赖、测试用例和完成状态。
-- **`progress.log` (进度日志)**：人性化的项目历史记录。必须采用**增量追加**模式，记录每个会话的成果。
-- **`app_spec.md` (应用规范)**：需求的原始来源，包含技术栈和验收标准。
-
----
-
-## 🚀 编码执行流程 (Coding Workflow)
-
-1. **准备阶段**：运行 `bash init.sh` 确保环境正常；运行 1-2 个核心功能的测试验证系统未被破坏。
-2. **任务选取**：从 `feature_list.md` 中选取最高优先级的 `pending` 任务，不允许跨任务开发。
-3. **实现验证**：编写代码及测试用例。**必须提供工具运行结果（日志/截图）作为完成证据**。
-4. **持久化**：
-   - 更新 `feature_list.md` (status: completed)。
-   - 在 `progress.log` 追加本次会话成果。
-   - 执行 Git 提交：`feat(模块): 描述 [Closes #ID]`。
+| Agent | Trigger Condition | Core Responsibilities |
+|-------|-------------------|----------------------|
+| **Initializer** | Project first start, missing `.ai/feature_list.md` | Analyze app_spec.md → Split features → Create structure → Generate init.sh → Git initial commit |
+| **Coding** | Project initialized | Verify environment → Regression check → Implement feature → Test verification → Update state → Git commit |
 
 ---
 
-## ⚠️ 安全与质量约束
+## 📂 Core State Files
 
-- **命令白名单**：仅允许使用开发相关命令（npm, python, git, ls, cat 等）。严禁 `sudo` 或 root 级操作。
-- **回归优先**：如果发现旧功能损坏，必须先修复回归，严禁继续开发新功能。
-- **原子提交**：每个功能必须是一个独立的 Git Commit。
+| File | Purpose |
+|------|---------|
+| `.ai/feature_list.md` | Feature list (truth source): 50-200 discrete features, each with test cases |
+| `.ai/progress.md` | Progress log: incremental session output |
+| `app_spec.md` | Application specification: original requirements source |
 
 ---
 
-## 📝 进度日志模板 (progress.log)
+## 🚀 Development Workflow
 
-每次完成功能后，请按以下格式追加：
-
-```markdown
-## [YYYY-MM-DD HH:MM] 完成: 功能名称 (feat-XXX)
-
-### 实现成果
-- [改动点 1]
-- [创建/修改的文件列表]
-
-### 验证证据
-- ✅ 单元测试通过 (日志引用)
-- ✅ 浏览器 E2E 验证 (截图或操作序列说明)
-
-### 状态变更
-- 功能 ID: #feat-XXX -> Completed
-- 总体进度: X/Y (XX%)
-
-### 交接提醒
-- 目前环境处于 [XXX] 状态。
-- 下一步建议开始 [XXX] 任务。
+```
+1. Prepare → bash init.sh verify environment → Run core feature tests (regression check)
+2. Select → Choose highest priority pending task from feature_list.md
+3. Implement → Write code + test cases
+4. Verify → Execute tests, must provide execution evidence
+5. Persist → Update feature_list.md → Append progress.md → Git commit
 ```
 
 ---
 
-**现在，请检查项目当前状态并开始你的工作。**
+## ⚠️ Security Constraints (Must Follow)
+
+### ✅ Allowed Commands
+
+| Category | Commands |
+|----------|----------|
+| File Operations | `ls`, `cat`, `head`, `tail`, `wc`, `grep`, `find`, `cp`, `mv` |
+| Node.js | `npm`, `node`, `npx`, `yarn` |
+| Python | `pip`, `python`, `pytest`, `black`, `flake8` |
+| Go | `go`, `gofmt` |
+| Rust | `cargo`, `rustc`, `rustfmt` |
+| Git | All subcommands |
+| Process | `ps`, `lsof`, `sleep` |
+
+### ❌ Forbidden Commands
+
+| Command | Reason |
+|---------|--------|
+| `sudo`, `su` | System permission risk |
+| `rm -rf /`, `mkfs`, `fdisk` | Irreversible data destruction |
+| `curl \| bash`, `wget \| sh` | Unreviewed script execution |
+| `kill -9` (system processes) | System stability |
+
+**Pre-Execution Checks**:
+1. Is the command in the whitelist?
+2. Are the parameters safe?
+3. Does it affect system files?
+4. If in doubt, ask the user first.
+
+---
+
+## ⚡ Core Rules
+
+- **Regression First**: If old features break → Fix immediately → Never continue developing new features
+- **Atomic Commits**: One Git Commit per feature
+- **Evidence Required**: All tests must provide execution results as completion evidence
+
+---
+
+## 📝 Progress Log Template
+
+```markdown
+## [YYYY-MM-DD HH:MM] Completed: Feature Name
+
+### Implementation Results
+- [Change points]
+
+### Verification Evidence
+- ✅ Tests passed (logs)
+
+### Status Changes
+- feat-XXX: pending → completed
+
+### Handoff Notes
+- Next steps: XXX
+```
+
+---
+
+**Now, please check the current project state and start working.**

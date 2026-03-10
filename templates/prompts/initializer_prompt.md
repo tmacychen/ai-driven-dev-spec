@@ -31,29 +31,22 @@ Establish a clear roadmap for subsequent Coding Agents to complete this project 
 - Key design decisions and alternatives considered.
 - Security considerations.
 
-### 3. `progress.log`
+### 3. `.ai/progress.md`
 - Initialize with overall statistics and current goal.
 - Add an incremental entry for the first session.
 - Write clear handoff notes for the first Coding Agent session.
 
 ### 4. `init.sh`
-- A bash script that executes from a fresh checkout to:
-  - Install dependencies
-  - Validate project state
-  - Start any necessary background services
-  - Run smoke tests
-- Must be **idempotent** (safe to run multiple times).
+**Dynamically Generated** - Based on the tech stack in app_spec.md:
+- Install dependencies
+- Verify project state
+- Start background services (if needed)
+- Run smoke tests
+- Must be **idempotent** (safe to run multiple times)
 
-### 5. Harness Configuration
-- Create `.ai/harness.md` (use template from `templates/scaffold/.ai/harness.md`)
-- Create `.ai/training_data/` directory with README.md
-- These files enable the **core value proposition** of Agent Harness: collecting learning data
-
-### 6. Git Initialization
+### 5. Git Initialization
 - Initialize git repository.
-- Create `.gitignore` appropriate for the tech stack.
-- Add `.ai/training_data/*.jsonl` to `.gitignore` (data files should not be committed)
-- Commit all scaffolding files: `chore: initial project setup [ADDS v2.1]`
+- Commit all scaffolding files: `chore: initial project setup [ADDS v2.3]`
 
 ## Rules
 - ❌ DO NOT attempt to write the entire application logic now.

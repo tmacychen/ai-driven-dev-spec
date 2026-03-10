@@ -5,6 +5,62 @@ All notable changes to the AI-Driven Development Specification (ADDS) project wi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-03-10
+
+### Added ⭐
+
+**Reference**: [Anthropic - Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
+
+Inspired by Anthropic's research on harness engineering for long-running agents, which addresses the core challenge of multi-session agent development.
+
+- **Cross-Platform Installer**
+  - Unified Python script (init-adds.py) for Windows/Linux/macOS
+  - Interactive prompts for existing project handling
+  - Dry-run mode for safe preview
+
+### Changed - Anthropic Pattern Alignment
+
+- **Environment Health Check** ⭐ CRITICAL
+  - Mandatory pre-feature validation
+  - "Start the session by running a basic test on the development server to catch any undocumented bugs"
+  - Fix-first policy: environment issues must be resolved before feature work
+
+- **Regression Check** ⭐ CRITICAL
+  - Enhanced from 1-2 features to 2-3 core features
+  - "Every session must verify the system hasn't regressed before starting new work"
+  - STOP policy: regression must be fixed before new features
+
+- **Feature Count Requirement**
+  - Emphasized 50-200 discrete features requirement
+  - Prevents "one-shot" tendency where agent tries to complete everything at once
+
+- **E2E Testing Guidance**
+  - Added Puppeteer/Playwright recommendations
+  - "Providing Claude with these kinds of testing tools dramatically improved performance"
+
+### Removed - Project Simplification
+
+- **Deleted Redundant Files**:
+  - `workflows/` directory (merged to docs/)
+  - `templates/scaffold/.ai/harness.md`
+  - `templates/scaffold/.ai/training_data/` directory
+  - `templates/scaffold/init.sh` (now dynamically generated)
+  - `templates/scaffold/.gitignore` (now dynamically generated)
+  - `scripts/analyze_failures.py`
+  - `scripts/extract_ki.py`
+  - `scripts/generate_metrics.py`
+  - `scripts/init-adds.sh` (replaced by Python)
+  - `scripts/init-adds.ps1` (replaced by Python)
+  - `docs/quick-reference.md` (duplicate)
+  - `docs/workflow-example.md` (duplicate)
+
+### Internationalization
+
+- All documentation converted to English
+- Consistent English terminology for AI Agent consumption
+
+---
+
 ## [2.2.0] - 2026-03-04
 
 ### Added - Middleware Pattern Implementation ⭐
@@ -28,178 +84,3 @@ Inspired by LangChain's approach to harness engineering, which improved their co
   - Deterministic context injection helps agents verify their work
 
 ### Changed - Enhanced Session Flow
-
-- **Phase 1** now includes step 1.5 "Auto Context Injection"
-- **Phase 4** now includes step 7 "Pre-Completion Checklist"
-- Renumbered subsequent steps (8-11) to accommodate new middleware steps
-
-### Key Insights from Reference Article
-
-1. **Self-Verification Loop**: Models don't naturally enter build-verify loops, so we force it via middleware
-2. **Deterministic Context Injection**: Helps agents verify their work with structured context
-3. **PreCompletionChecklistMiddleware**: Intercepts agent before exit and reminds it to run verification
-4. **LocalContextMiddleware**: Maps cwd, parent/children directories, and discovers available tools
-
-### Influences
-
-This release is influenced by:
-
-1. **LangChain Blog**: "Improving Deep Agents with Harness Engineering"
-   - URL: https://blog.langchain.com/improving-deep-agents-with-harness-engineering/
-   - Key insight: Self-verification & tracing help a lot
-   - Concept: PreCompletionChecklistMiddleware and LocalContextMiddleware patterns
-   - Result: 13.7 point improvement on Terminal Bench 2.0 (Top 30 → Top 5)
-
----
-
-## [2.1.0] - 2026-02-26
-
-### Added - Data Collection Infrastructure ⭐
-
-**Core Value Proposition**: Treat Harness as a Dataset (Phil Schmid's insight)
-
-- **Data Collection Configuration**
-  - `.ai/harness.md`: Configure harness modules and data collection
-  - Automated collection of failures, successes, timing, and context usage
-  - Privacy-aware anonymization of sensitive data
-
-- **Training Data Directory Structure**
-  - `.ai/training_data/failures.jsonl`: Failed attempts and resolutions
-  - `.ai/training_data/successes.jsonl`: Success patterns and efficiency metrics
-  - `.ai/training_data/performance.jsonl`: Per-feature performance metrics
-  - `.ai/training_data/context_metrics.jsonl`: Context window usage patterns
-  - `.ai/training_data/README.md`: Documentation for data usage
-
-- **Analysis Tools**
-  - `scripts/analyze_failures.py`: Identify common failure patterns and generate recommendations
-  - `scripts/generate_metrics.py`: Generate comprehensive performance reports
-
-### Added - Modular Harness Configuration ⭐
-
-**"Build for Deletion" Philosophy**: Anticipate that new models will obsolete current logic
-
-- **Harness Configuration**
-  - `.ai/harness.md`: Modular configuration with enable/disable flags
-  - Document rationale for each module
-  - Set review dates for re-evaluation
-  - Define alternatives for future models
-
-- **Supported Modules**
-  - dual_agent_pattern: Role separation for initialization vs. coding
-  - regression_check: Prevent breaking existing features
-  - atomic_commits: Single feature per session
-  - environment_validation: Ensure environment consistency
-  - tool_based_validation: Require evidence for completion
-  - command_whitelist: Security guardrails
-  - data_collection: Learning value capture
-
-### Added - Performance Metrics System ⭐
-
-- **Reliability Metrics**
-  - Task completion rate (target: ≥ 90%)
-  - Regression rate (target: ≤ 5%)
-  - Blocked rate (target: ≤ 10%)
-  - Retry rate (target: ≤ 0.5)
-
-- **Efficiency Metrics**
-  - Average development time
-  - Estimation accuracy (target: 0.8 - 1.2 ratio)
-  - Context window utilization
-
-- **Quality Metrics**
-  - Test coverage (target: ≥ 70%)
-  - Lint errors (target: 0)
-  - Documentation completeness (target: 100%)
-
-- **System-Level Evaluation**
-  - Context persistence across sessions
-  - Environment consistency
-  - Auto-recovery success rate
-
-### Changed - Enhanced Constraints
-
-- **Absolute Prohibitions Section** in `coding_prompt.md`
-  - Added 6 strictly forbidden behaviors with examples and detection mechanisms
-  - Defined violation consequences (revert, record, mark blocked)
-
-- **Error Recovery Protocol** in `coding_prompt.md`
-  - Added automatic error classification (environment/dependency/code/requirements/capability)
-  - Defined recovery procedures for each error type
-  - Established autonomous decision principles
-
-- **Test Cases** in `feature_list.md`
-  - Added `validation_requirements` field with specific evidence types
-  - Added `completion_criteria` for unambiguous completion definition
-  - Added `retry_count`, `max_retries`, `escalation` for error recovery
-
-### Changed - Documentation Updates
-
-- Updated `initializer_prompt.md` to require data collection infrastructure setup
-- Updated `coding_prompt.md` to require data collection on each session
-- Updated `specification.md` with new chapters:
-  - Chapter 12: Data Collection & Learning Mechanism
-  - Chapter 13: Harness Modular Configuration
-  - Chapter 14: Performance Evaluation Metrics
-- Updated `README.md` to reflect v2.1 features
-
-### Influences
-
-This release is heavily influenced by:
-
-1. **Phil Schmid's Article**: "The importance of Agent Harness in 2026"
-   - Concept: Harness as OS for AI agents
-   - Key insight: Treat harness as dataset
-   - Principle: Build for deletion
-
-2. **Anthropic's Best Practices**: From the critical review document
-   - Stronger constraints rather than more tools
-   - Clear validation standards
-   - Autonomous error recovery
-
-### Breaking Changes
-
-None. All changes are additive and backward compatible.
-
-### Migration Guide
-
-For existing ADDS v2.0 projects:
-
-1. Add `.ai/harness.md` (copy from `templates/scaffold/.ai/`)
-3. Create `.ai/training_data/` directory
-4. Update `.gitignore` to exclude `.ai/training_data/*.jsonl`
-5. Optional: Run `python scripts/generate_metrics.py` to establish baseline metrics
-
----
-
-## [2.0.0] - 2026-02-20
-
-### Added
-
-- Dual-agent pattern (Initializer + Coding Agent)
-- Feature list with test cases and acceptance criteria
-- Security command whitelist
-- Environment health checks with init.sh
-- Regression detection mechanism
-- Core feature locking
-- Browser automation support (E2E)
-- Session stability verification
-- Multi-language support (Node.js, Python, Go, Rust)
-- Detailed testing prompt
-- Code review checklist
-
-### Changed
-
-- Improved documentation structure
-- Enhanced state management files
-
----
-
-## [1.0.0] - 2025-12-01
-
-### Added
-
-- Initial release
-- Basic feature list tracking
-- Progress logging
-- Git integration
-- Simple environment validation
