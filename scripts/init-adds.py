@@ -357,6 +357,82 @@ def cleanup():
         shutil.rmtree(TEMP_DIR)
 
 
+def run_upgrade(source_dir: Path, dry_run: bool, force: bool):
+    """Upgrade existing ADDS installation.
+
+    Only updates ADDS-managed files (prompts, docs, CORE_GUIDELINES.md).
+    Preserves user data (feature_list.md, progress.md, architecture.md, app_spec.md).
+    """
+    # Files managed by ADDS (safe to update)
+    managed_files = {
+        "CORE_GUIDELINES.md": "quick reference",
+    }
+
+    print()
+    print("📦 Upgrade mode: updating ADDS-managed files only")
+    print("   Preserving user data: feature_list.md, progress.md, architecture.md, app_spec.md")
+    print()
+
+    # 1. Update CORE_GUIDELINES.md
+    for filepath, desc in managed_files.items():
+        src_path = source_dir / "templates/scaffold" / filepath
+        if src_path.exists():
+            if dry_run:
+                print(f"📋 [DRY RUN] Would update: {filepath}")
+            else:
+                shutil.copy2(src_path, filepath)
+                print(f"   ✅ Updated: {filepath}")
+        else:
+            print(f"   ⚠️  Source not found: {filepath}")
+
+    # 2. Update prompts (clear old, copy new)
+    if dry_run:
+        print("📋 [DRY RUN] Would update: .ai/prompts/")
+    else:
+        prompts_src = source_dir / "templates/prompts"
+        if prompts_src.exists():
+            prompts_dest = Path(".ai/prompts")
+            if prompts_dest.exists():
+                # Remove old prompt files that no longer exist in source
+                old_files = {f.name for f in prompts_dest.glob("*.md")}
+                new_files = {f.name for f in prompts_src.glob("*.md")}
+                removed = old_files - new_files
+                if removed:
+                    for f in removed:
+                        (prompts_dest / f).unlink()
+                        print(f"   🗑️  Removed deprecated: .ai/prompts/{f}")
+            prompts_dest.mkdir(exist_ok=True)
+            for f in prompts_src.glob("*.md"):
+                shutil.copy2(f, prompts_dest / f.name)
+            print("   ✅ Updated: .ai/prompts/ (5 agent prompts)")
+
+    # 3. Update docs
+    if dry_run:
+        print("📋 [DRY RUN] Would update: .ai/docs/")
+    else:
+        docs_src = source_dir / "docs"
+        docs_dest = Path(".ai/docs")
+        if docs_src.exists():
+            docs_dest.mkdir(exist_ok=True)
+            for f in docs_src.glob("*.md"):
+                shutil.copy2(f, docs_dest / f.name)
+            print("   ✅ Updated: .ai/docs/")
+
+    # 4. Update scripts (compress_context.py)
+    scripts_dest = Path(".ai/scripts")
+    if not scripts_dest.exists():
+        scripts_src = source_dir / "scripts"
+        if scripts_src.exists() and not dry_run:
+            scripts_dest.mkdir(parents=True, exist_ok=True)
+            for f in scripts_src.glob("*.py"):
+                shutil.copy2(f, scripts_dest / f.name)
+            print("   ✅ Copied scripts to: .ai/scripts/")
+
+    print()
+    print("✅ Upgrade complete!")
+    print("   Your project data (features, progress, architecture) has been preserved.")
+
+
 def print_next_steps():
     """Print next steps."""
     print()
@@ -414,6 +490,11 @@ def main():
         "--no-prompts",
         action="store_true",
         help="Skip copying prompt templates"
+    )
+    parser.add_argument(
+        "--upgrade",
+        action="store_true",
+        help="Upgrade ADDS-managed files while preserving user data"
     )
     
     args = parser.parse_args()
@@ -476,7 +557,16 @@ def main():
             source_dir = Path(TEMP_DIR)
         else:
             sys.exit(1)
-    
+
+    if args.upgrade:
+        # Verify this is an existing ADDS project
+        if not Path("CORE_GUIDELINES.md").exists():
+            print("❌ No ADDS installation found. Use normal install mode (without --upgrade).")
+            sys.exit(1)
+        run_upgrade(source_dir, args.dry_run, args.force)
+        cleanup()
+        return
+
     copy_scaffold(source_dir, args.force, args.dry_run, global_action)
     copy_prompts(source_dir, args.force, args.dry_run, args.no_prompts, global_action)
     copy_docs(source_dir, args.force, args.dry_run, global_action)

@@ -106,15 +106,9 @@ Every project must contain the following "self-descriptive" files:
   Uses incremental append mode, recording "completed", "in progress", "to-do items", and next handoff instructions.
 - **`CORE_GUIDELINES.md`**: (New) Minimal self-boosting manual. Placed in project root directory for AI to instantly start and align development process.
 - **`.ai/architecture.md`**: Records project architecture, technology stack selection, and core data flow.
-- **`.ai/session_log.jsonl`**: Machine-readable session history (one JSON object per line).
+- **`.ai/prompts/`**: Agent prompt files (pm, architect, developer, tester, reviewer).
 - **`init.sh`**: Scripted environment. After running this script, any Agent should be able to immediately execute tests or start development.
-- **`.ai/harness.md`**: Harness modular configuration, supporting the "built for deletion" philosophy.
-- **`.ai/training_data/` (New ⭐)**: Training data directory, storing failure cases, success patterns, and performance metrics.
-  - `failures.jsonl`: Failure cases and solutions
-  - `successes.jsonl`: Success patterns and efficiency metrics
-  - `performance.jsonl`: Performance metrics data
-  - `context_metrics.jsonl`: Context usage patterns
-- **`docs/KNOWLEDGE_ITEMS/` (New ⭐)**: Knowledge base automatically generated from failure data, recording verified solutions.
+- **`app_spec.md`**: Original project requirements source.
 
 ---
 
@@ -406,157 +400,84 @@ When an Agent encounters execution errors or test failures, it should follow thi
 
 ---
 
-## 12. Data Collection and Learning Mechanism ⭐ New
+## 12. Context Management and Learning
 
 ### 12.1 Core Concept
 
-Based on Phil Schmid's insight: **"Treat the Harness as a dataset"**
+Long-running projects generate increasingly large context files. Without management, `progress.md` can grow to thousands of lines, consuming valuable context window space and degrading Agent performance.
 
-- Every failure is training data
-- Every success pattern is a best practice
-- Collected data is used to improve Harness and train models
+Key principles:
+- **Compress, don't lose**: Historical data should be summarized, not deleted
+- **Recent context is king**: The last few sessions contain the most actionable information
+- **Patterns emerge from data**: Failed features and blocked tasks contain valuable lessons
 
-### 12.2 Data Collection Configuration
+### 12.2 Context Compression
 
-Configure data collection behavior through `.ai/harness.md`.
+Use the built-in `scripts/compress_context.py` tool to manage `progress.md` growth:
 
-```json
-{
-  "enabled": true,
-  "collect": {
-    "failures": true,      // Failure cases
-    "successes": true,     // Success patterns
-    "timing": true,        // Time metrics
-    "context_usage": true  // Context usage
-  },
-  "storage": {
-    "format": "jsonl",
-    "location": ".ai/training_data/"
-  }
-}
+```bash
+# Check if compression is needed (threshold: 1000 lines by default)
+python scripts/compress_context.py --project-dir /path/to/project
+
+# Force compression regardless of threshold
+python scripts/compress_context.py --project-dir /path/to/project --force
+
+# Keep more recent sessions (default: 10)
+python scripts/compress_context.py --keep-recent 20
 ```
 
-### 12.3 Data Format
+The tool:
+1. Archives the original `progress.md` as `progress.md.archive`
+2. Keeps the most recent N sessions in full detail
+3. Generates `progress_summary.md` with statistics and historical overview
+4. Reports compression ratio
 
-#### Failure Data (`failures.jsonl`)
+### 12.3 When to Compress
 
-Each failure case records:
+- When `progress.md` exceeds ~1000 lines
+- At the start of a new milestone or phase
+- Before onboarding a new team member or Agent session
 
-```json
-{
-  "feature_id": "F002",
-  "failure_type": "test_failure",
-  "error_details": {
-    "symptoms": "Login API returns 500",
-    "root_cause": "Database not initialized"
-  },
-  "recovery": {
-    "resolution": "Added DB check to init.sh",
-    "resolution_time_minutes": 15
-  },
-  "learning_value": {
-    "pattern": "Missing environment validation",
-    "generalizable": true,
-    "suggested_prevention": "Add DB health check to init.sh template"
-  }
-}
+### 12.4 Lessons Learned
+
+Record failure patterns and recovery strategies directly in `progress.md`:
+
+```markdown
+## [YYYY-MM-DD HH:MM] Session: Developer Agent
+
+### Lessons Learned
+- **Issue**: Database connection timeout during E2E tests
+- **Root Cause**: Connection pool not configured for test environment
+- **Prevention**: Added health check to init.sh
+- **Feature**: F015 - Payment Processing
 ```
-
-#### Success Data (`successes.jsonl`)
-
-Each success case records:
-
-```json
-{
-  "feature_id": "F003",
-  "success_factors": [
-    "Clear test cases",
-    "Small scope"
-  ],
-  "timing": {
-    "estimated_minutes": 120,
-    "actual_minutes": 90,
-    "efficiency_ratio": 1.33
-  },
-  "quality_metrics": {
-    "test_coverage": "85%",
-    "lint_errors": 0
-  }
-}
-```
-
-### 12.4 Data Analysis
-
-Use scripts for automatic analysis:
-
-- **`scripts/analyze_failures.py`**: Identify common failure patterns
-- **`scripts/extract_ki.py` (New ⭐)**: Automatically convert failure patterns to `docs/KNOWLEDGE_ITEMS/`
-- **`scripts/generate_metrics.py`**: Generate performance reports
-- **Regular Reports**: Automatically generate analysis reports weekly/monthly
-
-### 12.5 Feedback Loop
-
-Improvement process after data collection:
-
-1. **Analysis**: Identify failure patterns and success patterns
-2. **Extraction**: Extract general lessons
-3. **Improvement**: Update Harness specifications and best practices
-4. **Verification**: Verify improvement effects through new sessions
-5. **Training**: (Optional) Export data for model fine-tuning
 
 ---
 
-## 13. Harness Modular Configuration ⭐ New
+## 13. Module Evolution Strategy
 
 ### 13.1 "Built for Deletion" Principle
 
-Core concept: Anticipating that new models will replace current logic, the architecture must be modular and ready to "rip out" old code at any time.
+Core concept: Anticipating that new models will replace current logic, the architecture must be modular and ready to "rip out" old code at any time. ADDS is designed as a set of independent prompt files and guidelines that can be individually updated or replaced.
 
-### 13.2 Module Configuration File
+### 13.2 Module Examples
 
-Manage modules through `.ai/harness.md`.
+Current modules that may evolve as AI capabilities improve:
 
-```json
-{
-  "modules": {
-    "dual_agent_pattern": {
-      "enabled": true,
-      "reason": "Current models benefit from role separation",
-      "review_date": "2026-06-01",
-      "alternatives": [...]
-    },
-    "regression_check": {
-      "enabled": true,
-      "reason": "Models still introduce breaking changes",
-      "review_date": "2026-04-01"
-    }
-  }
-}
-```
+| Module | Current Status | Likely Future |
+|--------|---------------|---------------|
+| Multi-Agent separation | Enabled (models need role specialization) | May consolidate as models improve |
+| Regression check | Enabled (models still introduce regressions) | Keep until models self-verify |
+| Command whitelist | Enabled (security constraint) | May relax for sandboxed environments |
+| Loop detection | Enabled (models still fall into doom loops) | May reduce as models improve |
 
-### 13.3 Module Lifecycle
+### 13.3 Evolution Approach
 
-Each module includes:
-
-- **enabled**: Whether currently enabled
-- **reason**: Why this module is needed
-- **review_date**: When to re-evaluate
-- **alternatives**: Possible future alternatives
-
-### 13.4 Module Evolution Example
-
-```markdown
-## Current (2026-02)
-- dual_agent_pattern: enabled (models need role separation)
-- regression_check: enabled (models still introduce regressions)
-
-## Future Possibilities (2026-06)
-- dual_agent_pattern: disabled (models can handle complete flow)
-- regression_check: enabled (still needed)
-
-## Long-term (2027+)
-- multi_agent_collaboration: enabled (multi-agent parallel development)
-```
+To update ADDS modules:
+1. Update the relevant prompt file in `.ai/prompts/`
+2. Update `CORE_GUIDELINES.md` to reflect the change
+3. Run `init-adds.py --upgrade` (see upgrade mechanism) to propagate changes
+4. Document the change in CHANGELOG
 
 ---
 
@@ -596,26 +517,21 @@ Each module includes:
 
 ### 14.5 Evaluation Reports
 
-Generate reports using `scripts/generate_metrics.py`:
+Use `scripts/compress_context.py` to generate progress summaries, or manually review `progress.md` for session-by-session details.
 
-```bash
-python scripts/generate_metrics.py --project-dir /path/to/project
-```
-
-Reports include:
-- 📊 Overall performance score
-- 🎯 Reliability metrics analysis
-- ⚡ Efficiency metrics analysis
-- 🔬 Quality metrics analysis
-- 💡 Improvement suggestions
-- 📈 Project progress visualization
+Reports should include:
+- Overall performance score
+- Reliability metrics (completion rate, regression rate)
+- Efficiency metrics (time per feature)
+- Quality metrics (test coverage, lint errors)
+- Improvement suggestions
 
 ---
 
 ## 📚 Getting Started
 
 1. **Check Project Status** — See if `.ai/feature_list.md` already exists
-2. **Determine Current Mode** — Initializer Agent or Coding Agent
+2. **Determine Current Agent** — Use the Agent Selection Logic (see CORE_GUIDELINES.md)
 3. **Follow the Process** — Strictly follow the above specifications
 
 **Remember**: Your goal is to complete project development with high quality, sustainability, and safety. Follow the specifications, reduce mistakes, and ensure each feature is fully verified.

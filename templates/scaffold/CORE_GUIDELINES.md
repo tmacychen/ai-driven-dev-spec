@@ -79,6 +79,50 @@ pending → in_progress → testing → completed
 
 ---
 
+## 🧭 Agent Selection Logic
+
+When starting a session, determine your role by checking project state:
+
+```
+IF feature_list.md does NOT exist
+  → Use PM Agent (pm_prompt.md)
+    Action: Read app_spec.md → Generate feature_list.md
+
+ELSE IF architecture.md is empty or "TBD" everywhere
+  → Use Architect Agent (architect_prompt.md)
+    Action: Read feature_list.md → Design architecture → Create init.sh
+
+ELSE IF any feature has status = "pending" and all dependencies are "completed"
+  → Use Developer Agent (developer_prompt.md)
+    Action: Select next pending feature → Implement → Set status to "testing"
+
+ELSE IF any feature has status = "testing"
+  → Use Tester Agent (tester_prompt.md)
+    Action: Run tests → Verify acceptance criteria → Set status to "completed" or "bug"
+
+ELSE IF all features are "completed" or "pending" (none "testing")
+  → Use Reviewer Agent (reviewer_prompt.md)
+    Action: Review recent commits → Security audit → Approve or reject
+
+ELSE IF any feature has status = "blocked" or "regression"
+  → Use Developer Agent (developer_prompt.md)
+    Action: Fix blocker or regression → Re-test
+```
+
+---
+
+## 📦 Context Management
+
+When `progress.md` grows large (>1000 lines), compress it to maintain context efficiency:
+
+```bash
+python scripts/compress_context.py --project-dir .
+```
+
+This archives old sessions and keeps only recent ones in detail.
+
+---
+
 ## ⚠️ Security Constraints (Must Follow)
 
 ### ✅ Allowed Commands
@@ -87,7 +131,7 @@ pending → in_progress → testing → completed
 |----------|----------|
 | File Operations | `ls`, `cat`, `head`, `tail`, `wc`, `grep`, `find`, `cp`, `mv` |
 | Node.js | `npm`, `node`, `npx`, `yarn` |
-| Python | `pip`, `python`, `pytest`, `black`, `flake8` |
+| Python | `pip`, `python`, `pytest`, `black`, `flake8`, `mypy` |
 | Go | `go`, `gofmt` |
 | Rust | `cargo`, `rustc`, `rustfmt` |
 | Git | All subcommands |
@@ -98,7 +142,10 @@ pending → in_progress → testing → completed
 | Command | Reason |
 |---------|--------|
 | `sudo`, `su` | System permission risk |
-| `rm -rf /`, `mkfs`, `fdisk` | Irreversible data destruction |
+| `chmod`, `chown` (unless explicitly necessary) | Permission changes |
+| `rm -rf /`, `mkfs`, `fdisk` | Irrecoverable data destruction |
+| `nc`, `netcat`, `telnet` | Network backdoor risk |
+| `iptables`, `route` | Network configuration changes |
 | `curl \| bash`, `wget \| sh` | Unreviewed script execution |
 | `kill -9` (system processes) | System stability |
 

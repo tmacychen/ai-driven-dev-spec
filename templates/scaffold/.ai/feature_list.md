@@ -1,16 +1,16 @@
 # Feature List
 
-> 项目功能跟踪表 - AI 开发的核心状态管理文件
+> Project feature tracking table - Core state management file for AI-driven development
 
-## 状态说明
+## Status Reference
 
-| 状态 | 含义 |
-|------|------|
-| `pending` | 待开发 |
-| `in_progress` | 开发中 |
-| `completed` | 已完成 |
-| `blocked` | 已阻塞 |
-| `regression` | 回归问题 |
+| Status | Meaning |
+|--------|---------|
+| `pending` | Not yet started |
+| `in_progress` | Currently being developed |
+| `completed` | Development and review complete |
+| `blocked` | Blocked by dependency or issue |
+| `regression` | Previously working, now broken |
 
 ---
 
