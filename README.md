@@ -1,8 +1,10 @@
 # AI-Driven Development Specification (ADDS)
 
-> Agent-driven development framework - enabling AI Agents to autonomously complete project development
+> Agent-driven development framework — enabling AI Agents to autonomously complete project development across multiple context windows
 
 Inspired by [Anthropic's research](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents) and [LangChain's harness engineering](https://blog.langchain.com/improving-deep-agents-with-harness-engineering/).
+
+---
 
 ## Core Principles
 
@@ -17,124 +19,332 @@ Inspired by [Anthropic's research](https://www.anthropic.com/engineering/effecti
 
 ## Quick Start
 
+**Requires Python 3.8+.**
+
 ### Option 1: New Empty Project
 
 ```bash
-# Create project directory
 mkdir my-project && cd my-project
 
-# Clone ADDS as template
 git clone https://github.com/tmacychen/ai-driven-dev-spec.git .adds-temp
 cp -r .adds-temp/* .
 cp -r .adds-temp/.* . 2>/dev/null || true
 rm -rf .adds-temp
 
-# Run installer
 python scripts/init-adds.py
-
-# Tell AI to start
-"Please read the files in the .ai directory and start development."
 ```
 
 ### Option 2: Existing Project
 
 ```bash
 cd your-existing-project
-
-# Run installer (will prompt for existing file handling)
 python /path/to/ai-driven-dev-spec/scripts/init-adds.py --from-local /path/to/ai-driven-dev-spec
-
-# Tell AI to start
-"Please read the files in the .ai directory and start development."
 ```
 
-### Option 3: Clone + Run (Recommended for First Time)
+### Option 3: Clone + Run (Recommended)
 
 ```bash
-# Clone the full repository
 git clone https://github.com/tmacychen/ai-driven-dev-spec.git adds-temp
-
-# Go to your project directory
 cd your-project
-
-# Run installer from the cloned repo
 python ../adds-temp/scripts/init-adds.py --from-local ../adds-temp
+```
 
-# Tell AI to start
+After any of the above, tell your AI agent:
+
+```
 "Please read the files in the .ai directory and start development."
 ```
 
 ---
 
-## After Installation
-
-The installer generates this structure in your project:
+## Project Structure After Installation
 
 ```
 your-project/
-├── .ai/                         # ADDS state (generated)
-│   ├── feature_list.md          # Feature tracking (truth source)
-│   ├── progress.md              # Session progress log
-│   ├── architecture.md          # Architecture decisions
-│   └── prompts/                # AI agent prompts
+├── .ai/                          # ADDS state (the source of truth)
+│   ├── feature_list.md           # Feature tracking & status
+│   ├── progress.md               # Session history log
+│   ├── architecture.md           # Architecture decisions
+│   ├── session_log.jsonl         # Structured event log (optional)
+│   ├── archive/                  # Archived completed features
+│   └── prompts/                  # Per-agent system prompts
 │       ├── pm_prompt.md
 │       ├── architect_prompt.md
 │       ├── developer_prompt.md
 │       ├── tester_prompt.md
 │       └── reviewer_prompt.md
-├── app_spec.md                  # Your project requirements (edit this!)
-├── CORE_GUIDELINES.md          # AI behavior constraints
-└── [your project files]        # Your existing code
+├── app_spec.md                   # Your project requirements (edit this!)
+├── CORE_GUIDELINES.md            # AI behavior constraints
+└── [your project files]
 ```
 
 ---
 
-## Development Workflow
+## How to Use ADDS
 
-### First Session (PM + Architect)
+### Step 1 — Write Your Requirements
 
-1. You: "Please read the files in the .ai directory and start initialization"
-2. AI reads `app_spec.md` as PM Agent
-3. AI generates `feature_list.md` with 50-200 features
-4. AI creates architecture and initial structure as Architect Agent
+Edit `app_spec.md` to describe what you want to build. This is the only file you need to write manually before handing off to the AI.
 
-### Subsequent Sessions (Developer + Tester + Reviewer)
+### Step 2 — Start the First Session (PM Agent)
 
-1. You: "Please read the files in the .ai directory and continue development"
-2. AI runs environment health check
-3. AI runs regression tests (verify existing features)
-4. AI selects next feature from `feature_list.md`
-5. AI implements, tests, and commits
-6. AI verifies with Tester Agent and reviews with Reviewer Agent
+Tell your AI:
+
+```
+"Please read the files in the .ai directory and start initialization."
+```
+
+The AI reads `app_spec.md` as the PM Agent, generates `.ai/feature_list.md` with all features broken down (typically 50–200 atomic items), then hands off to the Architect Agent to design the system architecture.
+
+### Step 3 — Development Sessions (Developer Agent)
+
+For every subsequent session:
+
+```
+"Please read the files in the .ai directory and continue development."
+```
+
+The AI will:
+1. Check project state from `feature_list.md`
+2. Run regression tests on completed features
+3. Pick the next eligible pending feature (highest priority, all dependencies met)
+4. Implement it, write tests, update status to `testing`
+5. Append a session summary to `progress.md`
+
+### Step 4 — Testing (Tester Agent)
+
+When any feature reaches `testing` status, start a new session with:
+
+```
+"Please read the .ai directory and run tests for features in testing status."
+```
+
+The Tester runs all test cases, marks passing features as `completed` and failing ones as `bug` for the Developer to fix.
+
+### Step 5 — Review (Reviewer Agent)
+
+When all features are complete:
+
+```
+"Please read the .ai directory and perform a final code review."
+```
+
+The Reviewer checks code quality, security, and architecture compliance.
 
 ---
 
-## Project Structure (ADDS Template)
+## Agent Selection — When to Use Which Agent
+
+Use `adds route` (see CLI below) to get an automatic recommendation, or follow this decision tree:
+
+| Condition | Agent to use |
+|-----------|--------------|
+| `feature_list.md` does not exist | **PM** — generates the feature list |
+| `architecture.md` is empty or TBD | **Architect** — designs the system |
+| Features have `pending` status (deps met) | **Developer** — implements next feature |
+| Any feature has `testing` status | **Tester** — runs tests |
+| Any feature has `blocked` or `regression` | **Developer** — fixes the issue |
+| All features are `completed` | **Reviewer** — final audit |
+
+---
+
+## Feature Lifecycle
 
 ```
-ai-driven-dev-spec/
-├── docs/
-│   └── specification.md        # Complete specification
-├── scripts/
-│   ├── init-adds.py           # Cross-platform installer
-│   └── compress_context.py     # Context compression tool
-├── templates/
-│   ├── scaffold/
-│   │   ├── .ai/               # Templates for generated files
-│   │   │   ├── feature_list.md
-│   │   │   ├── progress.md
-│   │   │   └── architecture.md
-│   │   └── CORE_GUIDELINES.md
-│   └── prompts/                # v3.0 multi-agent prompts
-│       ├── pm_prompt.md
-│       ├── architect_prompt.md
-│       ├── developer_prompt.md
-│       ├── tester_prompt.md
-│       └── reviewer_prompt.md
-├── README.md
-├── CHANGELOG.md
-└── LICENSE
+pending → in_progress → testing → completed
+                              ↓
+                            bug → in_progress (fix cycle)
 ```
+
+Each feature in `feature_list.md` has this structure:
+
+```markdown
+## F001: User Authentication
+
+- **Category**: feature
+- **Priority**: high
+- **Complexity**: medium
+- **Status**: pending
+- **Dependencies**: -
+
+Description of what to build and its acceptance criteria.
+```
+
+---
+
+## ADDS CLI (`adds`)
+
+The `adds` command is a Python-based project management tool. It does **not** call any AI — it reads and analyzes your `.ai/` files to give you status, guidance, and utilities.
+
+### Installation
+
+```bash
+# Install to /usr/local/bin (may need sudo)
+sudo python3 setup.py
+
+# Or install to a user directory (no sudo needed)
+python3 setup.py --prefix ~/.local
+
+# Preview what will be installed without making changes
+python3 setup.py --dry-run
+
+# Check installation status
+python3 setup.py --check
+```
+
+This copies `adds`, `init-adds`, and `install_hooks` to `<prefix>/bin/` and sets executable permissions automatically.
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `adds status` | Overall project progress (feature counts, completion %) |
+| `adds next` | Show the next feature to implement |
+| `adds route` | Recommend which agent to use right now |
+| `adds validate` | Validate `feature_list.md` (format, deps, cycles) |
+| `adds dag` | Visualize feature dependency graph as ASCII tree |
+| `adds archive F###` | Move a completed feature to `.ai/archive/` |
+| `adds compress` | Compress `progress.md` when it grows too large |
+| `adds log` | Show session log statistics from `session_log.jsonl` |
+| `adds branch <subcmd>` | Multi-branch parallel development support |
+
+All commands support `-j / --json` for machine-readable output.
+
+### Examples
+
+```bash
+# Check overall progress
+adds status
+
+# Output:
+# 📊 ADDS Project Status
+# ──────────────────────────────────────────
+#   Total:       47
+#   Pending:     31
+#   In Progress: 1
+#   Testing:     0
+#   Completed:   15
+#
+#   Progress: [██████████░░░░░░░░░░░░░░░░░░░░] 32%  (15/47)
+
+# Find what to work on next
+adds next
+
+# See which agent role is recommended
+adds route
+
+# Validate the feature list before committing
+adds validate
+
+# Visualize the dependency graph
+adds dag
+```
+
+---
+
+## Branch Support (Parallel Development)
+
+When working on multiple features in parallel or with multiple AI sessions:
+
+```bash
+# Create a feature branch
+git checkout -b feature/F001-user-auth
+
+# Initialize a branch-specific progress file
+adds branch init F001
+
+# Check branch status
+adds branch status
+
+# List all active branches
+adds branch list
+
+# Check merge risk before merging
+adds branch merge-check
+```
+
+Branch naming convention: `feature/F###-short-description`
+
+Branch progress files are stored at `.ai/branches/progress_<branch>.md` and do not conflict with the main `progress.md`.
+
+---
+
+## Security Hooks
+
+ADDS includes a pre-commit hook that scans staged files for dangerous patterns before allowing commits.
+
+```bash
+# Install the hook
+python3 scripts/install_hooks.py
+
+# Check hook status
+python3 scripts/install_hooks.py --status
+
+# Remove the hook
+python3 scripts/install_hooks.py --remove
+```
+
+The hook blocks patterns such as `sudo`, `curl | bash`, destructive `rm -rf /` calls, and network backdoors. To explicitly allow a flagged line, add a bypass comment:
+
+```bash
+sudo some-command  # adds-security: allow
+```
+
+---
+
+## Session Management
+
+### Logging Session Events
+
+Track what each agent does in a structured log:
+
+```bash
+# Start of session
+python scripts/log_session.py --feature F001 --agent developer --action start
+
+# End of session
+python scripts/log_session.py --feature F001 --agent developer --action complete --files-changed 5
+
+# View summary
+python scripts/log_session.py --stats
+
+# Or use: adds log
+```
+
+### Compressing Context
+
+When `progress.md` exceeds ~800 lines, compress it to keep AI sessions fast:
+
+```bash
+adds compress
+# or directly:
+python scripts/compress_context.py --project-dir .
+```
+
+Old sessions are archived; recent ones stay accessible.
+
+---
+
+## Upgrading ADDS
+
+```bash
+# Pull latest version
+git -C /path/to/ai-driven-dev-spec pull
+
+# Run setup with upgrade flag — removes obsolete commands, installs new ones
+python3 /path/to/ai-driven-dev-spec/setup.py --upgrade
+
+# Preview what will change before upgrading
+python3 /path/to/ai-driven-dev-spec/setup.py --upgrade --dry-run
+```
+
+## Uninstalling ADDS
+
+```bash
+python3 /path/to/ai-driven-dev-spec/setup.py --uninstall
+```
+
+The uninstaller shows the full path of each file before deleting and requires confirmation. If a file is not found in the default directory, it prints the command name and instructions to locate and remove it manually.
 
 ---
 
@@ -142,9 +352,14 @@ ai-driven-dev-spec/
 
 | File | Purpose |
 |------|---------|
-| `docs/specification.md` | Complete ADDS specification |
-| `templates/prompts/` | AI system prompts |
-| `templates/scaffold/CORE_GUIDELINES.md` | AI behavior constraints |
+| `docs/specification.md` | Complete ADDS v3.0 specification |
+| `docs/guide/01-overview.md` | Core concepts and architecture |
+| `docs/guide/02-project-structure.md` | File organization reference |
+| `docs/guide/03-agent-selection.md` | When to use which agent |
+| `docs/guide/04-session-workflow.md` | Day-to-day session operations |
+| `docs/guide/05-security.md` | Security whitelist and hook details |
+| `docs/feature-branch-workflow.md` | Parallel development strategy |
+| `docs/ide-integration.md` | IDE-specific setup guides |
 
 ---
 

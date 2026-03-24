@@ -122,6 +122,19 @@ Inspired by LangChain's approach to harness engineering, which improved their co
 
 ## [3.0.1] - 2026-03-24
 
+### Added
+
+- **`setup.py` — Unified installer** at project root
+  - Installs tool scripts to `<prefix>/bin/` (default `/usr/local/bin`) by copying and setting `chmod +x`
+  - Command names derived automatically from script filenames (e.g. `adds.py` → `adds`)
+  - `INSTALL_SCRIPTS` list in the file header defines exactly which scripts are installed per release
+  - `REMOVED_SCRIPTS` list for cleanup of commands dropped in a given version
+  - `--upgrade`: removes obsolete commands (with confirmation), then force-installs current version
+  - `--uninstall`: shows full paths of files to delete, requires `y/N` confirmation; if a file is not found in the default directory, prints command name and `which <cmd>` instructions for manual removal
+  - `--check`: read-only status view (installed, up-to-date, PATH check)
+  - `--dry-run`: previews all operations without modifying any files
+  - `--prefix <dir>`: install to any directory (e.g. `~/.local` for user-only installs)
+
 ### Fixed
 
 - **License consistency**: README now correctly states GPL v3 (was mistakenly listed as MIT)
@@ -129,6 +142,9 @@ Inspired by LangChain's approach to harness engineering, which improved their co
 
 ### Changed
 
+- **README**: CLI installation section updated to use `setup.py` instead of manual `chmod + ln -s`
+- **README**: Upgrade and uninstall sections rewritten to reflect `setup.py` workflow
+- **Script permissions**: All scripts under `scripts/` set to executable (`chmod +x`)
 - **Prompt cleanup**: Removed legacy v2.x prompt files that were superseded by v3.0 multi-agent prompts:
   - `coding_prompt.md` (replaced by `developer_prompt.md`)
   - `review_prompt.md` (replaced by `reviewer_prompt.md`)
