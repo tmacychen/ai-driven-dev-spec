@@ -6,7 +6,7 @@ Inspired by [Anthropic's research](https://www.anthropic.com/engineering/effecti
 
 ## Core Principles
 
-1. **Two-Phase Agent Pattern** — Initializer Agent + Coding Agent
+1. **Multi-Agent Team Model** — PM, Architect, Developer, Tester, Reviewer agents
 2. **State-Driven** — `.ai/feature_list.md` is the single source of truth
 3. **Incremental Development** — One feature at a time, never one-shot
 4. **Clean Handoffs** — Every session leaves a mergeable state
@@ -76,11 +76,12 @@ your-project/
 │   ├── feature_list.md          # Feature tracking (truth source)
 │   ├── progress.md              # Session progress log
 │   ├── architecture.md          # Architecture decisions
-│   └── prompts/                # AI system prompts
-│       ├── initializer_prompt.md
-│       ├── coding_prompt.md
-│       ├── testing_prompt.md
-│       └── review_prompt.md
+│   └── prompts/                # AI agent prompts
+│       ├── pm_prompt.md
+│       ├── architect_prompt.md
+│       ├── developer_prompt.md
+│       ├── tester_prompt.md
+│       └── reviewer_prompt.md
 ├── app_spec.md                  # Your project requirements (edit this!)
 ├── CORE_GUIDELINES.md          # AI behavior constraints
 └── [your project files]        # Your existing code
@@ -90,20 +91,21 @@ your-project/
 
 ## Development Workflow
 
-### First Session (Initializer)
+### First Session (PM + Architect)
 
 1. You: "Please read the files in the .ai directory and start initialization"
-2. AI reads `app_spec.md` 
+2. AI reads `app_spec.md` as PM Agent
 3. AI generates `feature_list.md` with 50-200 features
-4. AI creates architecture and initial structure
+4. AI creates architecture and initial structure as Architect Agent
 
-### Subsequent Sessions (Coding)
+### Subsequent Sessions (Developer + Tester + Reviewer)
 
 1. You: "Please read the files in the .ai directory and continue development"
 2. AI runs environment health check
 3. AI runs regression tests (verify existing features)
 4. AI selects next feature from `feature_list.md`
 5. AI implements, tests, and commits
+6. AI verifies with Tester Agent and reviews with Reviewer Agent
 
 ---
 
@@ -123,11 +125,12 @@ ai-driven-dev-spec/
 │   │   │   ├── progress.md
 │   │   │   └── architecture.md
 │   │   └── CORE_GUIDELINES.md
-│   └── prompts/                # AI system prompts
-│       ├── initializer_prompt.md
-│       ├── coding_prompt.md
-│       ├── testing_prompt.md
-│       └── review_prompt.md
+│   └── prompts/                # v3.0 multi-agent prompts
+│       ├── pm_prompt.md
+│       ├── architect_prompt.md
+│       ├── developer_prompt.md
+│       ├── tester_prompt.md
+│       └── reviewer_prompt.md
 ├── README.md
 ├── CHANGELOG.md
 └── LICENSE
@@ -147,4 +150,4 @@ ai-driven-dev-spec/
 
 ## License
 
-MIT
+GPL v3

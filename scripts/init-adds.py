@@ -12,7 +12,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
-ADDS_VERSION = "2.3"
+ADDS_VERSION = "3.0.0"
 ADDS_REPO = "https://github.com/tmacychen/ai-driven-dev-spec.git"
 TEMP_DIR = "adds-temp-install"
 
@@ -234,6 +234,122 @@ def create_app_spec_template(dry_run: bool):
         print("ℹ️  app_spec.md already exists, skipping")
 
 
+def create_gitignore(dry_run: bool):
+    """Create or merge .gitignore with project-type-specific rules."""
+    if dry_run:
+        print("📝 [DRY RUN] Would create/update .gitignore")
+        return
+
+    project_type = get_project_type()
+
+    # Common entries for all projects
+    common = [
+        "# OS files",
+        ".DS_Store",
+        "Thumbs.db",
+        "Desktop.ini",
+        "",
+        "# IDE",
+        ".vscode/",
+        ".idea/",
+        "*.swp",
+        "*.swo",
+        "*~",
+        "",
+        "# Environment",
+        ".env",
+        ".env.local",
+        ".env.*.local",
+        "",
+        "# ADDS working files",
+        ".ai/session_log.jsonl",
+        ".ai/test_failure_log.json",
+        ".ai/training_data/",
+        "",
+    ]
+
+    # Project-type-specific entries
+    type_rules = {
+        "Node.js": [
+            "# Node.js",
+            "node_modules/",
+            "dist/",
+            "build/",
+            "*.tsbuildinfo",
+            "coverage/",
+            ".npm/",
+            ".yarn/",
+            "pnpm-lock.yaml",
+        ],
+        "Python": [
+            "# Python",
+            "__pycache__/",
+            "*.py[cod]",
+            "*.egg-info/",
+            ".eggs/",
+            "dist/",
+            "build/",
+            "*.egg",
+            ".venv/",
+            "venv/",
+            ".pytest_cache/",
+            ".mypy_cache/",
+            "*.coverage",
+            "htmlcov/",
+        ],
+        "Rust": [
+            "# Rust",
+            "target/",
+            "**/*.rs.bk",
+            "Cargo.lock",
+        ],
+        "Go": [
+            "# Go",
+            "vendor/",
+        ],
+        "Java": [
+            "# Java",
+            "*.class",
+            "*.jar",
+            "*.war",
+            "target/",
+            ".gradle/",
+        ],
+        "C#": [
+            "# C#",
+            "bin/",
+            "obj/",
+            "*.user",
+            "*.suo",
+        ],
+    }
+
+    lines = common.copy()
+    lines.append(f"# {project_type} specific")
+    lines.extend(type_rules.get(project_type, []))
+
+    content = "\n".join(lines) + "\n"
+
+    if Path(".gitignore").exists():
+        # Merge: only append ADDS-specific and project-type entries that are missing
+        existing = Path(".gitignore").read_text(encoding="utf-8")
+        existing_lines = set(existing.splitlines())
+        new_lines = [l for l in content.splitlines() if l not in existing_lines and not l.startswith("#")]
+        new_comments = [l for l in content.splitlines() if l.startswith("#") and l not in existing_lines]
+
+        if new_lines or new_comments:
+            print("📝 Updating .gitignore with missing entries...")
+            merged = existing.rstrip("\n") + "\n\n" + "# Added by ADDS installer\n" + content
+            Path(".gitignore").write_text(merged, encoding="utf-8")
+            print("✅ .gitignore updated")
+        else:
+            print("ℹ️  .gitignore already covers all ADDS entries")
+    else:
+        print("📝 Creating .gitignore...")
+        Path(".gitignore").write_text(content, encoding="utf-8")
+        print("✅ .gitignore created")
+
+
 def cleanup():
     """Clean up temporary files."""
     if Path(TEMP_DIR).exists():
@@ -257,6 +373,7 @@ def print_next_steps():
     print("   .ai/docs/               - Documentation")
     print("   CORE_GUIDELINES.md      - Quick reference")
     print("   app_spec.md             - Your project spec (edit this!)")
+    print("   .gitignore              - Git ignore rules")
     print()
     print("🚀 Next steps:")
     print()
@@ -364,6 +481,7 @@ def main():
     copy_prompts(source_dir, args.force, args.dry_run, args.no_prompts, global_action)
     copy_docs(source_dir, args.force, args.dry_run, global_action)
     create_app_spec_template(args.dry_run)
+    create_gitignore(args.dry_run)
     cleanup()
     print_next_steps()
 

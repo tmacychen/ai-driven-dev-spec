@@ -84,3 +84,55 @@ Inspired by LangChain's approach to harness engineering, which improved their co
   - Deterministic context injection helps agents verify their work
 
 ### Changed - Enhanced Session Flow
+
+- **Feature Lifecycle**
+  - Added `testing` status between `in_progress` and `completed`
+  - Developer hands off to Tester after implementation
+  - Tester verifies before marking as `completed`
+
+---
+
+## [2.3.0] - 2026-03-07
+
+### Added
+
+- **Multi-Agent Team Model**
+  - Project Manager Agent (pm_prompt.md) — Requirement analysis and task decomposition
+  - Architect Agent (architect_prompt.md) — Technical design and architecture
+  - Developer Agent (developer_prompt.md) — Feature implementation
+  - Tester Agent (tester_prompt.md) — Test verification and quality assurance
+  - Reviewer Agent (reviewer_prompt.md) — Code review and security audit
+
+- **Comprehensive Developer Prompt** (developer_prompt.md)
+  - Full onboarding and environment check procedures
+  - Loop detection and error recovery protocol
+  - Pre-completion checklist as mandatory exit gate
+  - Absolute prohibitions with violation consequences
+
+### Changed
+
+- **Initializer Prompt** split into PM + Architect roles
+- **Coding Prompt** renamed to Developer Prompt with expanded scope
+
+### Removed
+
+- Two-phase agent pattern (Initializer + Coding) replaced by five-agent model
+
+---
+
+## [3.0.1] - 2026-03-24
+
+### Fixed
+
+- **License consistency**: README now correctly states GPL v3 (was mistakenly listed as MIT)
+- **Version alignment**: ADDS_VERSION in init-adds.py updated from "2.3" to "3.0.0" to match CHANGELOG
+
+### Changed
+
+- **Prompt cleanup**: Removed legacy v2.x prompt files that were superseded by v3.0 multi-agent prompts:
+  - `coding_prompt.md` (replaced by `developer_prompt.md`)
+  - `review_prompt.md` (replaced by `reviewer_prompt.md`)
+  - `testing_prompt.md` (replaced by `tester_prompt.md`)
+- **Scaffold templates** updated to use v3.0 prompt set
+- **.gitignore**: Added dynamic .gitignore generation to init-adds.py
+- **README project structure**: Updated to reflect actual file layout
