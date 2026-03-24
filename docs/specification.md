@@ -4,6 +4,21 @@
 
 ---
 
+## 📚 Documentation Structure
+
+| Document | Purpose |
+|----------|---------|
+| [Guide: Overview](./guide/01-overview.md) | Core concepts and principles |
+| [Guide: Project Structure](./guide/02-project-structure.md) | File organization |
+| [Guide: Agent Selection](./guide/03-agent-selection.md) | Choosing the right agent |
+| [Guide: Session Workflow](./guide/04-session-workflow.md) | Day-to-day operations |
+| [Guide: Security](./guide/05-security.md) | Command whitelist and constraints |
+| [IDE Integration](./ide-integration.md) | Using ADDS with popular IDEs |
+
+**New to ADDS?** Start with the [Guide Overview](./guide/01-overview.md).
+
+---
+
 ## 1. Core Challenge: Context Fragmentation
 
 The biggest problem facing long-running AI tasks is **context fragmentation**:

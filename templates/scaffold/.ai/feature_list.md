@@ -48,11 +48,11 @@
 
 ## F00X: [Feature Description]
 
-- **Category**: core/feature/fix/refactor/chore/test/docs
-- **Priority**: high/medium/low
+- **Category**: feature
+- **Priority**: medium
 - **Status**: pending
-- **Dependencies**: F00X, F00Y
-- **Complexity**: low/medium/high
+- **Dependencies**: F001
+- **Complexity**: medium
 
 ### Steps
 1. Step 1
