@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
 """
-ADDS Setup — AI-Driven Development Specification 安装程序
+ADDS Setup — AI-Driven Development Specification installer
 
-用法：
-    python3 setup.py                        # 安装到默认目录 /usr/local/bin
-    python3 setup.py --prefix ~/.local      # 安装到 ~/.local/bin（无需 sudo）
-    sudo python3 setup.py                   # 需要 root 权限时使用
-    python3 setup.py --check                # 只查看安装状态，不修改任何文件
-    python3 setup.py --upgrade              # 升级：覆盖安装新版 + 清理旧命令
-    python3 setup.py --uninstall            # 卸载：删除所有已安装的工具脚本
-    python3 setup.py --dry-run              # 预览将执行的操作，不实际修改文件
-    python3 setup.py --force                # 强制覆盖，即使目标文件内容相同
+Usage:
+    python3 setup.py                        # Install to /usr/local/bin (default)
+    python3 setup.py --prefix ~/.local      # Install to ~/.local/bin (no sudo needed)
+    sudo python3 setup.py                   # Use when root access is required
+    python3 setup.py --check                # Show installation status, no changes made
+    python3 setup.py --upgrade              # Upgrade: reinstall current version + clean up old commands
+    python3 setup.py --uninstall            # Uninstall: remove all installed tool scripts
+    python3 setup.py --dry-run              # Preview what would happen without making any changes
+    python3 setup.py --force                # Force overwrite even if destination is already up to date
 
-说明：
-  • 安装：将工具脚本复制到 <prefix>/bin/，并自动设置可执行权限（chmod +x）。
-  • 命令名由脚本文件名去掉扩展名自动生成（如 adds.py → adds）。
-  • 卸载：依据 INSTALL_SCRIPTS 列表删除已安装的命令；若在默认路径找不到，
-         会提示命令名和查找方法，由用户自行手动删除。
-  • 升级：先清理 REMOVED_SCRIPTS 中的旧命令，再强制覆盖安装当前版本。
+Notes:
+  • Install: copies scripts to <prefix>/bin/ and sets executable permissions (chmod +x).
+  • Command names are derived automatically from script filenames (e.g. adds.py → adds).
+  • Uninstall: removes commands listed in INSTALL_SCRIPTS; if a file is not found in the
+    default directory, prints the command name and instructions for manual removal.
+  • Upgrade: removes commands in REMOVED_SCRIPTS first, then force-installs the current version.
 
-发版维护：
-  每次发布新版本时，只需修改下方两处：
-    INSTALL_SCRIPTS    — 本版本需要安装的脚本列表
-    REMOVED_SCRIPTS    — 本版本废弃的旧命令名列表（供升级/卸载时清理）
+Release maintenance:
+  On each release, update only these two variables below:
+    INSTALL_SCRIPTS   — scripts to install in this version
+    REMOVED_SCRIPTS   — command names dropped since last version (for upgrade/uninstall cleanup)
 """
 
 from __future__ import annotations
@@ -37,61 +37,61 @@ from pathlib import Path
 
 
 # ═══════════════════════════════════════════════════════════════
-# ★ 发布清单 — 每次发版时只需维护这里 ★
+# ★ Release manifest — update only this section on each release ★
 # ═══════════════════════════════════════════════════════════════
 
 ADDS_VERSION = "3.0.1"
 
-# 本版本需要安装的脚本文件列表（相对于项目根目录）。
-# 安装后的命令名 = 文件名去掉扩展名，例如：
+# Scripts to install in this version (paths relative to project root).
+# Installed command name = filename without extension, for example:
 #   scripts/adds.py          → adds
 #   scripts/init-adds.py     → init-adds
 #   scripts/install_hooks.py → install_hooks
 #
-# 发版维护规则：
-#   新增工具 → 加入此列表
-#   删除工具 → 从此列表移除，并加入下方 REMOVED_SCRIPTS
+# Release maintenance:
+#   New tool    → add to this list
+#   Removed tool → remove from this list and add its command name to REMOVED_SCRIPTS below
 INSTALL_SCRIPTS: list[str] = [
     "scripts/adds.py",
     "scripts/init-adds.py",
     "scripts/install_hooks.py",
 ]
 
-# 本版本需要删除的旧命令名（上一版本安装过、本版本不再提供）。
-# 填写命令名（不含路径，不含扩展名），升级/卸载时会据此清理。
-# 示例：上个版本有 adds-log，本版删除则写 "adds-log"
+# Command names dropped since the last release (no path, no extension).
+# These will be cleaned up during --upgrade and --uninstall.
+# Example: if adds-log was present in v3.0.0 and is now removed, add "adds-log" here.
 REMOVED_SCRIPTS: list[str] = [
     # "adds-log",
 ]
 
-# 默认安装目录前缀
+# Default installation prefix
 DEFAULT_PREFIX = "/usr/local"
 
 
 # ═══════════════════════════════════════════════════════════════
-# 内部：从脚本路径派生命令名
+# Internal: derive command name from script path
 # ═══════════════════════════════════════════════════════════════
 
 def _cmd_name(script_rel: str) -> str:
-    """从脚本相对路径获取安装后的命令名（去掉目录和扩展名）。"""
+    """Return the installed command name for a script path (stem only)."""
     return Path(script_rel).stem
 
 
-# 派生一个 {命令名: 源文件相对路径} 的映射，供内部使用
+# Build a {command_name: source_rel_path} mapping for internal use
 def _build_manifest() -> dict[str, str]:
     return {_cmd_name(s): s for s in INSTALL_SCRIPTS}
 
 
 # ═══════════════════════════════════════════════════════════════
-# 数据结构
+# Data structures
 # ═══════════════════════════════════════════════════════════════
 
 @dataclass
 class InstallResult:
-    """单个脚本的安装结果。"""
-    name: str           # 命令名
-    src: Path           # 源文件
-    dest: Path          # 目标文件
+    """Result for a single script operation."""
+    name: str           # command name
+    src: Path           # source file
+    dest: Path          # destination file
     action: str         # installed / upgraded / skipped / failed / removed
     message: str = ""
 
@@ -102,7 +102,7 @@ class InstallResult:
 
 @dataclass
 class SetupReport:
-    """本次操作的汇总报告。"""
+    """Summary report for the current operation."""
     results: list[InstallResult] = field(default_factory=list)
 
     def add(self, r: InstallResult) -> None:
@@ -114,40 +114,40 @@ class SetupReport:
 
 
 # ═══════════════════════════════════════════════════════════════
-# 环境检查
+# Environment check
 # ═══════════════════════════════════════════════════════════════
 
 MIN_PYTHON = (3, 8)
 
 
 def check_environment(prefix: Path) -> bool:
-    """检查运行环境，返回是否满足安装要求。"""
-    print("\n🔎 环境检查")
+    """Check runtime environment. Returns True if requirements are met."""
+    print("\n🔎 Environment check")
     print("─" * 52)
 
     ok = True
 
-    # Python 版本
+    # Python version
     vi = sys.version_info
     if vi < MIN_PYTHON:
-        print(f"  ❌  Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+ 是必须的，当前 {vi.major}.{vi.minor}.{vi.micro}")
+        print(f"  ❌  Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]}+ required, found {vi.major}.{vi.minor}.{vi.micro}")
         ok = False
     else:
         print(f"  ✅  Python {vi.major}.{vi.minor}.{vi.micro}")
 
-    # 安装目录
+    # Install directory
     bin_dir = prefix / "bin"
     if bin_dir.exists():
         if os.access(bin_dir, os.W_OK):
-            print(f"  ✅  安装目录可写: {bin_dir}")
+            print(f"  ✅  Install directory is writable: {bin_dir}")
         else:
-            print(f"  ⚠️   安装目录不可写: {bin_dir}")
-            print(f"       请用 sudo 运行，或用 --prefix 指定其他目录")
+            print(f"  ⚠️   Install directory is not writable: {bin_dir}")
+            print(f"       Run with sudo, or use --prefix to specify a writable directory.")
             ok = False
     else:
-        print(f"  ⚠️   安装目录不存在: {bin_dir}（将尝试创建）")
+        print(f"  ⚠️   Install directory does not exist: {bin_dir} (will be created)")
 
-    # 源脚本检查
+    # Source script check
     project_root = _project_root()
     missing = []
     for script_rel in INSTALL_SCRIPTS:
@@ -155,7 +155,7 @@ def check_environment(prefix: Path) -> bool:
         if not src.exists():
             missing.append(script_rel)
     if missing:
-        print(f"  ⚠️   以下源脚本未找到（可能是残缺的仓库克隆）:")
+        print(f"  ⚠️   The following source scripts were not found (incomplete clone?):")
         for m in missing:
             print(f"       - {m}")
 
@@ -163,28 +163,28 @@ def check_environment(prefix: Path) -> bool:
 
 
 # ═══════════════════════════════════════════════════════════════
-# 核心操作
+# Core operations
 # ═══════════════════════════════════════════════════════════════
 
 def _project_root() -> Path:
-    """返回项目根目录（setup.py 所在目录）。"""
+    """Return the project root (directory containing this setup.py)."""
     return Path(__file__).resolve().parent
 
 
 def _make_executable(path: Path) -> None:
-    """给文件加上可执行权限（等效 chmod +x）。"""
+    """Add executable permission bits to a file (equivalent to chmod +x)."""
     current = path.stat().st_mode
     path.chmod(current | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
 def install(prefix: Path, dry_run: bool, force: bool) -> SetupReport:
-    """安装所有工具脚本到 <prefix>/bin/。"""
+    """Copy all tool scripts to <prefix>/bin/ and set executable permissions."""
     report = SetupReport()
     bin_dir = prefix / "bin"
     project_root = _project_root()
     manifest = _build_manifest()
 
-    print(f"\n📦 安装 ADDS v{ADDS_VERSION} 工具脚本 → {bin_dir}")
+    print(f"\n📦 Installing ADDS v{ADDS_VERSION} tools → {bin_dir}")
     print("─" * 52)
 
     if not dry_run:
@@ -196,18 +196,18 @@ def install(prefix: Path, dry_run: bool, force: bool) -> SetupReport:
 
         if not src.exists():
             r = InstallResult(name, src, dest, "failed",
-                              f"源文件未找到: {src}")
+                              f"Source file not found: {src}")
             report.add(r)
-            print(f"  ❌  [failed    ]  {name:20s}  源文件未找到: {src}")
+            print(f"  ❌  [failed    ]  {name:20s}  Source file not found: {src}")
             continue
 
-        # 判断是否需要更新
+        # Skip if already up to date
         if dest.exists() and not force:
             if dest.read_bytes() == src.read_bytes():
                 r = InstallResult(name, src, dest, "skipped",
-                                  f"已是最新: {dest}")
+                                  f"Already up to date: {dest}")
                 report.add(r)
-                print(f"  ○   [skipped   ]  {name:20s}  已是最新: {dest}")
+                print(f"  ○   [skipped   ]  {name:20s}  Already up to date: {dest}")
                 continue
 
         action = "upgraded" if dest.exists() else "installed"
@@ -225,24 +225,24 @@ def install(prefix: Path, dry_run: bool, force: bool) -> SetupReport:
 
 
 def upgrade(prefix: Path, dry_run: bool) -> SetupReport:
-    """升级：安装新版脚本，同时清理本版本移除的旧命令。"""
-    print(f"\n⬆️  升级 ADDS → v{ADDS_VERSION}")
+    """Upgrade: reinstall current version and clean up removed commands."""
+    print(f"\n⬆️  Upgrading ADDS → v{ADDS_VERSION}")
     print("─" * 52)
 
     report = SetupReport()
     bin_dir = prefix / "bin"
 
-    # 1. 清理本版本移除的旧命令
+    # 1. Clean up commands removed in this version
     if REMOVED_SCRIPTS:
-        print(f"\n  🗑️  以下旧命令在本版本中已移除，需要清理：")
+        print(f"\n  🗑️  The following commands were removed in this version and will be cleaned up:")
         results = _confirm_and_remove(REMOVED_SCRIPTS, bin_dir, dry_run,
-                                      context="升级清理")
+                                      context="upgrade cleanup")
         for r in results:
             report.add(r)
     else:
-        print("  ○   本版本无需清理旧命令")
+        print("  ○   No obsolete commands to clean up in this version.")
 
-    # 2. 安装/更新新版脚本（force=True 确保覆盖旧内容）
+    # 2. Install/update scripts for this version (force=True to overwrite)
     install_report = install(prefix, dry_run, force=True)
     report.results.extend(install_report.results)
 
@@ -250,18 +250,18 @@ def upgrade(prefix: Path, dry_run: bool) -> SetupReport:
 
 
 def uninstall(prefix: Path, dry_run: bool) -> SetupReport:
-    """卸载当前版本安装的所有工具脚本。"""
+    """Uninstall all tool scripts installed by the current version."""
     report = SetupReport()
     bin_dir = prefix / "bin"
     manifest = _build_manifest()
 
-    print(f"\n🗑️  卸载 ADDS v{ADDS_VERSION} 工具脚本")
+    print(f"\n🗑️  Uninstalling ADDS v{ADDS_VERSION} tools")
     print("─" * 52)
 
-    # 卸载清单 = 当前版本的命令 + 历史遗留的旧命令
+    # Uninstall scope = current version commands + legacy removed commands
     all_names = list(manifest.keys()) + REMOVED_SCRIPTS
 
-    results = _confirm_and_remove(all_names, bin_dir, dry_run, context="卸载")
+    results = _confirm_and_remove(all_names, bin_dir, dry_run, context="uninstall")
     for r in results:
         report.add(r)
 
@@ -269,81 +269,81 @@ def uninstall(prefix: Path, dry_run: bool) -> SetupReport:
 
 
 def check_status(prefix: Path) -> None:
-    """只读：显示当前安装状态。"""
+    """Read-only: display current installation status."""
     bin_dir = prefix / "bin"
     project_root = _project_root()
     manifest = _build_manifest()
 
-    print(f"\n🔍 ADDS v{ADDS_VERSION} 安装状态检查")
-    print(f"   安装目录: {bin_dir}")
+    print(f"\n🔍 ADDS v{ADDS_VERSION} installation status")
+    print(f"   Install directory: {bin_dir}")
     print("─" * 52)
 
-    print("\n📋 工具脚本（本版本清单）：")
+    print("\n📋 Tool scripts (this version):")
     for name, rel in manifest.items():
         src = project_root / rel
         dest = bin_dir / name
 
         if dest.exists():
             if src.exists() and dest.read_bytes() == src.read_bytes():
-                status = "✅  已安装（最新）"
+                status = "✅  Installed (up to date)"
             elif src.exists():
-                status = "🔄  已安装（有新版本可升级）"
+                status = "🔄  Installed (update available)"
             else:
-                status = "✅  已安装（源文件不在本地）"
+                status = "✅  Installed (source not local)"
         else:
-            status = "○   未安装"
+            status = "○   Not installed"
 
         x_flag = ""
         if dest.exists():
             m = dest.stat().st_mode
-            x_flag = " [+x]" if (m & 0o111) else " [无执行权限]"
+            x_flag = " [+x]" if (m & 0o111) else " [no exec permission]"
 
-        print(f"  {status:30s}  {name}{x_flag}")
-        print(f"      命令名来源: {rel}  →  {name}")
-        print(f"      安装路径:   {dest}")
+        print(f"  {status:35s}  {name}{x_flag}")
+        print(f"      Source:  {rel}  →  {name}")
+        print(f"      Path:    {dest}")
 
     if REMOVED_SCRIPTS:
-        print(f"\n🗑️  本版本已移除的旧命令（如存在则需清理）：")
+        print(f"\n🗑️  Commands removed in this version (clean up if present):")
         for name in REMOVED_SCRIPTS:
             dest = bin_dir / name
-            exists = "⚠️   存在（升级时将自动提示删除）" if dest.exists() else "○   已清理"
+            exists = "⚠️   Present (will be prompted for removal on --upgrade)" if dest.exists() else "○   Already removed"
             print(f"  {exists}")
-            print(f"      命令: {name}")
-            print(f"      路径: {dest}")
+            print(f"      Command: {name}")
+            print(f"      Path:    {dest}")
 
-    # PATH 检查
-    print(f"\n🔗 PATH 检查：")
+    # PATH check
+    print(f"\n🔗 PATH check:")
     path_dirs = os.environ.get("PATH", "").split(":")
     if str(bin_dir) in path_dirs:
-        print(f"  ✅  {bin_dir} 已在 PATH 中")
+        print(f"  ✅  {bin_dir} is in PATH")
     else:
-        print(f"  ⚠️   {bin_dir} 不在 PATH 中")
-        print(f"       请将以下内容加入 shell 配置文件：")
+        print(f"  ⚠️   {bin_dir} is not in PATH")
+        print(f"       Add the following to your shell config:")
         print(f"       export PATH=\"$PATH:{bin_dir}\"")
 
 
 # ═══════════════════════════════════════════════════════════════
-# 工具函数
+# Helper functions
 # ═══════════════════════════════════════════════════════════════
 
 def _confirm_and_remove(
     names: list[str],
     bin_dir: Path,
     dry_run: bool,
-    context: str = "删除",
+    context: str = "removal",
 ) -> list[InstallResult]:
     """
-    展示待删除文件列表，请用户确认后再执行删除。
+    Show the list of files to delete, ask for confirmation, then delete.
 
-    - 默认路径（bin_dir）存在的文件：列出完整路径，请用户确认。
-    - 默认路径找不到的文件：提示命令名，请用户自行查找删除。
-    - dry_run 时跳过确认，直接展示预览。
+    - Files found in bin_dir: list full paths and require y/N confirmation.
+    - Files not found in bin_dir: print command name and manual removal instructions.
+    - In dry_run mode: skip confirmation and just preview.
     """
     results: list[InstallResult] = []
-    src = Path()  # 删除操作无源文件
+    src = Path()  # no source file for removal operations
 
-    found: list[tuple[str, Path]] = []     # (命令名, 完整路径)
-    not_found: list[str] = []              # 命令名
+    found: list[tuple[str, Path]] = []     # (command name, full path)
+    not_found: list[str] = []              # command names only
 
     for name in names:
         dest = bin_dir / name
@@ -352,78 +352,78 @@ def _confirm_and_remove(
         else:
             not_found.append(name)
 
-    # ── 默认路径找不到的 ──
+    # ── Files not in default directory ──
     if not_found:
         print()
-        print(f"  ⚠️   以下命令在默认安装目录 ({bin_dir}) 中未找到，")
-        print(f"       请自行在系统 PATH 中查找并手动删除：")
+        print(f"  ⚠️   The following commands were not found in the default install directory ({bin_dir}).")
+        print(f"       Please locate and remove them manually:")
         for name in not_found:
             print(f"       • {name}")
         print()
-        print(f"       查找方法：  which {not_found[0]}")
-        print(f"       删除方法：  rm -f <完整路径>")
+        print(f"       To find:   which {not_found[0]}")
+        print(f"       To remove: rm -f <full path>")
         for name in not_found:
             results.append(InstallResult(name, src, bin_dir / name, "skipped",
-                                         f"默认路径未找到，请手动查找: {name}"))
+                                         f"Not found in default directory, manual removal needed: {name}"))
 
-    # ── 找到的文件：展示完整路径，请用户确认 ──
+    # ── Files found: show full paths and ask for confirmation ──
     if not found:
         if not not_found:
-            print(f"\n  ○   无需{context}任何文件（均未安装）")
+            print(f"\n  ○   Nothing to remove for {context} (none installed).")
         return results
 
     print()
-    print(f"  以下文件将被删除（{context}）：")
+    print(f"  The following files will be deleted ({context}):")
     print()
     for _, dest in found:
         print(f"      {dest}")
     print()
 
     if dry_run:
-        print(f"  [DRY RUN] 预览模式，不实际执行删除")
+        print(f"  [DRY RUN] Preview only — no files will be deleted.")
         for name, dest in found:
             results.append(InstallResult(name, src, dest, "removed",
-                                         f"[DRY RUN] 将删除: {dest}"))
+                                         f"[DRY RUN] Would delete: {dest}"))
         return results
 
-    # 请用户确认
+    # Ask for confirmation
     try:
-        answer = input(f"  确认删除以上 {len(found)} 个文件？[y/N] ").strip().lower()
+        answer = input(f"  Delete the {len(found)} file(s) listed above? [y/N] ").strip().lower()
     except (EOFError, KeyboardInterrupt):
         print()
         answer = "n"
 
     if answer not in ("y", "yes"):
-        print(f"  已取消{context}。")
+        print(f"  {context.capitalize()} cancelled.")
         for name, dest in found:
-            results.append(InstallResult(name, src, dest, "skipped", f"用户取消: {dest}"))
+            results.append(InstallResult(name, src, dest, "skipped", f"Cancelled by user: {dest}"))
         return results
 
-    # 执行删除
+    # Execute deletion
     print()
     failed_manual: list[Path] = []
     for name, dest in found:
         try:
             dest.unlink()
-            print(f"  🗑️   已删除: {dest}")
-            results.append(InstallResult(name, src, dest, "removed", f"已删除: {dest}"))
+            print(f"  🗑️   Removed: {dest}")
+            results.append(InstallResult(name, src, dest, "removed", f"Removed: {dest}"))
         except PermissionError:
-            print(f"  ❌  权限不足: {dest}")
+            print(f"  ❌  Permission denied: {dest}")
             results.append(InstallResult(name, src, dest, "failed",
-                                         f"权限不足，无法删除: {dest}"))
+                                         f"Permission denied: {dest}"))
             failed_manual.append(dest)
         except OSError as e:
-            print(f"  ❌  删除失败: {dest} ({e})")
+            print(f"  ❌  Failed to remove: {dest} ({e})")
             results.append(InstallResult(name, src, dest, "failed",
-                                         f"删除失败: {dest} ({e})"))
+                                         f"Failed to remove: {dest} ({e})"))
             failed_manual.append(dest)
 
     if failed_manual:
         print()
-        print("  ⚠️  以下文件删除失败，请手动执行：")
+        print("  ⚠️  The following files could not be removed. Please delete them manually:")
         for p in failed_manual:
             print(f"       rm -f \"{p}\"")
-        print("  或以管理员权限运行：")
+        print("  Or with elevated privileges:")
         for p in failed_manual:
             print(f"       sudo rm -f \"{p}\"")
 
@@ -431,13 +431,13 @@ def _confirm_and_remove(
 
 
 def _make_executable(path: Path) -> None:
-    """给文件加上可执行权限（等效 chmod +x）。"""
+    """Add executable permission bits to a file (equivalent to chmod +x)."""
     current = path.stat().st_mode
     path.chmod(current | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
 def _print_post_install(prefix: Path, report: SetupReport) -> None:
-    """安装完成后打印使用说明。"""
+    """Print usage instructions after a successful install."""
     bin_dir = prefix / "bin"
     installed = [r for r in report.results if r.action in ("installed", "upgraded")]
     if not installed:
@@ -448,40 +448,39 @@ def _print_post_install(prefix: Path, report: SetupReport) -> None:
 
     print()
     print("═" * 52)
-    print(f"  ✅  ADDS v{ADDS_VERSION} 安装完成")
+    print(f"  ✅  ADDS v{ADDS_VERSION} installed successfully")
     print("═" * 52)
     print()
 
-    # 列出已安装的命令
-    print("📋 已安装命令：")
+    print("📋 Installed commands:")
     for r in installed:
         print(f"   {r.dest}")
     print()
 
-    print("🚀 快速开始：")
+    print("🚀 Quick start:")
     print()
-    print("   adds status          查看项目进度")
-    print("   adds next            下一个待开发特性")
-    print("   adds route           推荐 agent 角色")
-    print("   adds validate        检验 feature_list.md 格式")
-    print("   adds dag             可视化依赖图")
-    print("   adds compress        压缩 progress.md 上下文")
+    print("   adds status          Overall project progress")
+    print("   adds next            Next feature to implement")
+    print("   adds route           Recommended agent role")
+    print("   adds validate        Validate feature_list.md format")
+    print("   adds dag             Visualize dependency graph")
+    print("   adds compress        Compress progress.md context")
     print()
 
     if not in_path:
         shell_config = _detect_shell_config()
-        print(f"⚠️   {bin_dir} 尚未加入 PATH，请运行：")
+        print(f"⚠️   {bin_dir} is not in PATH. Run:")
         print()
         print(f'   echo \'export PATH="$PATH:{bin_dir}"\' >> {shell_config}')
         print(f"   source {shell_config}")
         print()
 
-    print("📚 文档：docs/specification.md")
+    print("📚 Docs: docs/specification.md")
     print()
 
 
 def _detect_shell_config() -> str:
-    """猜测用户的 shell 配置文件路径。"""
+    """Guess the user's shell configuration file path."""
     shell = os.environ.get("SHELL", "")
     home = Path.home()
     if "zsh" in shell:
@@ -489,7 +488,6 @@ def _detect_shell_config() -> str:
     if "fish" in shell:
         return str(home / ".config/fish/config.fish")
     if "bash" in shell:
-        # macOS 默认用 .bash_profile，Linux 用 .bashrc
         if sys.platform == "darwin":
             return str(home / ".bash_profile")
         return str(home / ".bashrc")
@@ -502,28 +500,28 @@ def _detect_shell_config() -> str:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description=f"ADDS v{ADDS_VERSION} Setup — 安装 / 升级 / 卸载",
+        description=f"ADDS v{ADDS_VERSION} Setup — Install / Upgrade / Uninstall",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
-            "示例：\n"
-            "  python3 setup.py                        # 安装到 /usr/local/bin\n"
-            "  python3 setup.py --prefix ~/.local      # 安装到 ~/.local/bin\n"
-            "  sudo python3 setup.py                   # 需要 root 时\n"
-            "  python3 setup.py --check                # 查看安装状态\n"
-            "  python3 setup.py --upgrade              # 升级到最新版本\n"
-            "  python3 setup.py --uninstall            # 卸载\n"
-            "  python3 setup.py --dry-run              # 预览，不实际执行\n"
+            "Examples:\n"
+            "  python3 setup.py                        # Install to /usr/local/bin\n"
+            "  python3 setup.py --prefix ~/.local      # Install to ~/.local/bin\n"
+            "  sudo python3 setup.py                   # Install with root privileges\n"
+            "  python3 setup.py --check                # Show installation status\n"
+            "  python3 setup.py --upgrade              # Upgrade to this version\n"
+            "  python3 setup.py --uninstall            # Uninstall all tools\n"
+            "  python3 setup.py --dry-run              # Preview, no changes made\n"
         ),
     )
     parser.add_argument(
         "--prefix", default=DEFAULT_PREFIX, metavar="DIR",
-        help=f"安装目录前缀，工具会安装到 <prefix>/bin/（默认: {DEFAULT_PREFIX}）",
+        help=f"Installation prefix; tools are placed in <prefix>/bin/ (default: {DEFAULT_PREFIX})",
     )
-    parser.add_argument("--check",     action="store_true", help="只显示安装状态，不做任何修改")
-    parser.add_argument("--upgrade",   action="store_true", help="升级到当前版本（保留用户数据）")
-    parser.add_argument("--uninstall", action="store_true", help="卸载所有已安装的工具脚本")
-    parser.add_argument("--dry-run",   action="store_true", help="预览将执行的操作，不实际修改任何文件")
-    parser.add_argument("--force",     action="store_true", help="强制覆盖，即使目标文件内容相同")
+    parser.add_argument("--check",     action="store_true", help="Show installation status without making any changes")
+    parser.add_argument("--upgrade",   action="store_true", help="Upgrade to current version (removes obsolete commands first)")
+    parser.add_argument("--uninstall", action="store_true", help="Remove all installed tool scripts")
+    parser.add_argument("--dry-run",   action="store_true", help="Preview operations without modifying any files")
+    parser.add_argument("--force",     action="store_true", help="Force overwrite even if destination is already up to date")
     return parser.parse_args()
 
 
@@ -537,56 +535,56 @@ def main() -> None:
     print(f"║   ADDS v{ADDS_VERSION} Setup                              ║")
     print("║   AI-Driven Development Specification            ║")
     print("╚══════════════════════════════════════════════════╝")
-    print(f"   安装目录: {prefix / 'bin'}")
+    print(f"   Install directory: {prefix / 'bin'}")
 
     if args.dry_run:
         print()
-        print("   ⚠️  DRY RUN 模式 — 不会实际修改任何文件")
+        print("   ⚠️  DRY RUN mode — no files will be modified")
 
-    # ── 只读模式 ──
+    # ── Read-only mode ──
     if args.check:
         check_status(prefix)
         print()
         return
 
-    # ── 卸载（不需要写权限检查，删除操作自带权限错误提示）──
+    # ── Uninstall (no environment check needed — deletion handles its own permission errors) ──
     if args.uninstall:
         report = uninstall(prefix, dry_run=args.dry_run)
         print()
         if report.has_failures:
-            print("⚠️  部分卸载失败，请参考上方提示手动清理。")
+            print("⚠️  Some files could not be removed. See instructions above.")
             sys.exit(1)
         else:
-            print("✅  卸载完成。")
+            print("✅  Uninstall complete.")
         print()
         return
 
-    # ── 升级 / 安装时做环境检查 ──
+    # ── Environment check (install / upgrade only) ──
     env_ok = check_environment(prefix)
     if not env_ok and not args.dry_run:
         print()
-        print("❌  环境检查未通过，安装中止。")
-        print("    请修复上述问题后重试，或使用 --prefix 指定有写权限的目录。")
+        print("❌  Environment check failed. Installation aborted.")
+        print("    Fix the issues above or use --prefix to specify a writable directory.")
         print()
         sys.exit(1)
 
-    # ── 升级 ──
+    # ── Upgrade ──
     if args.upgrade:
         report = upgrade(prefix, dry_run=args.dry_run)
         if not args.dry_run:
             _print_post_install(prefix, report)
         else:
-            print("\n══ DRY RUN 结束，未做任何修改 ══\n")
+            print("\n══ DRY RUN complete — no changes were made ══\n")
         if report.has_failures:
             sys.exit(1)
         return
 
-    # ── 安装 ──
+    # ── Install ──
     report = install(prefix, dry_run=args.dry_run, force=args.force)
     if not args.dry_run:
         _print_post_install(prefix, report)
     else:
-        print("\n══ DRY RUN 结束，未做任何修改 ══\n")
+        print("\n══ DRY RUN complete — no changes were made ══\n")
     if report.has_failures:
         sys.exit(1)
 
