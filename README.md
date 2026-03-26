@@ -178,6 +178,8 @@ The `adds` command is a Python-based project management tool. It does **not** ca
 
 ### Installation
 
+`setup.py` is a self-contained installer located in the project root. It copies CLI tool scripts to `<prefix>/bin/` and sets executable permissions automatically.
+
 ```bash
 # Install to /usr/local/bin (may need sudo)
 sudo python3 setup.py
@@ -188,11 +190,17 @@ python3 setup.py --prefix ~/.local
 # Preview what will be installed without making any changes
 python3 setup.py --dry-run
 
-# Check installation status
+# Check installation status (show which commands are installed and if PATH is configured)
 python3 setup.py --check
+
+# Force reinstall even if destination is already up to date
+python3 setup.py --force
+
+# Install with verbose/debug output
+python3 setup.py -v
 ```
 
-This copies `adds`, `init-adds`, and `install_hooks` to `<prefix>/bin/` and sets executable permissions automatically.
+Installed commands: `adds`, `init_adds`, `install_hooks`.
 
 Note: This project is licensed under GPL v3 — integrating or redistributing ADDS may impose GPLv3 obligations. See LICENSE for details.
 
@@ -344,6 +352,9 @@ python3 /path/to/ai-driven-dev-spec/setup.py --upgrade --dry-run
 
 ```bash
 python3 /path/to/ai-driven-dev-spec/setup.py --uninstall
+
+# Preview what would be removed
+python3 /path/to/ai-driven-dev-spec/setup.py --uninstall --dry-run
 ```
 
 The uninstaller shows the full path of each file before deleting and requires confirmation. If a file is not found in the default directory, it prints the command name and instructions to locate and remove it manually.
