@@ -20,6 +20,7 @@ Install:
 
 import argparse
 import json
+import logging
 import os
 import re
 import sys
@@ -29,6 +30,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+
+logger = logging.getLogger(__name__)
 
 ADDS_VERSION = "3.0.0"
 
@@ -57,7 +60,7 @@ def find_project_root(start: Optional[Path] = None) -> Optional[Path]:
 def require_project_root() -> Path:
     root = find_project_root()
     if not root:
-        print("❌  Not an ADDS project (no .ai/ directory found)", file=sys.stderr)
+        logger.error("Not an ADDS project (no .ai/ directory found)")
         sys.exit(1)
     return root
 
@@ -148,6 +151,110 @@ def parse_session_log(project_root: Path) -> dict:
     return {"entries": entries, "by_agent": dict(by_agent), "by_action": dict(by_action)}
 
 
+def status_data(project_root: Path) -> dict:
+    """Return structured status data for the project."""
+    features = parse_feature_list(project_root) or []
+    progress = parse_progress(project_root)
+    log = parse_session_log(project_root)
+    counts = defaultdict(int)
+    for f in features:
+        counts[f["status"]] += 1
+    total = len(features)
+    done = counts["completed"]
+    pct = round(done / total * 100) if total else 0
+    return {
+        "project": str(project_root),
+        "features": {
+            "total": total,
+            "pending": counts["pending"],
+            "in_progress": counts["in_progress"],
+            "testing": counts["testing"],
+            "completed": done,
+            "blocked": counts["blocked"],
+            "regression": counts["regression"],
+        },
+        "progress_pct": pct,
+        "sessions": progress["sessions"],
+        "last_session": progress["last_session"],
+        "progress_lines": progress["lines"],
+        "log_entries": log["entries"],
+    }
+
+
+def next_feature_data(project_root: Path) -> Optional[dict]:
+    """Return the next feature dict or None."""
+    features = parse_feature_list(project_root)
+    if not features:
+        return None
+    return find_next_feature(features)
+
+
+def validate_feature_list_data(project_root: Path) -> dict:
+    """Validate feature_list.md and return dict with 'valid','errors','warnings'."""
+    features = parse_feature_list(project_root)
+    if features is None:
+        return {"valid": False, "errors": ["feature_list.md not found"], "warnings": []}
+    errors = []
+    warnings = []
+    valid_ids = {f["id"] for f in features}
+    ids = [f["id"] for f in features]
+    seen = set()
+    for fid in ids:
+        if fid in seen:
+            errors.append(f"Duplicate feature ID: {fid}")
+        seen.add(fid)
+    for f in features:
+        prefix = f["id"]
+        for dep in f["dependencies"]:
+            if dep not in valid_ids:
+                errors.append(f"{prefix}: dependency '{dep}' does not exist")
+        if f["category"] not in VALID_CATEGORIES:
+            errors.append(f"{prefix}: invalid category '{f['category']}'")
+        if f["priority"] not in VALID_PRIORITIES:
+            errors.append(f"{prefix}: invalid priority '{f['priority']}'")
+        if f["status"] not in VALID_STATUSES:
+            errors.append(f"{prefix}: invalid status '{f['status']}'")
+        if f["status"] == "completed":
+            for dep in f["dependencies"]:
+                dep_feat = next((x for x in features if x["id"] == dep), None)
+                if dep_feat and dep_feat["status"] != "completed":
+                    warnings.append(f"{prefix}: marked completed but dep {dep} is '{dep_feat['status']}'")
+    for cycle in detect_cycles(features):
+        errors.append(f"Circular dependency: {' -> '.join(cycle)}")
+    valid = len(errors) == 0
+    return {"valid": valid, "errors": errors, "warnings": warnings, "features_count": len(features)}
+
+
+def route_data(project_root: Path) -> dict:
+    """Return agent recommendation dict (agent, reason, prompt)."""
+    features = parse_feature_list(project_root)
+    if not features:
+        return {"agent": "pm", "prompt": "pm_prompt.md", "reason": "No feature_list.md - project initialization needed"}
+    return determine_agent_role(features)
+
+
+def dag_data(project_root: Path) -> dict:
+    """Return a machine-readable DAG representation."""
+    features = parse_feature_list(project_root) or []
+    valid_ids = {f["id"] for f in features}
+    feature_map = {f["id"]: f for f in features}
+    has_parent = set()
+    for f in features:
+        for dep in f.get("dependencies", []):
+            if dep in valid_ids:
+                has_parent.add(dep)
+    roots = [f["id"] for f in features if f["id"] not in has_parent]
+    cycles = detect_cycles(features)
+    edges = []
+    for f in features:
+        for dep in f.get("dependencies", []):
+            if dep in valid_ids:
+                edges.append({"from": dep, "to": f["id"]})
+    nodes = [{"id": f["id"], "title": f["title"], "status": f["status"]} for f in features]
+    return {"roots": roots, "nodes": nodes, "edges": edges, "cycles": cycles}
+
+
+
 # ─────────────────────────────────────────────────
 # DAG logic
 # ─────────────────────────────────────────────────
@@ -233,172 +340,104 @@ def determine_agent_role(features: list) -> dict:
 
 def cmd_status(args):
     root = require_project_root()
-    features = parse_feature_list(root) or []
-    progress = parse_progress(root)
-    log = parse_session_log(root)
-
-    counts = defaultdict(int)
-    for f in features:
-        counts[f["status"]] += 1
-
-    total = len(features)
-    done = counts["completed"]
-    pct = round(done / total * 100) if total else 0
+    data = status_data(root)
 
     if args.json:
-        print(json.dumps({
-            "project": str(root),
-            "features": {
-                "total": total,
-                "pending": counts["pending"],
-                "in_progress": counts["in_progress"],
-                "testing": counts["testing"],
-                "completed": done,
-                "blocked": counts["blocked"],
-                "regression": counts["regression"],
-            },
-            "progress_pct": pct,
-            "sessions": progress["sessions"],
-            "last_session": progress["last_session"],
-            "progress_lines": progress["lines"],
-            "log_entries": log["entries"],
-        }, indent=2))
+        print(json.dumps(data, indent=2))
         return
+
+    counts = data["features"]
+    total = counts["total"]
+    done = counts["completed"]
+    pct = data["progress_pct"]
 
     bar_width = 30
     filled = round(bar_width * pct / 100)
-    bar = "█" * filled + "░" * (bar_width - filled)
+    bar = "\u2588" * filled + "\u2591" * (bar_width - filled)
 
-    print("📊 ADDS Project Status")
-    print("─" * 42)
-    print(f"  Project:     {root}")
-    print(f"  Total:       {total}")
-    print(f"  Pending:     {counts['pending']}")
-    print(f"  In Progress: {counts['in_progress']}")
-    print(f"  Testing:     {counts['testing']}")
-    print(f"  Completed:   {done}")
+    logger.info("\U0001f4ca ADDS Project Status")
+    logger.info("\u2500" * 42)
+    logger.info(f"  Project:     {root}")
+    logger.info(f"  Total:       {total}")
+    logger.info(f"  Pending:     {counts['pending']}")
+    logger.info(f"  In Progress: {counts['in_progress']}")
+    logger.info(f"  Testing:     {counts['testing']}")
+    logger.info(f"  Completed:   {done}")
     if counts["blocked"]:
-        print(f"  Blocked:     {counts['blocked']}")
+        logger.info(f"  Blocked:     {counts['blocked']}")
     if counts["regression"]:
-        print(f"  Regression:  {counts['regression']}")
-    print()
-    print(f"  Progress: [{bar}] {pct}%  ({done}/{total})")
-    print()
-    print(f"  Sessions:      {progress['sessions']}")
-    if progress["last_session"]:
-        print(f"  Last Session:  {progress['last_session']}")
-    if progress["lines"] > 800:
-        print(f"  ⚠️  progress.md has {progress['lines']} lines — consider running: adds compress")
-    if log["entries"]:
-        print(f"  Log Entries:   {log['entries']}")
+        logger.info(f"  Regression:  {counts['regression']}")
+    logger.info("")
+    logger.info(f"  Progress: [{bar}] {pct}%  ({done}/{total})")
+    logger.info("")
+    logger.info(f"  Sessions:      {data['sessions']}")
+    if data["last_session"]:
+        logger.info(f"  Last Session:  {data['last_session']}")
+    if data["progress_lines"] > 800:
+        logger.warning(f"  progress.md has {data['progress_lines']} lines - consider running: adds compress")
+    if data["log_entries"]:
+        logger.info(f"  Log Entries:   {data['log_entries']}")
 
 
 def cmd_next(args):
     root = require_project_root()
-    features = parse_feature_list(root)
-    if not features:
-        print("No features found. Create .ai/feature_list.md first.")
-        return
-
-    nxt = find_next_feature(features)
+    nxt = next_feature_data(root)
 
     if args.json:
         print(json.dumps(nxt, indent=2))
         return
 
     if not nxt:
-        print("✅  No pending features ready to implement.")
+        logger.info("No pending features ready to implement.")
+        features = parse_feature_list(root) or []
         blocked = [f for f in features if f["status"] == "blocked"]
         if blocked:
-            print(f"\n⚠️  {len(blocked)} feature(s) blocked:")
+            logger.warning(f"\n{len(blocked)} feature(s) blocked:")
             for f in blocked:
-                print(f"   - {f['id']}: {f['title']}")
+                logger.info(f"   - {f['id']}: {f['title']}")
         return
 
-    print("🎯 Next Feature to Implement")
-    print("─" * 42)
-    print(f"  ID:          {nxt['id']}")
-    print(f"  Title:       {nxt['title']}")
-    print(f"  Priority:    {nxt['priority']}")
-    print(f"  Complexity:  {nxt['complexity']}")
-    print(f"  Category:    {nxt['category']}")
-    if nxt["dependencies"]:
-        print(f"  Deps:        {', '.join(nxt['dependencies'])}")
-    print()
-    print(f"  → Open .ai/prompts/developer_prompt.md and implement {nxt['id']}")
+    logger.info("\U0001f3af Next Feature to Implement")
+    logger.info("\u2500" * 42)
+    logger.info(f"  ID:          {nxt['id']}")
+    logger.info(f"  Title:       {nxt['title']}")
+    logger.info(f"  Priority:    {nxt['priority']}")
+    logger.info(f"  Complexity:  {nxt['complexity']}")
+    logger.info(f"  Category:    {nxt['category']}")
+    if nxt.get("dependencies"):
+        logger.info(f"  Deps:        {', '.join(nxt['dependencies'])}")
+    logger.info("")
+    logger.info(f"  -> Open .ai/prompts/developer_prompt.md and implement {nxt['id']}")
 
 
 def cmd_validate(args):
     root = require_project_root()
-    features = parse_feature_list(root)
-    if features is None:
-        print("❌  .ai/feature_list.md not found", file=sys.stderr)
-        sys.exit(1)
-
-    errors = []
-    warnings = []
-    valid_ids = {f["id"] for f in features}
-
-    # Duplicate IDs
-    ids = [f["id"] for f in features]
-    seen = set()
-    for fid in ids:
-        if fid in seen:
-            errors.append(f"Duplicate feature ID: {fid}")
-        seen.add(fid)
-
-    for f in features:
-        prefix = f["id"]
-
-        # Missing dependencies
-        for dep in f["dependencies"]:
-            if dep not in valid_ids:
-                errors.append(f"{prefix}: dependency '{dep}' does not exist")
-
-        # Invalid field values
-        if f["category"] not in VALID_CATEGORIES:
-            errors.append(f"{prefix}: invalid category '{f['category']}'")
-        if f["priority"] not in VALID_PRIORITIES:
-            errors.append(f"{prefix}: invalid priority '{f['priority']}'")
-        if f["status"] not in VALID_STATUSES:
-            errors.append(f"{prefix}: invalid status '{f['status']}'")
-
-        # Completed but dependency is not
-        if f["status"] == "completed":
-            for dep in f["dependencies"]:
-                dep_feat = next((x for x in features if x["id"] == dep), None)
-                if dep_feat and dep_feat["status"] != "completed":
-                    warnings.append(f"{prefix}: marked completed but dep {dep} is '{dep_feat['status']}'")
-
-    # Cycle detection
-    for cycle in detect_cycles(features):
-        errors.append(f"Circular dependency: {' → '.join(cycle)}")
-
-    valid = len(errors) == 0
-
+    result = validate_feature_list_data(root)
     if args.json:
-        print(json.dumps({"valid": valid, "errors": errors, "warnings": warnings}, indent=2))
-        sys.exit(0 if valid else 1)
+        print(json.dumps(result, indent=2))
+        sys.exit(0 if result.get("valid") else 1)
 
-    if valid and not warnings:
-        print(f"✅  feature_list.md is valid ({len(features)} features)")
+    if result.get("valid") and not result.get("warnings"):
+        logger.info(f"feature_list.md is valid ({result.get('features_count', 0)} features)")
     else:
+        errors = result.get("errors", [])
+        warnings = result.get("warnings", [])
         if errors:
-            print(f"❌  {len(errors)} error(s):")
+            logger.error(f"{len(errors)} error(s):")
             for e in errors:
-                print(f"   - {e}")
+                logger.error(f"   - {e}")
         if warnings:
-            print(f"⚠️   {len(warnings)} warning(s):")
+            logger.warning(f"{len(warnings)} warning(s):")
             for w in warnings:
-                print(f"   - {w}")
-    sys.exit(0 if valid else 1)
+                logger.warning(f"   - {w}")
+    sys.exit(0 if result.get("valid") else 1)
 
 
 def cmd_compress(args):
     root = require_project_root()
     script = root / "scripts" / "compress_context.py"
     if not script.exists():
-        print("❌  compress_context.py not found", file=sys.stderr)
+        logger.error("compress_context.py not found")
         sys.exit(1)
     result = subprocess.run(
         [sys.executable, str(script), "--project-dir", str(root)],
@@ -409,13 +448,7 @@ def cmd_compress(args):
 
 def cmd_route(args):
     root = require_project_root()
-    features = parse_feature_list(root)
-
-    if not features:
-        result = {"agent": "pm", "prompt": "pm_prompt.md",
-                  "reason": "No feature_list.md — project initialization needed"}
-    else:
-        result = determine_agent_role(features)
+    result = route_data(root)
 
     if args.json:
         print(json.dumps(result, indent=2))
@@ -428,28 +461,28 @@ def cmd_route(args):
         "tester": "Tester Agent",
         "reviewer": "Reviewer Agent",
     }
-    print("🧭 Agent Recommendation")
-    print("─" * 42)
-    print(f"  Agent:  {agent_labels.get(result['agent'], result['agent'])}")
-    print(f"  Prompt: .ai/prompts/{result['prompt']}")
-    print(f"  Reason: {result['reason']}")
-    print()
-    print("  Next Steps:")
-    print(f"    1. Read .ai/prompts/{result['prompt']}")
-    print("    2. Read .ai/feature_list.md for current state")
-    print("    3. Follow the prompt instructions")
+    logger.info("\U0001f9ed Agent Recommendation")
+    logger.info("\u2500" * 42)
+    logger.info(f"  Agent:  {agent_labels.get(result['agent'], result['agent'])}")
+    logger.info(f"  Prompt: .ai/prompts/{result['prompt']}")
+    logger.info(f"  Reason: {result['reason']}")
+    logger.info("")
+    logger.info("  Next Steps:")
+    logger.info(f"    1. Read .ai/prompts/{result['prompt']}")
+    logger.info("    2. Read .ai/feature_list.md for current state")
+    logger.info("    3. Follow the prompt instructions")
 
 
 def cmd_archive(args):
     root = require_project_root()
     fid = args.feature_id.upper()
     if not re.match(r"^F\d{3}$", fid):
-        print(f"❌  Invalid feature ID '{fid}' — expected format: F001", file=sys.stderr)
+        logger.error(f"Invalid feature ID '{fid}' - expected format: F001")
         sys.exit(1)
 
     feature_list_path = root / ".ai" / "feature_list.md"
     if not feature_list_path.exists():
-        print("❌  .ai/feature_list.md not found", file=sys.stderr)
+        logger.error(".ai/feature_list.md not found")
         sys.exit(1)
 
     content = feature_list_path.read_text(encoding="utf-8")
@@ -461,7 +494,7 @@ def cmd_archive(args):
     )
     m = pattern.search(content)
     if not m:
-        print(f"❌  Feature {fid} not found in feature_list.md", file=sys.stderr)
+        logger.error(f"Feature {fid} not found in feature_list.md")
         sys.exit(1)
 
     feature_section = m.group(0)
@@ -470,8 +503,8 @@ def cmd_archive(args):
     if "**Status**: completed" not in feature_section:
         status_m = re.search(r"\*\*Status\*\*:\s*(\w+)", feature_section)
         current = status_m.group(1) if status_m else "unknown"
-        print(f"❌  Feature {fid} is '{current}', not 'completed'", file=sys.stderr)
-        print("   Only completed features can be archived.", file=sys.stderr)
+        logger.error(f"Feature {fid} is '{current}', not 'completed'")
+        logger.error("   Only completed features can be archived.")
         sys.exit(1)
 
     # Create archive
@@ -487,8 +520,8 @@ def cmd_archive(args):
     new_content = pattern.sub("", content).strip() + "\n"
     feature_list_path.write_text(new_content, encoding="utf-8")
 
-    print(f"✅  Archived {fid} → .ai/archive/{fid}.md")
-    print(f"   Removed from feature_list.md")
+    logger.info(f"Archived {fid} -> .ai/archive/{fid}.md")
+    logger.info(f"   Removed from feature_list.md")
 
 
 def cmd_log(args):
@@ -499,17 +532,19 @@ def cmd_log(args):
         print(json.dumps(log, indent=2))
         return
 
-    print("📋 Session Log Statistics")
-    print("─" * 42)
-    print(f"  Total Entries: {log['entries']}")
+    logger.info("\U0001f4cb Session Log Statistics")
+    logger.info("\u2500" * 42)
+    logger.info(f"  Total Entries: {log['entries']}")
     if log["by_agent"]:
-        print("\n  By Agent:")
+        logger.info("")
+        logger.info("  By Agent:")
         for agent, count in sorted(log["by_agent"].items()):
-            print(f"    {agent}: {count}")
+            logger.info(f"    {agent}: {count}")
     if log["by_action"]:
-        print("\n  By Action:")
+        logger.info("")
+        logger.info("  By Action:")
         for action, count in sorted(log["by_action"].items()):
-            print(f"    {action}: {count}")
+            logger.info(f"    {action}: {count}")
 
 
 def cmd_dag(args):
@@ -517,19 +552,19 @@ def cmd_dag(args):
     root = require_project_root()
     features = parse_feature_list(root)
     if not features:
-        print("No features found.")
+        logger.info("No features found.")
         return
 
     valid_ids = {f["id"] for f in features}
     feature_map = {f["id"]: f for f in features}
 
     STATUS_ICONS = {
-        "pending": "○",
-        "in_progress": "◉",
-        "testing": "◎",
-        "completed": "●",
-        "blocked": "✗",
-        "regression": "⚠",
+        "pending": "\u25cb",
+        "in_progress": "\u25c9",
+        "testing": "\u25ce",
+        "completed": "\u25cf",
+        "blocked": "\u2717",
+        "regression": "\u26a0",
     }
 
     # Find root nodes (no dependencies)
@@ -543,31 +578,31 @@ def cmd_dag(args):
 
     cycles = detect_cycles(features)
     if cycles:
-        print("⚠️  Circular dependencies detected:")
+        logger.warning("Circular dependencies detected:")
         for c in cycles:
-            print(f"   {' → '.join(c)}")
-        print()
+            logger.warning(f"   {' -> '.join(c)}")
+        logger.info("")
 
-    print("🔗 Dependency Graph")
-    print("─" * 42)
+    logger.info("\U0001f517 Dependency Graph")
+    logger.info("\u2500" * 42)
 
     printed = set()
 
     def print_tree(fid, indent=0, last=True):
         if fid in printed:
-            prefix = "  " * indent + ("└── " if last else "├── ")
+            prefix = "  " * indent + ("\u2514\u2500\u2500 " if last else "\u251c\u2500\u2500 ")
             f = feature_map.get(fid)
             if f:
                 icon = STATUS_ICONS.get(f["status"], "?")
-                print(f"{prefix}{icon} {fid} (↑ already shown)")
+                logger.info(f"{prefix}{icon} {fid} (already shown)")
             return
         printed.add(fid)
         f = feature_map.get(fid)
         if not f:
             return
         icon = STATUS_ICONS.get(f["status"], "?")
-        prefix = "  " * indent + ("└── " if (indent > 0 and last) else ("├── " if indent > 0 else ""))
-        print(f"{prefix}{icon} {f['id']}: {f['title']}  [{f['status']}]")
+        prefix = "  " * indent + ("\u2514\u2500\u2500 " if (indent > 0 and last) else ("\u251c\u2500\u2500 " if indent > 0 else ""))
+        logger.info(f"{prefix}{icon} {f['id']}: {f['title']}  [{f['status']}]")
 
         # Find children
         children = [x for x in features if fid in x["dependencies"]]
@@ -578,8 +613,8 @@ def cmd_dag(args):
         print_tree(root_feat["id"])
 
     # Legend
-    print()
-    print("  Legend: ○ pending  ◉ in_progress  ◎ testing  ● completed  ✗ blocked  ⚠ regression")
+    logger.info("")
+    logger.info("  Legend: o pending  * in_progress  @ testing  # completed  x blocked  ! regression")
 
 
 # ─────────────────────────────────────────────────
@@ -617,31 +652,31 @@ def cmd_branch(args):
         progress_path = _branch_progress_path(root, branch)
         branches_dir = root / ".ai" / "branches"
 
-        print("🌿 Branch Status")
-        print("─" * 42)
-        print(f"  Current branch:  {branch or '(unknown)'}")
-        print(f"  Progress file:   {progress_path.relative_to(root)}")
-        print(f"  File exists:     {'yes' if progress_path.exists() else 'no'}")
-        print()
+        logger.info("Branch Status")
+        logger.info("\u2500" * 42)
+        logger.info(f"  Current branch:  {branch or '(unknown)'}")
+        logger.info(f"  Progress file:   {progress_path.relative_to(root)}")
+        logger.info(f"  File exists:     {'yes' if progress_path.exists() else 'no'}")
+        logger.info("")
 
         if branches_dir.exists():
             branch_files = list(branches_dir.glob("progress_*.md"))
             if branch_files:
-                print("  Branch progress files:")
+                logger.info("  Branch progress files:")
                 for bf in sorted(branch_files):
                     lines = len(bf.read_text(encoding="utf-8").splitlines())
-                    print(f"    {bf.name}  ({lines} lines)")
+                    logger.info(f"    {bf.name}  ({lines} lines)")
 
     elif subcmd == "init":
         branch = _get_git_branch()
         if not branch or branch in ("main", "master", "HEAD"):
-            print("❌  Cannot init branch progress on main/master. Create a feature branch first.")
+            logger.error("Cannot init branch progress on main/master. Create a feature branch first.")
             sys.exit(1)
         progress_path = _branch_progress_path(root, branch)
         progress_path.parent.mkdir(parents=True, exist_ok=True)
         if progress_path.exists() and not getattr(args, "force", False):
-            print(f"⚠️   Branch progress file already exists: {progress_path.relative_to(root)}")
-            print("    Use --force to overwrite.")
+            logger.warning(f"Branch progress file already exists: {progress_path.relative_to(root)}")
+            logger.warning("    Use --force to overwrite.")
             sys.exit(1)
         feature_id = getattr(args, "feature_id", None) or ""
         content = (
@@ -653,18 +688,18 @@ def cmd_branch(args):
             "_(sessions will be appended here)_\n"
         )
         progress_path.write_text(content, encoding="utf-8")
-        print(f"✅  Created branch progress: {progress_path.relative_to(root)}")
+        logger.info(f"Created branch progress: {progress_path.relative_to(root)}")
 
     elif subcmd == "merge-check":
         # Show merge conflicts risk for feature_list.md across branches
         branch = _get_git_branch()
         branches_dir = root / ".ai" / "branches"
-        print("🔍 Merge Risk Check")
-        print("─" * 42)
-        print(f"  Current branch: {branch or '(unknown)'}")
-        print()
+        logger.info("Merge Risk Check")
+        logger.info("\u2500" * 42)
+        logger.info(f"  Current branch: {branch or '(unknown)'}")
+        logger.info("")
         if not branches_dir.exists() or not list(branches_dir.glob("progress_*.md")):
-            print("  No branch progress files found. Nothing to check.")
+            logger.info("  No branch progress files found. Nothing to check.")
             return
         # Check git status for .ai/feature_list.md
         try:
@@ -673,31 +708,31 @@ def cmd_branch(args):
                 capture_output=True, text=True, cwd=str(root)
             )
             if result.stdout.strip():
-                print("  Recent feature_list.md changes (last 5):")
+                logger.info("  Recent feature_list.md changes (last 5):")
                 for line in result.stdout.strip().splitlines():
-                    print(f"    {line}")
+                    logger.info(f"    {line}")
             else:
-                print("  No recent changes to feature_list.md")
+                logger.info("  No recent changes to feature_list.md")
         except (subprocess.CalledProcessError, FileNotFoundError):
-            print("  (git not available)")
-        print()
-        print("  Tip: Run `adds validate` before merging to catch conflicts early.")
+            logger.info("  (git not available)")
+        logger.info("")
+        logger.info("  Tip: Run `adds validate` before merging to catch conflicts early.")
 
     elif subcmd == "list":
         branches_dir = root / ".ai" / "branches"
         if not branches_dir.exists():
-            print("No branch progress files found.")
+            logger.info("No branch progress files found.")
             return
         files = list(branches_dir.glob("progress_*.md"))
         if not files:
-            print("No branch progress files found.")
+            logger.info("No branch progress files found.")
             return
-        print("🌿 Branch Progress Files")
-        print("─" * 42)
+        logger.info("Branch Progress Files")
+        logger.info("\u2500" * 42)
         for bf in sorted(files):
             lines = len(bf.read_text(encoding="utf-8").splitlines())
             branch_name = bf.stem.replace("progress_", "").replace("_", "/", 1)
-            print(f"  {branch_name:30s}  {lines} lines")
+            logger.info(f"  {branch_name:30s}  {lines} lines")
 
 
 
@@ -709,9 +744,11 @@ def cmd_branch(args):
 def main():
     parser = argparse.ArgumentParser(
         prog="adds",
-        description=f"ADDS CLI v{ADDS_VERSION} — AI-Driven Development Spec",
+        description=f"ADDS CLI v{ADDS_VERSION} - AI-Driven Development Spec",
     )
     parser.add_argument("--version", action="version", version=f"ADDS CLI v{ADDS_VERSION}")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug output")
+    parser.add_argument("-q", "--quiet", action="store_true", help="Suppress info output")
     sub = parser.add_subparsers(dest="command", metavar="<command>")
 
     # status
@@ -755,6 +792,13 @@ def main():
     branch_sub.add_parser("merge-check", help="Check merge risk for feature_list.md")
 
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else (logging.WARNING if args.quiet else logging.INFO),
+        format="%(message)s",
+        stream=sys.stdout,
+        force=True,
+    )
 
     dispatch = {
         "status":   cmd_status,

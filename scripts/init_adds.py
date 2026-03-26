@@ -4,13 +4,17 @@ ADDS Installer - AI-Driven Development Specification
 Cross-platform: Windows, Linux, macOS
 """
 
-import os
-import sys
-import shutil
 import argparse
+import logging
+import os
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
+
+
+logger = logging.getLogger(__name__)
 
 ADDS_VERSION = "3.0.0"
 ADDS_REPO = "https://github.com/tmacychen/ai-driven-dev-spec.git"
@@ -41,7 +45,7 @@ def scan_existing_files() -> list[tuple[str, str]]:
         ("app_spec.md", "Project specification"),
         ("CORE_GUIDELINES.md", "Quick reference"),
     ]
-    
+
     existing = []
     for file, desc in files_to_check:
         if Path(file).exists():
@@ -51,12 +55,13 @@ def scan_existing_files() -> list[tuple[str, str]]:
 
 def get_user_action() -> str:
     """Get user action for existing files."""
-    print("\nPlease choose an action:")
-    print("   [A] Replace All    - Replace all existing files")
-    print("   [S] Skip All      - Keep all existing files")
-    print("   [R] Review Each   - Review each file individually")
-    print("   [Q] Quit          - Cancel installation")
-    print()
+    logger.info("")
+    logger.info("Please choose an action:")
+    logger.info("   [A] Replace All    - Replace all existing files")
+    logger.info("   [S] Skip All      - Keep all existing files")
+    logger.info("   [R] Review Each   - Review each file individually")
+    logger.info("   [Q] Quit          - Cancel installation")
+    logger.info("")
     while True:
         action = input("Choose action (A/S/R/Q): ").strip().upper()
         if action in ["A", "S", "R", "Q"]:
@@ -69,13 +74,13 @@ def should_replace_file(file: str, desc: str, force: bool, global_action: Option
         return True
     if not global_action:
         return True
-    
+
     if global_action == "A":
         return True
     elif global_action == "S":
         return False
     elif global_action == "R":
-        print(f"\n   File: {file} ({desc})")
+        logger.info(f"\n   File: {file} ({desc})")
         while True:
             yn = input("   Replace? (y/n/a/q): ").strip().lower()
             if yn in ["y", "a"]:
@@ -89,7 +94,7 @@ def should_replace_file(file: str, desc: str, force: bool, global_action: Option
 
 def install_from_git(source_dir: Path) -> bool:
     """Clone ADDS repository."""
-    print("📥 Cloning ADDS repository...")
+    logger.info("Cloning ADDS repository...")
     try:
         subprocess.run(
             ["git", "clone", "--depth", "1", ADDS_REPO, TEMP_DIR],
@@ -98,102 +103,151 @@ def install_from_git(source_dir: Path) -> bool:
         )
         return True
     except subprocess.CalledProcessError:
-        print("❌ Failed to clone repository")
-        print("   Please check your internet connection or use --from-local")
+        logger.error("Failed to clone repository")
+        logger.error("   Please check your internet connection or use --from-local")
         return False
 
 
 def copy_scaffold(source_dir: Path, force: bool, dry_run: bool, global_action: Optional[str]):
     """Copy scaffold files."""
     if dry_run:
-        print("📋 [DRY RUN] Would copy scaffold files to .ai/")
+        logger.info("[DRY RUN] Would copy scaffold files to .ai/")
         return
-    
-    print("📋 Copying scaffold files...")
+
+    logger.info("Copying scaffold files...")
     Path(".ai").mkdir(exist_ok=True)
-    
+
     files_to_copy = [
         ("templates/scaffold/.ai/feature_list.md", ".ai/feature_list.md"),
         ("templates/scaffold/.ai/progress.md", ".ai/progress.md"),
         ("templates/scaffold/.ai/architecture.md", ".ai/architecture.md"),
     ]
-    
+
     for src, dest in files_to_copy:
         src_path = source_dir / src
         if src_path.exists():
             if should_replace_file(dest, "feature tracking", force, global_action):
                 shutil.copy2(src_path, dest)
-                print(f"   ✅ Copied: {dest}")
+                logger.info(f"   Copied: {dest}")
             else:
-                print(f"   ⏭️  Skipped: {dest}")
-    
+                logger.info(f"   Skipped: {dest}")
+
     if should_replace_file("CORE_GUIDELINES.md", "quick reference", force, global_action):
         src_path = source_dir / "templates/scaffold/CORE_GUIDELINES.md"
         if src_path.exists():
             shutil.copy2(src_path, "CORE_GUIDELINES.md")
-            print("✅ Copied: CORE_GUIDELINES.md")
+            logger.info("Copied: CORE_GUIDELINES.md")
     else:
-        print("⏭️  Skipped: CORE_GUIDELINES.md")
+        logger.info("Skipped: CORE_GUIDELINES.md")
 
 
 def copy_prompts(source_dir: Path, force: bool, dry_run: bool, no_prompts: bool, global_action: Optional[str]):
     """Copy prompt templates."""
     if no_prompts:
         return
-    
+
     if dry_run:
-        print("📋 [DRY RUN] Would copy prompt templates to .ai/prompts/")
+        logger.info("[DRY RUN] Would copy prompt templates to .ai/prompts/")
         return
-    
-    print("📋 Copying prompt templates...")
+
+    logger.info("Copying prompt templates...")
     Path(".ai/prompts").mkdir(exist_ok=True)
-    
+
     if should_replace_file(".ai/prompts/", "prompt templates", force, global_action):
         src = source_dir / "templates/prompts"
         if src.exists():
             for f in src.glob("*"):
                 if f.is_file():
                     shutil.copy2(f, f".ai/prompts/{f.name}")
-            print("✅ Prompt templates copied")
+            logger.info("Prompt templates copied")
     else:
-        print("⏭️  Skipped: prompt templates")
+        logger.info("Skipped: prompt templates")
 
 
 def copy_docs(source_dir: Path, force: bool, dry_run: bool, global_action: Optional[str]):
     """Copy documentation."""
     if dry_run:
-        print("📋 [DRY RUN] Would copy documentation to .ai/docs/")
+        logger.info("[DRY RUN] Would copy documentation to .ai/docs/")
         return
-    
-    print("📋 Copying documentation...")
+
+    logger.info("Copying documentation...")
     Path(".ai/docs").mkdir(exist_ok=True)
-    
+
     if should_replace_file(".ai/docs/", "documentation", force, global_action):
         src = source_dir / "docs"
         if src.exists():
             for f in src.glob("*.md"):
                 shutil.copy2(f, f".ai/docs/{f.name}")
-            print("✅ Documentation copied")
+            logger.info("Documentation copied")
     else:
-        print("⏭️  Skipped: documentation")
+        logger.info("Skipped: documentation")
+
+
+def copy_scripts(source_dir: Path, force: bool, dry_run: bool, global_action: Optional[str]):
+    """Copy utility scripts (CLI tools, hooks, etc.)."""
+    if dry_run:
+        logger.info("[DRY RUN] Would copy scripts to scripts/")
+        return
+
+    logger.info("Copying scripts...")
+    scripts_src = source_dir / "scripts"
+    if not scripts_src.exists():
+        logger.warning("  Source scripts/ directory not found, skipping")
+        return
+
+    scripts_dest = Path("scripts")
+    if not should_replace_file("scripts/", "utility scripts", force, global_action):
+        logger.info("Skipped: scripts/")
+        return
+
+    scripts_dest.mkdir(exist_ok=True)
+    copied = 0
+    for f in scripts_src.glob("*.py"):
+        dest = scripts_dest / f.name
+        if not dest.exists() or should_replace_file(f"scripts/{f.name}", "script", force, global_action):
+            shutil.copy2(f, dest)
+            copied += 1
+    logger.info(f"Scripts copied ({copied} files)")
+
+
+def copy_schemas(source_dir: Path, dry_run: bool):
+    """Copy JSON schemas used by validators."""
+    if dry_run:
+        logger.info("[DRY RUN] Would copy schemas to schemas/")
+        return
+
+    schemas_src = source_dir / "schemas"
+    if not schemas_src.exists():
+        return
+
+    schemas_dest = Path("schemas")
+    schemas_dest.mkdir(exist_ok=True)
+    copied = 0
+    for f in schemas_src.glob("*.json"):
+        dest = schemas_dest / f.name
+        if not dest.exists():
+            shutil.copy2(f, dest)
+            copied += 1
+    if copied:
+        logger.info(f"Schemas copied ({copied} files)")
 
 
 def create_app_spec_template(dry_run: bool):
     """Create app_spec.md template if it doesn't exist."""
     if dry_run:
         if not Path("app_spec.md").exists():
-            print("📝 [DRY RUN] Would create app_spec.md template")
+            logger.info("[DRY RUN] Would create app_spec.md template")
         else:
-            print("📝 [DRY RUN] app_spec.md exists, would skip")
+            logger.info("[DRY RUN] app_spec.md exists, would skip")
         return
-    
+
     if not Path("app_spec.md").exists():
-        print("📝 Creating app_spec.md template...")
+        logger.info("Creating app_spec.md template...")
         content = """# Application Specification
 
 > **Status**: DRAFT
 > 
-> ⚠️ Fill out this specification before starting development.
+> Fill out this specification before starting development.
 
 ## Vision
 {One paragraph describing what this project is and why it exists.}
@@ -229,15 +283,15 @@ def create_app_spec_template(dry_run: bool):
 *Last updated: <!-- date -->*
 """
         Path("app_spec.md").write_text(content, encoding="utf-8")
-        print("✅ app_spec.md template created")
+        logger.info("app_spec.md template created")
     else:
-        print("ℹ️  app_spec.md already exists, skipping")
+        logger.info("app_spec.md already exists, skipping")
 
 
 def create_gitignore(dry_run: bool):
     """Create or merge .gitignore with project-type-specific rules."""
     if dry_run:
-        print("📝 [DRY RUN] Would create/update .gitignore")
+        logger.info("[DRY RUN] Would create/update .gitignore")
         return
 
     project_type = get_project_type()
@@ -338,22 +392,22 @@ def create_gitignore(dry_run: bool):
         new_comments = [l for l in content.splitlines() if l.startswith("#") and l not in existing_lines]
 
         if new_lines or new_comments:
-            print("📝 Updating .gitignore with missing entries...")
+            logger.info("Updating .gitignore with missing entries...")
             merged = existing.rstrip("\n") + "\n\n" + "# Added by ADDS installer\n" + content
             Path(".gitignore").write_text(merged, encoding="utf-8")
-            print("✅ .gitignore updated")
+            logger.info(".gitignore updated")
         else:
-            print("ℹ️  .gitignore already covers all ADDS entries")
+            logger.info(".gitignore already covers all ADDS entries")
     else:
-        print("📝 Creating .gitignore...")
+        logger.info("Creating .gitignore...")
         Path(".gitignore").write_text(content, encoding="utf-8")
-        print("✅ .gitignore created")
+        logger.info(".gitignore created")
 
 
 def cleanup():
     """Clean up temporary files."""
     if Path(TEMP_DIR).exists():
-        print("🧹 Cleaning up...")
+        logger.info("Cleaning up...")
         shutil.rmtree(TEMP_DIR)
 
 
@@ -368,26 +422,26 @@ def run_upgrade(source_dir: Path, dry_run: bool, force: bool):
         "CORE_GUIDELINES.md": "quick reference",
     }
 
-    print()
-    print("📦 Upgrade mode: updating ADDS-managed files only")
-    print("   Preserving user data: feature_list.md, progress.md, architecture.md, app_spec.md")
-    print()
+    logger.info("")
+    logger.info("Upgrade mode: updating ADDS-managed files only")
+    logger.info("   Preserving user data: feature_list.md, progress.md, architecture.md, app_spec.md")
+    logger.info("")
 
     # 1. Update CORE_GUIDELINES.md
     for filepath, desc in managed_files.items():
         src_path = source_dir / "templates/scaffold" / filepath
         if src_path.exists():
             if dry_run:
-                print(f"📋 [DRY RUN] Would update: {filepath}")
+                logger.info(f"[DRY RUN] Would update: {filepath}")
             else:
                 shutil.copy2(src_path, filepath)
-                print(f"   ✅ Updated: {filepath}")
+                logger.info(f"   Updated: {filepath}")
         else:
-            print(f"   ⚠️  Source not found: {filepath}")
+            logger.warning(f"   Source not found: {filepath}")
 
     # 2. Update prompts (clear old, copy new)
     if dry_run:
-        print("📋 [DRY RUN] Would update: .ai/prompts/")
+        logger.info("[DRY RUN] Would update: .ai/prompts/")
     else:
         prompts_src = source_dir / "templates/prompts"
         if prompts_src.exists():
@@ -400,15 +454,15 @@ def run_upgrade(source_dir: Path, dry_run: bool, force: bool):
                 if removed:
                     for f in removed:
                         (prompts_dest / f).unlink()
-                        print(f"   🗑️  Removed deprecated: .ai/prompts/{f}")
+                        logger.info(f"   Removed deprecated: .ai/prompts/{f}")
             prompts_dest.mkdir(exist_ok=True)
             for f in prompts_src.glob("*.md"):
                 shutil.copy2(f, prompts_dest / f.name)
-            print("   ✅ Updated: .ai/prompts/ (5 agent prompts)")
+            logger.info("   Updated: .ai/prompts/ (5 agent prompts)")
 
     # 3. Update docs
     if dry_run:
-        print("📋 [DRY RUN] Would update: .ai/docs/")
+        logger.info("[DRY RUN] Would update: .ai/docs/")
     else:
         docs_src = source_dir / "docs"
         docs_dest = Path(".ai/docs")
@@ -416,7 +470,7 @@ def run_upgrade(source_dir: Path, dry_run: bool, force: bool):
             docs_dest.mkdir(exist_ok=True)
             for f in docs_src.glob("*.md"):
                 shutil.copy2(f, docs_dest / f.name)
-            print("   ✅ Updated: .ai/docs/")
+            logger.info("   Updated: .ai/docs/")
 
     # 4. Update scripts (compress_context.py)
     scripts_dest = Path(".ai/scripts")
@@ -426,53 +480,57 @@ def run_upgrade(source_dir: Path, dry_run: bool, force: bool):
             scripts_dest.mkdir(parents=True, exist_ok=True)
             for f in scripts_src.glob("*.py"):
                 shutil.copy2(f, scripts_dest / f.name)
-            print("   ✅ Copied scripts to: .ai/scripts/")
+            logger.info("   Copied scripts to: .ai/scripts/")
 
-    print()
-    print("✅ Upgrade complete!")
-    print("   Your project data (features, progress, architecture) has been preserved.")
+    logger.info("")
+    logger.info("Upgrade complete!")
+    logger.info("   Your project data (features, progress, architecture) has been preserved.")
 
 
 def print_next_steps():
     """Print next steps."""
-    print()
-    print("========================================")
-    print(f"  ✅ ADDS v{ADDS_VERSION} Installed!")
-    print("========================================")
-    print()
-    print("📁 Files created:")
-    print("   .ai/                    - State management directory")
-    print("   .ai/feature_list.md     - Feature tracking")
-    print("   .ai/progress.md         - Session history")
-    print("   .ai/architecture.md    - Architecture document")
-    print("   .ai/prompts/            - AI prompts")
-    print("   .ai/docs/               - Documentation")
-    print("   CORE_GUIDELINES.md      - Quick reference")
-    print("   app_spec.md             - Your project spec (edit this!)")
-    print("   .gitignore              - Git ignore rules")
-    print()
-    print("🚀 Next steps:")
-    print()
-    print("   1. Edit app_spec.md with your project requirements")
-    print()
-    print('   2. Tell your AI assistant:')
-    print('      "Please read the files in the .ai directory')
-    print('       and start working according to the development specifications."')
-    print()
-    print('   3. For subsequent sessions:')
-    print('      "Please read the files in the .ai directory')
-    print('       and continue development."')
-    print()
-    print("🛠️  ADDS CLI (optional):")
-    print("   python3 scripts/adds.py status     - Show progress")
-    print("   python3 scripts/adds.py next        - Next feature to implement")
-    print("   python3 scripts/adds.py route       - Recommended agent role")
-    print()
-    print("   Shortcut — add to PATH:")
-    print("   ln -s $(pwd)/scripts/adds.py /usr/local/bin/adds")
-    print()
-    print("📚 Documentation:")
-    print("   .ai/docs/specification.md     - Full specification")
+    logger.info("")
+    logger.info("=" * 40)
+    logger.info(f"  ADDS v{ADDS_VERSION} Installed!")
+    logger.info("=" * 40)
+    logger.info("")
+    logger.info("Files created:")
+    logger.info("   .ai/                    - State management directory")
+    logger.info("   .ai/feature_list.md     - Feature tracking")
+    logger.info("   .ai/progress.md         - Session history")
+    logger.info("   .ai/architecture.md    - Architecture document")
+    logger.info("   .ai/prompts/            - AI prompts")
+    logger.info("   .ai/docs/               - Documentation")
+    logger.info("   scripts/                 - CLI tools & hooks")
+    logger.info("   CORE_GUIDELINES.md      - Quick reference")
+    logger.info("   app_spec.md             - Your project spec (edit this!)")
+    logger.info("   .gitignore              - Git ignore rules")
+    logger.info("")
+    logger.info("Next steps:")
+    logger.info("")
+    logger.info("   1. Edit app_spec.md with your project requirements")
+    logger.info("")
+    logger.info('   2. Tell your AI assistant:')
+    logger.info('      "Please read the files in the .ai directory')
+    logger.info('       and start working according to the development specifications."')
+    logger.info("")
+    logger.info('   3. For subsequent sessions:')
+    logger.info('      "Please read the files in the .ai directory')
+    logger.info('       and continue development."')
+    logger.info("")
+    logger.info("ADDS CLI (optional):")
+    logger.info("   python3 scripts/adds.py status     - Show progress")
+    logger.info("   python3 scripts/adds.py next        - Next feature to implement")
+    logger.info("   python3 scripts/adds.py route       - Recommended agent role")
+    logger.info("")
+    logger.info("Security hooks (optional):")
+    logger.info("   python3 scripts/install_hooks.py     - Install pre-commit hook")
+    logger.info("")
+    logger.info("   Shortcut - add to PATH:")
+    logger.info("   ln -s $(pwd)/scripts/adds.py /usr/local/bin/adds")
+    logger.info("")
+    logger.info("Documentation:")
+    logger.info("   .ai/docs/specification.md     - Full specification")
 
 
 def main():
@@ -504,62 +562,79 @@ def main():
         action="store_true",
         help="Upgrade ADDS-managed files while preserving user data"
     )
-    
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable debug output"
+    )
+    parser.add_argument(
+        "-q", "--quiet",
+        action="store_true",
+        help="Suppress info output"
+    )
+
     args = parser.parse_args()
-    
-    print()
-    print("========================================")
-    print(f"  ADDS v{ADDS_VERSION} Installer")
-    print("  AI-Driven Development Specification")
-    print("========================================")
-    print()
-    
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else (logging.WARNING if args.quiet else logging.INFO),
+        format="%(message)s",
+        stream=sys.stdout,
+        force=True,
+    )
+
+    logger.info("")
+    logger.info("=" * 40)
+    logger.info(f"  ADDS v{ADDS_VERSION} Installer")
+    logger.info("  AI-Driven Development Specification")
+    logger.info("=" * 40)
+    logger.info("")
+
     project_type = get_project_type()
     existing = scan_existing_files()
-    
-    print("📊 Scanning existing project files...")
-    print()
-    print(f"   Detected project type: {project_type}")
-    print()
-    
+
+    logger.info("Scanning existing project files...")
+    logger.info("")
+    logger.info(f"   Detected project type: {project_type}")
+    logger.info("")
+
     if existing:
-        print(f"   Found {len(existing)} existing file(s):")
+        logger.info(f"   Found {len(existing)} existing file(s):")
         for file, desc in existing:
-            print(f"   ⚠️  Found: {file} ({desc})")
-        print()
-        
+            logger.info(f"   Found: {file} ({desc})")
+        logger.info("")
+
         if not args.force:
             action = get_user_action()
-            
+
             if action == "Q":
-                print("\nInstallation cancelled.")
+                logger.info("\nInstallation cancelled.")
                 sys.exit(0)
             elif action == "A":
-                print("\n→ Replacing all existing files...")
+                logger.info("\n-> Replacing all existing files...")
             elif action == "S":
-                print("\n→ Keeping all existing files...")
+                logger.info("\n-> Keeping all existing files...")
             elif action == "R":
-                print("\n→ Reviewing each file...")
-            
+                logger.info("\n-> Reviewing each file...")
+
             global_action = action
         else:
             global_action = "A"
     else:
-        print("   ✅ This appears to be an empty directory")
+        logger.info("   This appears to be an empty directory")
         global_action = "A"
-    
+
     if args.dry_run:
-        print()
-        print("========================================")
-        print("  ⚠️  DRY RUN - No files were changed")
-        print("========================================")
-    
+        logger.info("")
+        logger.info("=" * 40)
+        logger.info("  DRY RUN - No files were changed")
+        logger.info("=" * 40)
+
     if args.from_local:
         source_dir = Path(args.from_local)
         if not source_dir.exists():
-            print(f"❌ Local path does not exist: {args.from_local}")
+            logger.error(f"Local path does not exist: {args.from_local}")
             sys.exit(1)
-        print(f"📁 Using local ADDS from: {args.from_local}")
+        logger.info(f"Using local ADDS from: {args.from_local}")
     else:
         if install_from_git(Path(".")):
             source_dir = Path(TEMP_DIR)
@@ -569,7 +644,7 @@ def main():
     if args.upgrade:
         # Verify this is an existing ADDS project
         if not Path("CORE_GUIDELINES.md").exists():
-            print("❌ No ADDS installation found. Use normal install mode (without --upgrade).")
+            logger.error("No ADDS installation found. Use normal install mode (without --upgrade).")
             sys.exit(1)
         run_upgrade(source_dir, args.dry_run, args.force)
         cleanup()
@@ -578,6 +653,8 @@ def main():
     copy_scaffold(source_dir, args.force, args.dry_run, global_action)
     copy_prompts(source_dir, args.force, args.dry_run, args.no_prompts, global_action)
     copy_docs(source_dir, args.force, args.dry_run, global_action)
+    copy_scripts(source_dir, args.force, args.dry_run, global_action)
+    copy_schemas(source_dir, args.dry_run)
     create_app_spec_template(args.dry_run)
     create_gitignore(args.dry_run)
     cleanup()

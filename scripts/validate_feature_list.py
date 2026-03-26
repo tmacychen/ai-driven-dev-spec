@@ -10,10 +10,14 @@ Usage:
 
 import argparse
 import json
+import logging
 import re
 import sys
 from pathlib import Path
 from typing import Any
+
+
+logger = logging.getLogger(__name__)
 
 
 def parse_feature_list(content: str) -> dict:
@@ -210,8 +214,17 @@ def main():
     parser.add_argument('--project-dir', type=str, help='Project directory containing .ai/feature_list.md')
     parser.add_argument('--file', type=str, help='Direct path to feature_list.md')
     parser.add_argument('--schema', type=str, help='Path to JSON schema (optional)')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Enable debug output')
+    parser.add_argument('-q', '--quiet', action='store_true', help='Suppress info output')
 
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else (logging.WARNING if args.quiet else logging.INFO),
+        format="%(message)s",
+        stream=sys.stdout,
+        force=True,
+    )
 
     # Determine feature_list.md path
     if args.file:
@@ -222,25 +235,34 @@ def main():
         feature_file = Path('.ai') / 'feature_list.md'
 
     if not feature_file.exists():
-        print(f"❌ Error: Feature list not found: {feature_file}")
+        logger.error(f"Feature list not found: {feature_file}")
         sys.exit(1)
 
     # Determine schema path
     if args.schema:
         schema_path = Path(args.schema)
     else:
-        # Look for schema relative to script location
-        script_dir = Path(__file__).parent.parent
-        schema_path = script_dir / 'schemas' / 'feature_list.schema.json'
+        # Look for schema: first in project's schemas/ directory, then alongside script
+        candidates = [
+            Path("schemas") / "feature_list.schema.json",
+            Path(__file__).parent.parent / "schemas" / "feature_list.schema.json",
+        ]
+        schema_path = None
+        for candidate in candidates:
+            if candidate.exists():
+                schema_path = candidate
+                break
+        if schema_path is None:
+            schema_path = candidates[0]  # report the expected default path
 
     if not schema_path.exists():
-        print(f"❌ Error: Schema not found: {schema_path}")
+        logger.error(f"Schema not found: {schema_path}")
         sys.exit(1)
 
     # Parse and validate
-    print(f"📋 Validating: {feature_file}")
-    print(f"📐 Schema: {schema_path}")
-    print()
+    logger.info(f"Validating: {feature_file}")
+    logger.info(f"Schema: {schema_path}")
+    logger.info("")
 
     with open(feature_file, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -249,15 +271,15 @@ def main():
     errors = validate_against_schema(data, schema_path)
 
     if errors:
-        print(f"❌ Validation failed with {len(errors)} error(s):")
+        logger.error(f"Validation failed with {len(errors)} error(s):")
         for error in errors:
-            print(f"   - {error}")
+            logger.error(f"   - {error}")
         sys.exit(1)
     else:
-        print(f"✅ Validation passed!")
-        print(f"   Found {len(data['features'])} feature(s)")
+        logger.info(f"Validation passed!")
+        logger.info(f"   Found {len(data['features'])} feature(s)")
         for f in data['features']:
-            print(f"   - {f['id']}: {f['title']} [{f['status']}]")
+            logger.info(f"   - {f['id']}: {f['title']} [{f['status']}]")
         sys.exit(0)
 
 

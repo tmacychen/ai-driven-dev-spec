@@ -13,11 +13,14 @@ Or use install_hooks.py to install automatically:
     python3 scripts/install_hooks.py
 """
 
+import logging
 import re
 import subprocess
 import sys
 from pathlib import Path
 
+
+logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────────────────
 # Security Rules
@@ -111,17 +114,37 @@ def scan_content(content: str, filepath: str) -> list:
 
 
 def log_violation(filepath: str, violations: list) -> None:
-    """Append violation to security log."""
-    if not HOOK_LOG.parent.exists():
-        return
-    from datetime import datetime, timezone
-    timestamp = datetime.now(timezone.utc).isoformat()
-    with open(HOOK_LOG, "a", encoding="utf-8") as f:
-        for line_num, line, reason in violations:
-            f.write(f"{timestamp}\tBLOCKED\t{filepath}:{line_num}\t{reason}\t{line[:80]}\n")
+    """Append violation to security log. Ensure directory exists and fall back to stderr on failure."""
+    try:
+        # Ensure the parent directory exists (create .ai/ if needed)
+        HOOK_LOG.parent.mkdir(parents=True, exist_ok=True)
+        from datetime import datetime, timezone
+        timestamp = datetime.now(timezone.utc).isoformat()
+        with open(HOOK_LOG, "a", encoding="utf-8") as f:
+            for line_num, line, reason in violations:
+                f.write(f"{timestamp}\tBLOCKED\t{filepath}:{line_num}\t{reason}\t{line[:80]}\n")
+    except Exception:
+        # Non-fatal — log the failure via logging module, do not block the commit
+        logger.error("Failed to write security hook log to %s", HOOK_LOG)
+        try:
+            from datetime import datetime, timezone
+            ts = datetime.now(timezone.utc).isoformat()
+            for line_num, line, reason in violations:
+                sys.stderr.write(f"{ts}\tLOG_FAILURE\t{filepath}:{line_num}\t{reason}\t{line[:80]}\n")
+        except Exception:
+            # Give up silently to avoid blocking commits
+            pass
 
 
 def main():
+    # Configure logging for internal diagnostics (main output uses print() for git hook compatibility)
+    logging.basicConfig(
+        level=logging.WARNING,
+        format="%(message)s",
+        stream=sys.stderr,
+        force=True,
+    )
+
     staged = get_staged_files()
     if not staged:
         sys.exit(0)
@@ -146,7 +169,7 @@ def main():
     if not all_violations:
         sys.exit(0)
 
-    # Block the commit
+    # Block the commit — use print() directly for git hook output compatibility
     print()
     print("🔒 ADDS Security Hook — Commit Blocked")
     print("=" * 50)

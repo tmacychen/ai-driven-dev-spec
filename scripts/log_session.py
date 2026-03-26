@@ -13,11 +13,15 @@ Usage:
 
 import argparse
 import json
+import logging
 import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_session_log_path(project_dir: Path) -> Path:
@@ -123,7 +127,7 @@ def show_stats(project_dir: Path) -> None:
     log_path = get_session_log_path(project_dir)
 
     if not log_path.exists():
-        print("No session log found.")
+        logger.info("No session log found.")
         return
 
     sessions = []
@@ -137,7 +141,7 @@ def show_stats(project_dir: Path) -> None:
                     continue
 
     if not sessions:
-        print("No sessions recorded.")
+        logger.info("No sessions recorded.")
         return
 
     # Calculate stats
@@ -155,20 +159,20 @@ def show_stats(project_dir: Path) -> None:
         if 'error' in s:
             error_count += 1
 
-    print("📊 Session Statistics")
-    print("=" * 40)
-    print(f"Total session events: {len(sessions)}")
-    print(f"Unique sessions: {total_sessions}")
-    print(f"Features touched: {total_features}")
-    print(f"Errors recorded: {error_count}")
-    print()
-    print("By Agent:")
+    logger.info("Session Statistics")
+    logger.info("=" * 40)
+    logger.info(f"Total session events: {len(sessions)}")
+    logger.info(f"Unique sessions: {total_sessions}")
+    logger.info(f"Features touched: {total_features}")
+    logger.info(f"Errors recorded: {error_count}")
+    logger.info("")
+    logger.info("By Agent:")
     for agent, count in sorted(agent_counts.items()):
-        print(f"  {agent}: {count}")
-    print()
-    print("By Action:")
+        logger.info(f"  {agent}: {count}")
+    logger.info("")
+    logger.info("By Action:")
     for action, count in sorted(action_counts.items()):
-        print(f"  {action}: {count}")
+        logger.info(f"  {action}: {count}")
 
 
 def main():
@@ -199,8 +203,19 @@ def main():
                         help='Additional notes')
     parser.add_argument('--stats', action='store_true',
                         help='Show session statistics')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='Enable debug output')
+    parser.add_argument('-q', '--quiet', action='store_true',
+                        help='Suppress info output')
 
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else (logging.WARNING if args.quiet else logging.INFO),
+        format="%(message)s",
+        stream=sys.stdout,
+        force=True,
+    )
 
     project_dir = Path(args.project_dir).resolve()
 
@@ -210,13 +225,13 @@ def main():
 
     # Validate required args for logging
     if not args.action:
-        print("❌ Error: --action is required (unless using --stats)")
+        logger.error("--action is required (unless using --stats)")
         sys.exit(1)
     if not args.feature:
-        print("❌ Error: --feature is required (unless using --stats)")
+        logger.error("--feature is required (unless using --stats)")
         sys.exit(1)
     if not args.agent:
-        print("❌ Error: --agent is required (unless using --stats)")
+        logger.error("--agent is required (unless using --stats)")
         sys.exit(1)
 
     # Log the event
@@ -234,9 +249,9 @@ def main():
         notes=args.notes
     )
 
-    print(f"✅ Logged: {event['action']} for {event['feature']} by {event['agent']}")
-    print(f"   Session: {event['session_id']}")
-    print(f"   Time: {event['timestamp']}")
+    logger.info(f"Logged: {event['action']} for {event['feature']} by {event['agent']}")
+    logger.info(f"   Session: {event['session_id']}")
+    logger.info(f"   Time: {event['timestamp']}")
 
 
 if __name__ == '__main__':

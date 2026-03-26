@@ -45,7 +45,7 @@ ADDS_VERSION = "3.0.1"
 # Scripts to install in this version (paths relative to project root).
 # Installed command name = filename without extension, for example:
 #   scripts/adds.py          → adds
-#   scripts/init-adds.py     → init-adds
+#   scripts/init_adds.py     → init-adds
 #   scripts/install_hooks.py → install_hooks
 #
 # Release maintenance:
@@ -53,7 +53,7 @@ ADDS_VERSION = "3.0.1"
 #   Removed tool → remove from this list and add its command name to REMOVED_SCRIPTS below
 INSTALL_SCRIPTS: list[str] = [
     "scripts/adds.py",
-    "scripts/init-adds.py",
+    "scripts/init_adds.py",
     "scripts/install_hooks.py",
 ]
 
@@ -363,7 +363,7 @@ def _confirm_and_remove(
         print(f"       To find:   which {not_found[0]}")
         print(f"       To remove: rm -f <full path>")
         for name in not_found:
-            results.append(InstallResult(name, src, bin_dir / name, "skipped",
+            results.append(InstallResult(name, src, bin_dir / name, "not_found",
                                          f"Not found in default directory, manual removal needed: {name}"))
 
     # ── Files found: show full paths and ask for confirmation ──
@@ -551,11 +551,31 @@ def main() -> None:
     if args.uninstall:
         report = uninstall(prefix, dry_run=args.dry_run)
         print()
-        if report.has_failures:
+
+        removed = [r for r in report.results if r.action == "removed"]
+        failed = [r for r in report.results if r.action == "failed"]
+        not_found = [r for r in report.results if r.action == "not_found"]
+        skipped = [r for r in report.results if r.action == "skipped"]
+
+        # User cancelled the prompt and no files were removed
+        if not removed and skipped and not not_found:
+            print("❌  Uninstall cancelled by user. No files were removed.")
+            print()
+            return
+
+        # Nothing to remove (no installed files)
+        if not removed and not_found and not skipped:
+            print("○   Nothing to remove (none installed).")
+            print()
+            return
+
+        if failed:
             print("⚠️  Some files could not be removed. See instructions above.")
             sys.exit(1)
         else:
-            print("✅  Uninstall complete.")
+            print(f"✅  Uninstall complete. Removed {len(removed)} file(s).")
+            if not_found:
+                print(f"  Note: {len(not_found)} command(s) were not found in {prefix / 'bin'}; manual removal may be needed.")
         print()
         return
 

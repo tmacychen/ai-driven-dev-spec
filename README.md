@@ -185,7 +185,7 @@ sudo python3 setup.py
 # Or install to a user directory (no sudo needed)
 python3 setup.py --prefix ~/.local
 
-# Preview what will be installed without making changes
+# Preview what will be installed without making any changes
 python3 setup.py --dry-run
 
 # Check installation status
@@ -193,6 +193,8 @@ python3 setup.py --check
 ```
 
 This copies `adds`, `init-adds`, and `install_hooks` to `<prefix>/bin/` and sets executable permissions automatically.
+
+Note: This project is licensed under GPL v3 — integrating or redistributing ADDS may impose GPLv3 obligations. See LICENSE for details.
 
 ### Commands
 
@@ -363,6 +365,34 @@ The uninstaller shows the full path of each file before deleting and requires co
 
 ---
 
-## License
+## License & Compliance
 
-GPL v3
+This project is licensed under the **GNU General Public License v3.0 (GPLv3)**.
+See the [LICENSE](LICENSE) file for the full license text.
+
+### What GPLv3 Means for You
+
+**Using ADDS as a development tool** (running `adds` commands, reading templates/docs):
+No restrictions. GPLv3 governs distribution, not usage.
+
+**Copying ADDS scripts into your project** (via `init-adds.py` or manual copy):
+Your project becomes subject to GPLv3 obligations for those copied files. This means:
+
+| Scenario | Obligation |
+|----------|-----------|
+| Your project is also GPLv3 | No additional action needed |
+| Your project uses a compatible license (AGPL, LGPL) | No additional action needed |
+| Your project is proprietary / closed-source | You must disclose that GPLv3-licensed files are included and provide their source. You may place the ADDS files in a separate directory with a NOTICE file. |
+| You modify ADDS scripts | Modified versions must also be licensed under GPLv3 and source must be made available |
+| You distribute ADDS as part of a product | You must provide the complete corresponding source code of ADDS under GPLv3 |
+
+### Quick Compliance Checklist
+
+- [ ] If your project is **not** GPLv3, consider placing ADDS files in a clearly marked subdirectory (e.g., `.ai/`) with a `NOTICE` or `LICENSE.third-party` file
+- [ ] If you **modify** any ADDS scripts, ensure your modifications are also under GPLv3
+- [ ] If you **distribute** your project (including to customers or as a product), include the ADDS source code or a written offer to provide it
+- [ ] Do **not** remove or alter the GPLv3 license headers
+
+### Disclaimer
+
+This section provides general guidance and does not constitute legal advice. For specific compliance questions, consult with a legal professional familiar with open-source licensing.
