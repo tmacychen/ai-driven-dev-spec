@@ -117,7 +117,7 @@ class SetupReport:
 # Environment check
 # ═══════════════════════════════════════════════════════════════
 
-MIN_PYTHON = (3, 8)
+MIN_PYTHON = (3, 9)
 
 
 def check_environment(prefix: Path) -> bool:

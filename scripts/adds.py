@@ -113,11 +113,17 @@ def parse_progress(project_root: Path) -> dict:
     if not path.exists():
         return {"sessions": 0, "last_session": None, "lines": 0}
     content = path.read_text(encoding="utf-8")
-    sessions = len(re.findall(r"^## Session", content, re.MULTILINE))
-    last_m = re.search(r"^## Session\s+([\d-]+ [\d:]+)", content, re.MULTILINE)
+    # Count headers that look like session entries (e.g., "## Session", "## [2024-01-01 12:00] Session", etc.)
+    headers = re.findall(r"^## .*Session.*$", content, re.MULTILINE)
+    sessions = len(headers)
+    last_session = None
+    if headers:
+        # Try to extract an ISO-like timestamp from the last header line
+        m = re.search(r"(\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2})?)", headers[-1])
+        last_session = m.group(1) if m else None
     return {
         "sessions": sessions,
-        "last_session": last_m.group(1) if last_m else None,
+        "last_session": last_session,
         "lines": len(content.splitlines()),
     }
 
@@ -529,9 +535,9 @@ def cmd_dag(args):
     # Find root nodes (no dependencies)
     has_parent = set()
     for f in features:
-        for dep in f["dependencies"]:
+        for dep in f.get("dependencies", []):
             if dep in valid_ids:
-                has_parent.add(f["id"])
+                has_parent.add(dep)
 
     roots = [f for f in features if f["id"] not in has_parent]
 

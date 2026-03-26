@@ -19,7 +19,7 @@ Inspired by [Anthropic's research](https://www.anthropic.com/engineering/effecti
 
 ## Quick Start
 
-**Requires Python 3.8+.**
+**Requires Python 3.9+.**
 
 ### Option 1: New Empty Project
 
