@@ -1,0 +1,63 @@
+{
+  "timestamp": "2026-04-02T18:30:23.256284",
+  "summary": {
+    "total_checks": 12,
+    "passed_checks": 6,
+    "failed_checks": 6,
+    "pass_rate": 0.5,
+    "compliance_score": 0.04287499999999999,
+    "violations_count": 6,
+    "violations_by_type": {
+      "multiple_features_per_session": 1,
+      "missing_feature_list": 1,
+      "invalid_status_transition": 1,
+      "agent_boundary_violation": 1,
+      "missing_evidence": 1,
+      "safety_constraint_violation": 1
+    }
+  },
+  "violations": [
+    {
+      "type": "multiple_features_per_session",
+      "details": "当前功能 'feature_1' 正在进行中，尝试切换到 'feature_2'",
+      "timestamp": "2026-04-02T18:30:23.256135",
+      "severity": "critical",
+      "feature_name": "feature_2"
+    },
+    {
+      "type": "missing_feature_list",
+      "details": "feature_list.md 不存在于 .ai/feature_list.md - AI 跳过了状态检查",
+      "timestamp": "2026-04-02T18:30:23.256166",
+      "severity": "critical",
+      "feature_name": null
+    },
+    {
+      "type": "invalid_status_transition",
+      "details": "非法状态转换: pending → completed",
+      "timestamp": "2026-04-02T18:30:23.256172",
+      "severity": "error",
+      "feature_name": "feature_1"
+    },
+    {
+      "type": "agent_boundary_violation",
+      "details": "代理 'developer' 尝试执行越权操作: design_architecture",
+      "timestamp": "2026-04-02T18:30:23.256179",
+      "severity": "error",
+      "feature_name": "feature_1"
+    },
+    {
+      "type": "missing_evidence",
+      "details": "功能 'feature_2' 缺少证据字段: ['files_modified', 'tests_run', 'tools_executed']",
+      "timestamp": "2026-04-02T18:30:23.256186",
+      "severity": "error",
+      "feature_name": "feature_2"
+    },
+    {
+      "type": "safety_constraint_violation",
+      "details": "危险操作被允许: rm -rf. ",
+      "timestamp": "2026-04-02T18:30:23.256190",
+      "severity": "critical",
+      "feature_name": null
+    }
+  ]
+}
