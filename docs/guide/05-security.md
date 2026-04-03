@@ -141,7 +141,7 @@ telnet example.com  # ❌
 Use the validation script to check feature_list.md:
 
 ```bash
-python scripts/validate_feature_list.py --project-dir .
+python scripts/adds.py validate
 ```
 
 ---

@@ -1,4 +1,4 @@
-# ADDS v2.0 使用示例
+# ADDS 使用示例
 
 ## 📋 目录
 
@@ -20,12 +20,12 @@ mkdir my-project
 cd my-project
 
 # 初始化 ADDS
-python3 /path/to/adds_v2.py init
+python3 /path/to/adds.py init
 ```
 
 **输出**：
 ```
-🚀 ADDS v2.0 项目初始化
+🚀 ADDS 项目初始化
 ================================================================================
 ✅ 创建目录: .ai
 ✅ 创建目录: .ai/sessions
@@ -69,7 +69,7 @@ vim .ai/feature_list.md
 ### 步骤 3：查看推荐代理
 
 ```bash
-python3 /path/to/adds_v2.py route
+python3 /path/to/adds.py route
 ```
 
 **输出**：
@@ -85,7 +85,7 @@ python3 /path/to/adds_v2.py route
 ### 步骤 4：启动开发流程
 
 ```bash
-python3 /path/to/adds_v2.py start --max-turns 10
+python3 /path/to/adds.py start --max-turns 10
 ```
 
 **输出**：
@@ -232,10 +232,10 @@ my-api/
 
 ```bash
 # 查看当前状态
-python3 adds_v2.py status
+python3 adds.py status
 
 # 输出：
-📊 ADDS v2.0 项目状态
+📊 ADDS 项目状态
 ================================================================================
 功能总数: 5
 
@@ -251,7 +251,7 @@ python3 adds_v2.py status
 违规次数: 1
 
 # 查看推荐代理
-python3 adds_v2.py route
+python3 adds.py route
 
 # 输出：
 🧭 代理路由推荐
@@ -262,7 +262,7 @@ python3 adds_v2.py route
 原因: 有 1 个正在实现的功能
 
 # 继续开发
-python3 adds_v2.py start --max-turns 5
+python3 adds.py start --max-turns 5
 ```
 
 ---
@@ -339,10 +339,10 @@ vim .ai/feature_list.md
   - 订单状态变更发送通知
 
 # 2. 查看状态
-python3 adds_v2.py status
+python3 adds.py status
 
 # 3. 启动开发
-python3 adds_v2.py start
+python3 adds.py start
 ```
 
 ### 场景 2：修复 Bug
@@ -356,7 +356,7 @@ vim .ai/feature_list.md
 - **状态**: bug  # 改为 bug
 
 # 2. 启动修复
-python3 adds_v2.py start
+python3 adds.py start
 
 # Developer Agent 会自动修复 bug
 ```
@@ -378,7 +378,7 @@ vim .ai/feature_list.md
   - 保持原有功能不变
 
 # 2. 运行
-python3 adds_v2.py start
+python3 adds.py start
 ```
 
 ### 场景 4：多项目管理
@@ -386,11 +386,11 @@ python3 adds_v2.py start
 ```bash
 # 项目 A
 cd ~/projects/api-gateway
-python3 /path/to/adds_v2.py status
+python3 /path/to/adds.py status
 
 # 项目 B
 cd ~/projects/user-service
-python3 /path/to/adds_v2.py status
+python3 /path/to/adds.py status
 
 # 每个项目独立的 feature_list.md
 ```
@@ -539,7 +539,7 @@ vim .ai/feature_list.md
 # 修改状态为正确值
 
 # 3. 重启 Agent Loop
-python3 adds_v2.py start
+python3 adds.py start
 ```
 
 ### 问题 2：合规分数过低
@@ -560,7 +560,7 @@ cat .ai/compliance_report.json
 # - invalid_status_transition：检查状态转换规则
 
 # 3. 重新运行
-python3 adds_v2.py start
+python3 adds.py start
 ```
 
 ### 问题 3：代理选择错误
@@ -594,7 +594,7 @@ python3 adds_v2.py start
 # 解决方法：
 # 1. 完成当前功能
 # 2. 或重新开始会话（重置锁存）
-python3 adds_v2.py init  # 重新初始化会重置锁存
+python3 adds.py init  # 重新初始化会重置锁存
 ```
 
 ### 问题 5：状态转换被拒绝
@@ -628,13 +628,11 @@ cat .ai/feature_list.md
 
 ## 📚 参考资源
 
-- [快速开始指南](v2-quick-start.md)
-- [详细对比文档](v1-vs-v2-comparison.md)
+- [快速开始指南](quick-start.md)
 - [改进计划](improvement-plan.md)
-- [API 文档](api-reference.md)（待创建）
 
 ---
 
 **更新时间**：2026-04-02
-**版本**：ADDS v2.0
+**版本**：ADDS
 **状态**：✅ 生产就绪

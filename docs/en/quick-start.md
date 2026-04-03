@@ -1,4 +1,4 @@
-# ADDS v2.0 Quick Start Guide
+# ADDS Quick Start Guide
 
 **Get started in 5 minutes**
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-ADDS v2.0 is an AI-driven development specification that enables AI Agents to autonomously complete project development through **architectural constraints rather than AI understanding**.
+ADDS is an AI-driven development specification that enables AI Agents to autonomously complete project development through **architectural constraints rather than AI understanding**.
 
 ### Core Philosophy
 
@@ -23,7 +23,7 @@ v2.0: Architectural constraints enforce behavior → Certainty ✅
 
 ```bash
 cd your-project
-python3 /path/to/scripts_v2/adds_v2.py init
+python3 /path/to/scripts/adds.py init
 ```
 
 This creates:
@@ -57,7 +57,7 @@ Edit `app_spec.md` to describe what you want to build:
 ### Step 3: View Recommended Agent (30 seconds)
 
 ```bash
-python3 scripts_v2/adds_v2.py route
+python3 scripts/adds.py route
 ```
 
 Output:
@@ -70,7 +70,7 @@ Output:
 ### Step 4: Start Development Loop (1 minute)
 
 ```bash
-python3 scripts_v2/adds_v2.py start --max-turns 10
+python3 scripts/adds.py start --max-turns 10
 ```
 
 The Agent Loop will:
@@ -82,7 +82,7 @@ The Agent Loop will:
 ### Step 5: Check Progress (30 seconds)
 
 ```bash
-python3 scripts_v2/adds_v2.py status
+python3 scripts/adds.py status
 ```
 
 Output:
@@ -266,17 +266,17 @@ pending → in_progress → testing → completed
 
 ```bash
 # Project management
-python3 scripts_v2/adds_v2.py init      # Initialize project
-python3 scripts_v2/adds_v2.py status    # Show progress
-python3 scripts_v2/adds_v2.py validate  # Validate feature_list.md
-python3 scripts_v2/adds_v2.py route     # Recommend agent
+python3 scripts/adds.py init      # Initialize project
+python3 scripts/adds.py status    # Show progress
+python3 scripts/adds.py validate  # Validate feature_list.md
+python3 scripts/adds.py route     # Recommend agent
 
 # Development loop
-python3 scripts_v2/adds_v2.py start     # Start Agent Loop
-python3 scripts_v2/adds_v2.py stop      # Stop loop
+python3 scripts/adds.py start     # Start Agent Loop
+python3 scripts/adds.py stop      # Stop loop
 
 # Testing
-python3 scripts_v2/test_integration.py  # Run all tests (28 tests)
+python3 scripts/test_integration.py  # Run all tests (28 tests)
 ```
 
 ---
@@ -286,7 +286,7 @@ python3 scripts_v2/test_integration.py  # Run all tests (28 tests)
 ### 1. Always Check Route First
 
 ```bash
-python3 scripts_v2/adds_v2.py route
+python3 scripts/adds.py route
 ```
 
 This tells you which agent is appropriate for the current state.
@@ -303,7 +303,7 @@ project_latch.lock(agent="Developer")  # Lock to Developer Agent
 
 ```bash
 # Check compliance score (0.0 - 1.0)
-python3 scripts_v2/adds_v2.py status
+python3 scripts/adds.py status
 ```
 
 Score < 0.7 indicates violations.
@@ -312,7 +312,7 @@ Score < 0.7 indicates violations.
 
 ```bash
 # Run integration tests to verify functionality
-python3 scripts_v2/test_integration.py
+python3 scripts/test_integration.py
 ```
 
 ---
@@ -326,10 +326,10 @@ python3 scripts_v2/test_integration.py
 **Solution**:
 ```bash
 # Check which features are blocked
-python3 scripts_v2/adds_v2.py status
+python3 scripts/adds.py status
 
 # View dependency graph
-python3 scripts_v2/adds_v2.py dag
+python3 scripts/adds.py dag
 ```
 
 ### Problem: "Invalid status transition"
@@ -348,35 +348,34 @@ pending → in_progress → testing → completed
 **Solution**:
 ```bash
 # View violations
-python3 scripts_v2/adds_v2.py status
+python3 scripts/adds.py status
 
 # Fix violations and restart
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 ```
 
 ---
 
 ## Next Steps
 
-1. ✅ **Initialize your project** - `python3 scripts_v2/adds_v2.py init`
+1. ✅ **Initialize your project** - `python3 scripts/adds.py init`
 2. ✅ **Edit requirements** - Edit `app_spec.md`
-3. ✅ **Start development** - `python3 scripts_v2/adds_v2.py start`
-4. ✅ **Monitor progress** - `python3 scripts_v2/adds_v2.py status`
+3. ✅ **Start development** - `python3 scripts/adds.py start`
+4. ✅ **Monitor progress** - `python3 scripts/adds.py status`
 
 ---
 
 ## Additional Resources
 
-- **Usage Examples**: [v2-usage-examples.md](v2-usage-examples.md)
-- **Detailed Comparison**: [v1-vs-v2-comparison.md](v1-vs-v2-comparison.md)
-- **Improvement Plan**: [improvement-plan-summary.md](improvement-plan-summary.md)
+- **Usage Examples**: [usage-examples.md](usage-examples.md)
+- **Improvement Plan**: [improvement-plan.md](../improvement-plan.md)
 
 ---
 
 **Ready to start? Just run:**
 
 ```bash
-python3 scripts_v2/adds_v2.py init
+python3 scripts/adds.py init
 ```
 
 🚀

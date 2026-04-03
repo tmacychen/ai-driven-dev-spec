@@ -225,7 +225,7 @@ Agent B: Waiting for F001 to start F002 (profile)
 # .git/hooks/pre-commit
 
 # Validate feature_list.md
-python scripts/validate_feature_list.py --project-dir .
+python scripts/adds.py validate
 
 # Check for forbidden commands
 if git diff --cached | grep -E "(sudo|rm -rf /)"; then
@@ -243,7 +243,7 @@ fi
 # Check if feature_list.md was modified
 if git diff HEAD@{1} HEAD --name-only | grep -q "feature_list.md"; then
     echo "📋 Feature list updated"
-    python scripts/validate_feature_list.py --project-dir .
+    python scripts/adds.py validate
 fi
 ```
 

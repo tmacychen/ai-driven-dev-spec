@@ -36,7 +36,7 @@ Based on [Claude Code's design approach](https://github.com/ZhangHanDong/harness
 | **Safety** | Relies on AI judgment | Fail-closed design |
 | **Observability** | Logs only | Compliance tracking |
 
-**Detailed Comparison**: [v1-vs-v2-comparison.md](docs/en/v1-vs-v2-comparison.md) | [中文](docs/v1-vs-v2-comparison.md)
+**Core Features**: System prompt injection • Agent Loop state machine • Latch protection • Fail-safe defaults • Compliance tracking
 
 ---
 
@@ -48,19 +48,19 @@ Based on [Claude Code's design approach](https://github.com/ZhangHanDong/harness
 
 ```bash
 # 1. Initialize project
-python3 scripts_v2/adds_v2.py init
+python3 scripts/adds.py init
 
 # 2. Edit feature list
 vim .ai/feature_list.md
 
 # 3. Check recommended agent
-python3 scripts_v2/adds_v2.py route
+python3 scripts/adds.py route
 
 # 4. Start development loop
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 
 # 5. Check progress
-python3 scripts_v2/adds_v2.py status
+python3 scripts/adds.py status
 ```
 
 **Full Guide**: [v2-quick-start.md](docs/en/v2-quick-start.md) | [中文](docs/v2-quick-start.md)
@@ -130,17 +130,15 @@ if not pending_features:
 
 | Document | Time | Content |
 |----------|------|---------|
-| [Detailed Comparison](docs/en/v1-vs-v2-comparison.md) \| [中文](docs/v1-vs-v2-comparison.md) | 30 min | Deep analysis |
-| [Improvement Plan](docs/improvement-plan.md) | 60 min | 4-phase improvement plan |
-| [Architecture Design](docs/improvement-plan.md#核心架构改进) | 30 min | Technical implementation details |
+| [Improvement Plan](docs/improvement-plan.md) | 60 min | Technical implementation details |
+| [Architecture Design](docs/improvement-plan.md#核心架构改进) | 30 min | Architecture design philosophy |
 
 ### 📊 Project Managers (10-30 minutes)
 
 | Document | Time | Content |
 |----------|------|---------|
-| [Executive Summary](IMPROVEMENT_SUMMARY.md) | 10 min | High-level overview |
-| [Progress Report](PROGRESS_REPORT.md) | 15 min | Completion status and test results |
-| [Improvement Plan Summary](docs/en/improvement-plan-summary.md) | 5 min | Improvement value summary |
+| [Quick Start](docs/en/quick-start.md) | 10 min | Quick start guide |
+| [Usage Examples](docs/en/usage-examples.md) | 30 min | Best practices and examples |
 
 ---
 
@@ -148,8 +146,8 @@ if not pending_features:
 
 ```
 ai-driven-dev-spec/
-├── scripts_v2/               # Core implementation
-│   ├── adds_v2.py           # Main CLI tool
+├── scripts/               # Core implementation
+│   ├── adds.py           # Main CLI tool
 │   ├── system_prompt_builder.py  # Prompt builder
 │   ├── agent_loop.py        # Agent Loop state machine
 │   ├── compliance_tracker.py  # Compliance tracker
@@ -187,7 +185,7 @@ Execution Time: 0.718 seconds
 
 Run tests:
 ```bash
-cd scripts_v2
+cd scripts
 python3 test_integration.py
 ```
 
@@ -235,17 +233,17 @@ ADDS fully implements Claude Code's six harness engineering principles:
 
 ```bash
 # Project management
-python3 scripts_v2/adds_v2.py init      # Initialize project
-python3 scripts_v2/adds_v2.py status    # Check progress
-python3 scripts_v2/adds_v2.py route     # Recommend agent
-python3 scripts_v2/adds_v2.py validate  # Validate feature list
+python3 scripts/adds.py init      # Initialize project
+python3 scripts/adds.py status    # Check progress
+python3 scripts/adds.py route     # Recommend agent
+python3 scripts/adds.py validate  # Validate feature list
 
 # Development loop
-python3 scripts_v2/adds_v2.py start     # Start Agent Loop
-python3 scripts_v2/adds_v2.py stop      # Stop loop
+python3 scripts/adds.py start     # Start Agent Loop
+python3 scripts/adds.py stop      # Stop loop
 
 # Testing
-python3 scripts_v2/test_integration.py  # Run all tests
+python3 scripts/test_integration.py  # Run all tests
 ```
 
 ---
@@ -256,7 +254,7 @@ python3 scripts_v2/test_integration.py  # Run all tests
 
 ```bash
 # Initialize
-python3 scripts_v2/adds_v2.py init
+python3 scripts/adds.py init
 
 # PM Agent automatically analyzes requirements and creates feature list
 # Developer Agent implements features one by one
@@ -366,8 +364,6 @@ This project design references [Claude Code's architecture approach](https://git
 <a name="english-documentation"></a>
 ## English Documentation
 
-- [Quick Start Guide](docs/en/v2-quick-start.md)
-- [Usage Examples & Best Practices](docs/en/v2-usage-examples.md)
-- [Detailed Comparison](docs/en/v1-vs-v2-comparison.md)
-- [Improvement Plan Summary](docs/en/improvement-plan-summary.md)
-- [Progress Report](docs/en/PROGRESS_REPORT.md)
+- [Quick Start Guide](docs/en/quick-start.md)
+- [Usage Examples & Best Practices](docs/en/usage-examples.md)
+- [Improvement Plan](docs/improvement-plan.md)

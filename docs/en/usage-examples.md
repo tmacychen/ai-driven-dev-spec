@@ -1,4 +1,4 @@
-# ADDS v2.0 Usage Examples & Best Practices
+# ADDS Usage Examples & Best Practices
 
 **Real-world scenarios and practical guidance**
 
@@ -23,8 +23,8 @@
 # Create project directory
 mkdir my-api && cd my-api
 
-# Initialize ADDS v2.0
-python3 /path/to/scripts_v2/adds_v2.py init
+# Initialize ADDS
+python3 /path/to/scripts/adds.py init
 
 # Edit requirements
 cat > app_spec.md << 'EOF'
@@ -55,11 +55,11 @@ EOF
 
 ```bash
 # Check route
-python3 scripts_v2/adds_v2.py route
+python3 scripts/adds.py route
 # Output: Recommend PM Agent
 
 # Start development
-python3 scripts_v2/adds_v2.py start --max-turns 10
+python3 scripts/adds.py start --max-turns 10
 
 # PM Agent will:
 # 1. Analyze app_spec.md
@@ -102,7 +102,7 @@ Acceptance Criteria:
 
 ```bash
 # Check route
-python3 scripts_v2/adds_v2.py route
+python3 scripts/adds.py route
 # Output: Recommend Architect Agent
 
 # Architect Agent will:
@@ -137,7 +137,7 @@ python3 scripts_v2/adds_v2.py route
 
 ```bash
 # Start feature implementation
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 
 # Developer Agent will:
 # 1. Select F001 (User Registration)
@@ -169,7 +169,7 @@ Session complete (latch released)
 
 ```bash
 # Check route
-python3 scripts_v2/adds_v2.py route
+python3 scripts/adds.py route
 # Output: Recommend Tester Agent (features in testing)
 
 # Tester Agent will:
@@ -182,7 +182,7 @@ python3 scripts_v2/adds_v2.py route
 
 ```bash
 # Developer Agent continues with F002
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 
 # Latch prevents switching to F003 within same session
 ```
@@ -191,7 +191,7 @@ python3 scripts_v2/adds_v2.py start
 
 ```bash
 # Check compliance score
-python3 scripts_v2/adds_v2.py status
+python3 scripts/adds.py status
 
 # Output:
 📊 ADDS Project Status
@@ -224,7 +224,7 @@ python3 scripts_v2/adds_v2.py status
 ```bash
 mkdir my-cli && cd my-cli
 
-python3 /path/to/scripts_v2/adds_v2.py init
+python3 /path/to/scripts/adds.py init
 
 cat > app_spec.md << 'EOF'
 # Data Processing CLI
@@ -247,16 +247,16 @@ EOF
 
 ```bash
 # Session 1: PM Agent creates 30 features
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 
 # Session 2: Architect Agent designs CLI structure
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 
 # Session 3+: Developer Agent implements features
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 
 # After all features complete: Reviewer Agent
-python3 scripts_v2/adds_v2.py route
+python3 scripts/adds.py route
 # Output: Recommend Reviewer Agent
 ```
 
@@ -304,7 +304,7 @@ def test_csv_parser():
 ```bash
 mkdir data-pipeline && cd data-pipeline
 
-python3 /path/to/scripts_v2/adds_v2.py init
+python3 /path/to/scripts/adds.py init
 
 cat > app_spec.md << 'EOF'
 # ETL Data Pipeline
@@ -354,15 +354,15 @@ EOF
 
 **ADDS automatically respects dependencies**:
 ```bash
-python3 scripts_v2/adds_v2.py next
+python3 scripts/adds.py next
 # Output: F001 (no dependencies, highest priority)
 
 # After F001 completed:
-python3 scripts_v2/adds_v2.py next
+python3 scripts/adds.py next
 # Output: F002 (no dependencies, second highest priority)
 
 # After F001 and F002 completed:
-python3 scripts_v2/adds_v2.py next
+python3 scripts/adds.py next
 # Output: F003 (dependencies F001, F002 met)
 ```
 
@@ -375,7 +375,7 @@ python3 scripts_v2/adds_v2.py next
 ```bash
 mkdir my-lib && cd my-lib
 
-python3 /path/to/scripts_v2/adds_v2.py init
+python3 /path/to/scripts/adds.py init
 
 cat > app_spec.md << 'EOF'
 # Date Utility Library
@@ -427,7 +427,7 @@ Acceptance Criteria:
 
 ```bash
 # Before starting any session
-python3 scripts_v2/adds_v2.py route
+python3 scripts/adds.py route
 ```
 
 **Why**: Ensures you use the right agent for the current state.
@@ -443,7 +443,7 @@ python3 scripts_v2/adds_v2.py route
 
 ```bash
 # Check compliance after each session
-python3 scripts_v2/adds_v2.py status
+python3 scripts/adds.py status
 ```
 
 **Good Score**: ≥ 0.8
@@ -456,7 +456,7 @@ python3 scripts_v2/adds_v2.py status
 cat .ai/progress.md | grep "VIOLATION"
 
 # Fix violations in next session
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 ```
 
 ### 3. Use Latches Correctly
@@ -478,7 +478,7 @@ project_latch.release()
 **Common Mistake**:
 ```bash
 # ❌ Wrong: Try to work on F004 in same session
-python3 scripts_v2/adds_v2.py start --feature F004
+python3 scripts/adds.py start --feature F004
 # Error: Latch is locked to F003
 ```
 
@@ -564,17 +564,17 @@ pending → in_progress → testing → completed
 
 **Symptom**:
 ```bash
-python3 scripts_v2/adds_v2.py next
+python3 scripts/adds.py next
 # Error: No pending features
 ```
 
 **Diagnosis**:
 ```bash
 # Check status
-python3 scripts_v2/adds_v2.py status
+python3 scripts/adds.py status
 
 # Check for blocked features
-python3 scripts_v2/adds_v2.py validate
+python3 scripts/adds.py validate
 ```
 
 **Possible Causes**:
@@ -585,15 +585,15 @@ python3 scripts_v2/adds_v2.py validate
 **Solutions**:
 ```bash
 # Case 1: All completed → start review
-python3 scripts_v2/adds_v2.py route
+python3 scripts/adds.py route
 # Output: Recommend Reviewer Agent
 
 # Case 2: Blocked dependencies → check DAG
-python3 scripts_v2/adds_v2.py dag
+python3 scripts/adds.py dag
 # Identify which dependencies are blocking
 
 # Case 3: Corrupted file → re-validate
-python3 scripts_v2/adds_v2.py validate --fix
+python3 scripts/adds.py validate --fix
 ```
 
 ### Problem: "Invalid status transition"
@@ -619,14 +619,14 @@ pending → in_progress → testing → completed
 
 # ✅ Correct workflow:
 # 1. Start development
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 # → Status: pending → in_progress
 
 # 2. Finish implementation
 # → Status: in_progress → testing
 
 # 3. Run tests
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 # → Status: testing → completed
 ```
 
@@ -634,7 +634,7 @@ python3 scripts_v2/adds_v2.py start
 
 **Symptom**:
 ```bash
-python3 scripts_v2/adds_v2.py status
+python3 scripts/adds.py status
 # Compliance Score: 0.45 (needs attention)
 ```
 
@@ -654,7 +654,7 @@ cat .ai/progress.md | grep "VIOLATION"
 **Violation 1: Multiple features in session**
 ```bash
 # Start new session and focus on one feature
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 # Latch will prevent switching
 ```
 
@@ -668,7 +668,7 @@ vim .ai/feature_list.md
 **Violation 3: Missing evidence**
 ```bash
 # Add evidence for completed features
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 # Tester Agent will verify and add evidence
 ```
 
@@ -685,10 +685,10 @@ This is expected behavior (preventing state thrashing).
 **Solution**:
 ```bash
 # Option 1: Continue with F003 (recommended)
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 
 # Option 2: Manually release latch (not recommended)
-python3 scripts_v2/adds_v2.py stop --release-latch
+python3 scripts/adds.py stop --release-latch
 ```
 
 ### Problem: "Agent boundary violation"
@@ -705,7 +705,7 @@ Each agent has specific permissions.
 Use the correct agent:
 ```bash
 # Check recommended agent
-python3 scripts_v2/adds_v2.py route
+python3 scripts/adds.py route
 
 # Output:
 # 📍 Recommended Agent: Developer Agent
@@ -723,21 +723,21 @@ python3 scripts_v2/adds_v2.py route
 git checkout -b feature/F001-user-auth
 
 # Initialize branch-specific progress
-python3 scripts_v2/adds_v2.py branch init F001
+python3 scripts/adds.py branch init F001
 
 # Work on F001 in isolation
-python3 scripts_v2/adds_v2.py start
+python3 scripts/adds.py start
 
 # Meanwhile, another developer works on F002
 git checkout -b feature/F002-task-crud
-python3 scripts_v2/adds_v2.py branch init F002
+python3 scripts/adds.py branch init F002
 ```
 
 ### Pattern 2: Regression Testing
 
 ```bash
 # Before adding new features
-python3 scripts_v2/adds_v2.py start --regression-check
+python3 scripts/adds.py start --regression-check
 
 # Tester Agent will:
 # 1. Run all tests for completed features
@@ -779,18 +779,18 @@ python3 scripts_v2/adds_v2.py start --regression-check
 
 ```bash
 # Daily workflow
-python3 scripts_v2/adds_v2.py route    # Check agent
-python3 scripts_v2/adds_v2.py start    # Start session
-python3 scripts_v2/adds_v2.py status   # Check progress
+python3 scripts/adds.py route    # Check agent
+python3 scripts/adds.py start    # Start session
+python3 scripts/adds.py status   # Check progress
 
 # Troubleshooting
-python3 scripts_v2/adds_v2.py validate # Validate state
-python3 scripts_v2/adds_v2.py dag      # View dependencies
+python3 scripts/adds.py validate # Validate state
+python3 scripts/adds.py dag      # View dependencies
 
 # Testing
-python3 scripts_v2/test_integration.py # Run all tests
+python3 scripts/test_integration.py # Run all tests
 ```
 
 ---
 
-**Need help?** Check [Troubleshooting](#troubleshooting) or review [v1-vs-v2-comparison.md](v1-vs-v2-comparison.md) for deeper understanding.
+**Need help?** Check [Troubleshooting](#troubleshooting) or review the [Quick Start Guide](quick-start.md) for more details.

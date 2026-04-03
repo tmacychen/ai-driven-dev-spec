@@ -53,15 +53,15 @@ ADDS_VERSION = "3.0.1"
 #   Removed tool → remove from this list and add its command name to REMOVED_SCRIPTS below
 INSTALL_SCRIPTS: list[str] = [
     "scripts/adds.py",
-    "scripts/init_adds.py",
-    "scripts/install_hooks.py",
 ]
 
 # Command names dropped since the last release (no path, no extension).
 # These will be cleaned up during --upgrade and --uninstall.
 # Example: if adds-log was present in v3.0.0 and is now removed, add "adds-log" here.
 REMOVED_SCRIPTS: list[str] = [
-    # "adds-log",
+    "adds",
+    "init-adds",
+    "install_hooks",
 ]
 
 # Default installation prefix
