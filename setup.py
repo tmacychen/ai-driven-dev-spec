@@ -177,7 +177,7 @@ def install(prefix: Path, dry_run: bool, force: bool) -> SetupReport:
     project_root = _project_root()
     manifest = _build_manifest()
 
-    print(f"\n📦 Installing ADDS v{ADDS_VERSION} tools → {bin_dir}")
+    print(f"\n📦 Creating symlinks → {bin_dir}")
     print("─" * 52)
 
     if not dry_run:
@@ -194,13 +194,13 @@ def install(prefix: Path, dry_run: bool, force: bool) -> SetupReport:
             print(f"  ❌  [failed    ]  {name:20s}  Source file not found: {src}")
             continue
 
-        if dest.is_symlink() and dest.resolve() == src:
+        if not force and dest.is_symlink() and dest.resolve() == src:
             r = InstallResult(name, src, dest, "skipped", f"Already up to date: {dest}")
             report.add(r)
             print(f"  ○   [skipped   ]  {name:20s}  Already up to date: {dest}")
             continue
 
-        action = "upgraded" if dest.exists() else "installed"
+        action = "linked" if dest.exists() else "linked"
         tag = "[DRY RUN] " if dry_run else ""
 
         if not dry_run:
@@ -210,14 +210,14 @@ def install(prefix: Path, dry_run: bool, force: bool) -> SetupReport:
 
         r = InstallResult(name, src, dest, action, f"{tag}{dest}")
         report.add(r)
-        print(f"  {'🔄' if action == 'upgraded' else '✅'}  [{action:10s}]  {name:20s}  {tag}{dest}")
+        print(f"  �  [{action:10s}]  {name:20s}  {tag}{dest}")
 
     return report
 
 
 def upgrade(prefix: Path, dry_run: bool) -> SetupReport:
     """Upgrade: reinstall current version and clean up removed commands."""
-    print(f"\n⬆️  Upgrading ADDS → v{ADDS_VERSION}")
+    print(f"\n⬆️  Updating symlinks → v{ADDS_VERSION}")
     print("─" * 52)
 
     report = SetupReport()
@@ -418,7 +418,7 @@ def _make_executable(path: Path) -> None:
 def _print_post_install(prefix: Path, report: SetupReport) -> None:
     """Print usage instructions after a successful install."""
     bin_dir = prefix / "bin"
-    installed = [r for r in report.results if r.action in ("installed", "upgraded")]
+    installed = [r for r in report.results if r.action in ("installed", "linked")]
     if not installed:
         return
 
@@ -427,11 +427,11 @@ def _print_post_install(prefix: Path, report: SetupReport) -> None:
 
     print()
     print("═" * 52)
-    print(f"  ✅  ADDS v{ADDS_VERSION} installed successfully")
+    print(f"  ✅  Symlinks created: {len(installed)}")
     print("═" * 52)
     print()
 
-    print("📋 Installed commands:")
+    print("📋 Commands:")
     for r in installed:
         print(f"   {r.dest}")
     print()
