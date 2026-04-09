@@ -200,6 +200,12 @@ def install(prefix: Path, dry_run: bool, force: bool) -> SetupReport:
             print(f"  ○   [skipped   ]  {name:20s}  Already up to date: {dest}")
             continue
 
+        if dest.is_symlink() and dest.resolve() == src and src.exists():
+            r = InstallResult(name, src, dest, "skipped", f"Already up to date: {dest}")
+            report.add(r)
+            print(f"  ○   [skipped   ]  {name:20s}  Already up to date: {dest}")
+            continue
+
         action = "linked" if dest.exists() else "linked"
         tag = "[DRY RUN] " if dry_run else ""
 
