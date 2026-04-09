@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 
-_SCRIPT_DIR = Path(__file__).parent.resolve()
+_SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPT_DIR))
 
 from system_prompt_builder import SystemPromptBuilder, build_agent_specific_prompt
@@ -57,38 +57,38 @@ class ADDSCli:
     def init(self):
         """
         初始化 ADDS 项目
-        
-        改进：
-        - 创建标准目录结构
-        - 生成初始系统提示词
-        - 锁存项目类型
+
+        从 templates/scaffold/ 复制模板文件到项目目录
         """
         print("=" * 80)
         print("🚀 ADDS Project Initialization")
         print("=" * 80)
-        
-        # 创建目录
+
+        project_root = _SCRIPT_DIR.parent.resolve()
+        scaffold_dir = project_root / "templates" / "scaffold"
+
         dirs = [
             self.ai_dir,
             self.ai_dir / "sessions",
             self.project_root / "templates" / "prompts" / "sections",
         ]
-        
+
         for d in dirs:
             d.mkdir(parents=True, exist_ok=True)
             print(f"✅ 创建目录: {d}")
-        
-        # 创建初始文件
-        self._create_feature_list_template()
-        self._create_progress_template()
+
+        self._copy_template_file(scaffold_dir / ".ai" / "feature_list.md", self.ai_dir / "feature_list.md")
+        self._copy_template_file(scaffold_dir / ".ai" / "progress.md", self.ai_dir / "progress.md")
+        self._copy_template_file(scaffold_dir / ".ai" / "architecture.md", self.ai_dir / "architecture.md")
+        self._copy_template_file(scaffold_dir / "CORE_GUIDELINES.md", self.project_root / "CORE_GUIDELINES.md")
+
         self._create_system_prompt_file()
-        
-        # 锁存项目类型（示例）
+
         self.project_latches.latch_project_type(
-            type('State', (), {})(), 
-            "web_app"  # 可根据实际项目推断
+            type('State', (), {})(),
+            "web_app"
         )
-        
+
         print("\n✅ 初始化完成！")
         print("\n下一步：")
         print("1. 编辑 .ai/feature_list.md 定义功能")
@@ -524,60 +524,17 @@ echo "✅ Post-merge checks passed"
         print("  adds hooks uninstall  - Remove Git hooks")
         print("  adds hooks status     - Show this status")
     
-    def _create_feature_list_template(self):
-        """创建功能列表模板"""
-        template = """# 功能列表
-
-## 功能 1: user_authentication
-- **描述**: 实现用户认证功能，包括登录、注册、登出
-- **状态**: pending
-- **依赖**: 无
-- **验收标准**:
-  - 用户可以使用邮箱和密码注册
-  - 用户可以使用邮箱和密码登录
-  - 用户可以登出
-  - 密码使用 bcrypt 加密存储
-
-## 功能 2: data_validation
-- **描述**: 实现数据验证功能
-- **状态**: pending
-- **依赖**: user_authentication
-- **验收标准**:
-  - 输入数据格式验证
-  - 业务规则验证
-  - 错误信息友好提示
-
-## 功能 3: api_endpoints
-- **描述**: 实现 RESTful API 端点
-- **状态**: pending
-- **依赖**: user_authentication, data_validation
-- **验收标准**:
-  - 符合 RESTful 规范
-  - 返回正确的 HTTP 状态码
-  - 错误处理完善
-"""
-        
-        feature_list_path = self.ai_dir / "feature_list.md"
-        if not feature_list_path.exists():
-            feature_list_path.write_text(template, encoding='utf-8')
-            print(f"✅ 创建功能列表模板: {feature_list_path}")
-    
-    def _create_progress_template(self):
-        """创建进度日志模板"""
-        template = f"""# 进度日志
-
-## 会话历史
-
-### {datetime.now().strftime('%Y-%m-%d %H:%M')}
-- 项目初始化
-- 创建功能列表
-
-"""
-        
-        progress_path = self.ai_dir / "progress.md"
-        if not progress_path.exists():
-            progress_path.write_text(template, encoding='utf-8')
-            print(f"✅ 创建进度日志: {progress_path}")
+    def _copy_template_file(self, src: Path, dest: Path) -> None:
+        """Copy a template file if destination doesn't exist."""
+        if dest.exists():
+            print(f"○  跳过（已存在）: {dest}")
+            return
+        if not src.exists():
+            print(f"❌ 模板不存在: {src}")
+            return
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(src.read_text(encoding='utf-8'), encoding='utf-8')
+        print(f"✅ 创建: {dest}")
     
     def _create_system_prompt_file(self):
         """创建系统提示词文件"""
