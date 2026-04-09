@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-04-09T17:37:50.995864",
+  "summary": {
+    "total_checks": 1,
+    "passed_checks": 1,
+    "failed_checks": 0,
+    "pass_rate": 1.0,
+    "compliance_score": 1.0,
+    "violations_count": 0,
+    "violations_by_type": {}
+  },
+  "violations": []
+}

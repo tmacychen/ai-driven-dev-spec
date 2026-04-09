@@ -1,0 +1,72 @@
+{
+  "permissions": {
+    "mode": "default",
+    "rules": {
+      "allow": [
+        "bash(ls*)",
+        "bash(cat*)",
+        "bash(head*)",
+        "bash(tail*)",
+        "bash(wc*)",
+        "bash(grep*)",
+        "bash(find*)",
+        "bash(python*)",
+        "bash(pytest*)",
+        "bash(git status*)",
+        "bash(git log*)",
+        "bash(git diff*)",
+        "bash(git add*)",
+        "read(*)",
+        "write(./*)"
+      ],
+      "ask": [
+        "bash(rm*)",
+        "bash(mv*)",
+        "bash(cp*)",
+        "bash(npm install*)",
+        "bash(pip install*)",
+        "bash(git push*)",
+        "bash(git commit*)",
+        "bash(git checkout*)",
+        "write(../../*)"
+      ],
+      "deny": [
+        "bash(sudo*)",
+        "bash(su*)",
+        "bash(chmod 777*)",
+        "bash(mkfs*)",
+        "bash(dd*)",
+        "bash(nc *)",
+        "bash(iptables*)",
+        "write(/etc/*)",
+        "write(/System/*)",
+        "write(/usr/*)"
+      ]
+    }
+  },
+  "model": {
+    "provider": null,
+    "mode": null,
+    "model": null,
+    "api_key_env": null,
+    "base_url": null,
+    "context_window": null,
+    "options": {
+      "temperature": 0.7,
+      "max_tokens": 4096
+    }
+  },
+  "compaction": {
+    "tool_result_threshold": 2000,
+    "layer2_trigger": 0.8,
+    "layer1_trigger": 0.5,
+    "warn_threshold": 0.85,
+    "hard_limit": 0.95
+  },
+  "memory": {
+    "index_mem_path": ".ai/sessions/index.mem",
+    "sessions_dir": ".ai/sessions/",
+    "max_fixed_memory_chars": 2000,
+    "evolution_min_occurrences": 2
+  }
+}
