@@ -13,9 +13,9 @@ Usage:
     python3 setup.py --force                # Force overwrite even if destination is already up to date
 
 Notes:
-  • Install: copies scripts to <prefix>/bin/ and sets executable permissions (chmod +x).
+  • Install: creates symlinks in <prefix>/bin/ pointing to source scripts in the project.
   • Command names are derived automatically from script filenames (e.g. adds.py → adds).
-  • Uninstall: removes commands listed in INSTALL_SCRIPTS; if a file is not found in the
+  • Uninstall: removes symlinks listed in INSTALL_SCRIPTS; if a file is not found in the
     default directory, prints the command name and instructions for manual removal.
   • Upgrade: removes commands in REMOVED_SCRIPTS first, then force-installs the current version.
 
@@ -59,13 +59,12 @@ INSTALL_SCRIPTS: list[str] = [
 # These will be cleaned up during --upgrade and --uninstall.
 # Example: if adds-log was present in v3.0.0 and is now removed, add "adds-log" here.
 REMOVED_SCRIPTS: list[str] = [
-    "adds",
     "init-adds",
     "install_hooks",
 ]
 
 # Default installation prefix
-DEFAULT_PREFIX = "/usr/local"
+DEFAULT_PREFIX = os.path.expanduser("~/.local")
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -171,14 +170,8 @@ def _project_root() -> Path:
     return Path(__file__).resolve().parent
 
 
-def _make_executable(path: Path) -> None:
-    """Add executable permission bits to a file (equivalent to chmod +x)."""
-    current = path.stat().st_mode
-    path.chmod(current | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-
 def install(prefix: Path, dry_run: bool, force: bool) -> SetupReport:
-    """Copy all tool scripts to <prefix>/bin/ and set executable permissions."""
+    """Create symlinks in <prefix>/bin/ pointing to project source scripts."""
     report = SetupReport()
     bin_dir = prefix / "bin"
     project_root = _project_root()
@@ -191,7 +184,7 @@ def install(prefix: Path, dry_run: bool, force: bool) -> SetupReport:
         bin_dir.mkdir(parents=True, exist_ok=True)
 
     for name, rel in manifest.items():
-        src = project_root / rel
+        src = (project_root / rel).resolve()
         dest = bin_dir / name
 
         if not src.exists():
@@ -201,21 +194,19 @@ def install(prefix: Path, dry_run: bool, force: bool) -> SetupReport:
             print(f"  ❌  [failed    ]  {name:20s}  Source file not found: {src}")
             continue
 
-        # Skip if already up to date
-        if dest.exists() and not force:
-            if dest.read_bytes() == src.read_bytes():
-                r = InstallResult(name, src, dest, "skipped",
-                                  f"Already up to date: {dest}")
-                report.add(r)
-                print(f"  ○   [skipped   ]  {name:20s}  Already up to date: {dest}")
-                continue
+        if dest.is_symlink() and dest.resolve() == src:
+            r = InstallResult(name, src, dest, "skipped", f"Already up to date: {dest}")
+            report.add(r)
+            print(f"  ○   [skipped   ]  {name:20s}  Already up to date: {dest}")
+            continue
 
         action = "upgraded" if dest.exists() else "installed"
         tag = "[DRY RUN] " if dry_run else ""
 
         if not dry_run:
-            shutil.copy2(src, dest)
-            _make_executable(dest)
+            if dest.exists() or dest.is_symlink():
+                dest.unlink()
+            os.symlink(src, dest)
 
         r = InstallResult(name, src, dest, action, f"{tag}{dest}")
         report.add(r)
@@ -283,13 +274,10 @@ def check_status(prefix: Path) -> None:
         src = project_root / rel
         dest = bin_dir / name
 
-        if dest.exists():
-            if src.exists() and dest.read_bytes() == src.read_bytes():
-                status = "✅  Installed (up to date)"
-            elif src.exists():
-                status = "🔄  Installed (update available)"
-            else:
-                status = "✅  Installed (source not local)"
+        if dest.is_symlink() and dest.resolve() == src.resolve():
+            status = "✅  Installed (symlink, up to date)"
+        elif dest.exists() and not dest.is_symlink():
+            status = "🔄  Installed (different from source - update available)"
         else:
             status = "○   Not installed"
 
@@ -301,15 +289,6 @@ def check_status(prefix: Path) -> None:
         print(f"  {status:35s}  {name}{x_flag}")
         print(f"      Source:  {rel}  →  {name}")
         print(f"      Path:    {dest}")
-
-    if REMOVED_SCRIPTS:
-        print(f"\n🗑️  Commands removed in this version (clean up if present):")
-        for name in REMOVED_SCRIPTS:
-            dest = bin_dir / name
-            exists = "⚠️   Present (will be prompted for removal on --upgrade)" if dest.exists() else "○   Already removed"
-            print(f"  {exists}")
-            print(f"      Command: {name}")
-            print(f"      Path:    {dest}")
 
     # PATH check
     print(f"\n🔗 PATH check:")

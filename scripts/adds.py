@@ -20,7 +20,9 @@ from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 
-# 导入改进模块
+_SCRIPT_DIR = Path(__file__).parent.resolve()
+sys.path.insert(0, str(_SCRIPT_DIR))
+
 from system_prompt_builder import SystemPromptBuilder, build_agent_specific_prompt
 from agent_loop import (
     ADDSAgentLoop, Feature, FeatureStatus, AgentType,
@@ -626,7 +628,9 @@ echo "✅ Post-merge checks passed"
 def main():
     """CLI entry point"""
     import argparse
-    
+
+    ADDS_VERSION = "3.0.1"
+
     parser = argparse.ArgumentParser(
         description="ADDS - AI-Driven Development Specification Tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -642,7 +646,11 @@ Examples:
   adds hooks status      Show hooks status
         """
     )
-    
+
+    parser.add_argument(
+        "--version", action="version", version=f"ADDS v{ADDS_VERSION}"
+    )
+
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
     
     # init command
