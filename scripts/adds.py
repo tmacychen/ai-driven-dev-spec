@@ -70,7 +70,6 @@ class ADDSCli:
         dirs = [
             self.ai_dir,
             self.ai_dir / "sessions",
-            self.project_root / "templates" / "prompts" / "sections",
         ]
 
         for d in dirs:
@@ -80,20 +79,8 @@ class ADDSCli:
         self._copy_template_file(scaffold_dir / ".ai" / "feature_list.md", self.ai_dir / "feature_list.md")
         self._copy_template_file(scaffold_dir / ".ai" / "progress.md", self.ai_dir / "progress.md")
         self._copy_template_file(scaffold_dir / ".ai" / "architecture.md", self.ai_dir / "architecture.md")
-        self._copy_template_file(scaffold_dir / "CORE_GUIDELINES.md", self.project_root / "CORE_GUIDELINES.md")
-
-        self._create_system_prompt_file()
-
-        self.project_latches.latch_project_type(
-            type('State', (), {})(),
-            "web_app"
-        )
 
         print("\n✅ 初始化完成！")
-        print("\n下一步：")
-        print("1. 编辑 .ai/feature_list.md 定义功能")
-        print("2. 运行 'adds route' 查看推荐的代理")
-        print("3. 运行 'adds start' 开始开发")
     
     def status(self):
         """
@@ -535,18 +522,7 @@ echo "✅ Post-merge checks passed"
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(src.read_text(encoding='utf-8'), encoding='utf-8')
         print(f"✅ 创建: {dest}")
-    
-    def _create_system_prompt_file(self):
-        """创建系统提示词文件"""
-        prompt_dir = self.project_root / "templates" / "prompts" / "sections"
-        prompt_dir.mkdir(parents=True, exist_ok=True)
-        
-        # 创建示例段落
-        identity_path = prompt_dir / "identity.md"
-        if not identity_path.exists():
-            identity_path.write_text("# AI-Driven Development Specification Agent\n", encoding='utf-8')
-            print(f"✅ 创建系统提示词段落: {identity_path}")
-    
+
     def _parse_feature_list(self, filepath: Path) -> List[dict]:
         """解析功能列表文件"""
         features = []
