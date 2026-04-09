@@ -472,6 +472,7 @@ def parse_args() -> argparse.Namespace:
         "--prefix", default=DEFAULT_PREFIX, metavar="DIR",
         help=f"Installation prefix; tools are placed in <prefix>/bin/ (default: {DEFAULT_PREFIX})",
     )
+    parser.add_argument("--install",  action="store_true", help="Create symlinks in <prefix>/bin/ (default action)")
     parser.add_argument("--check",     action="store_true", help="Show installation status without making any changes")
     parser.add_argument("--upgrade",   action="store_true", help="Upgrade to current version (removes obsolete commands first)")
     parser.add_argument("--uninstall", action="store_true", help="Remove all installed tool scripts")
