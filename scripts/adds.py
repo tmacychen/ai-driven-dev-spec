@@ -79,6 +79,7 @@ class ADDSCli:
         self._copy_template_file(scaffold_dir / ".ai" / "feature_list.md", self.ai_dir / "feature_list.md")
         self._copy_template_file(scaffold_dir / ".ai" / "progress.md", self.ai_dir / "progress.md")
         self._copy_template_file(scaffold_dir / ".ai" / "architecture.md", self.ai_dir / "architecture.md")
+        self._copy_template_file(scaffold_dir / "CORE_GUIDELINES.md", self.ai_dir / "CORE_GUIDELINES.md")
 
         print("\n✅ 初始化完成！")
     
