@@ -210,7 +210,7 @@ def install(prefix: Path, dry_run: bool, force: bool) -> SetupReport:
 
         r = InstallResult(name, src, dest, action, f"{tag}{dest}")
         report.add(r)
-        print(f"  �  [{action:10s}]  {name:20s}  {tag}{dest}")
+        print(f"  --> [{action:10s}]  {name:20s}  {tag}{dest}")
 
     return report
 
@@ -223,17 +223,12 @@ def upgrade(prefix: Path, dry_run: bool) -> SetupReport:
     report = SetupReport()
     bin_dir = prefix / "bin"
 
-    # 1. Clean up commands removed in this version
     if REMOVED_SCRIPTS:
-        print(f"\n  🗑️  The following commands were removed in this version and will be cleaned up:")
         results = _confirm_and_remove(REMOVED_SCRIPTS, bin_dir, dry_run,
                                       context="upgrade cleanup")
         for r in results:
             report.add(r)
-    else:
-        print("  ○   No obsolete commands to clean up in this version.")
 
-    # 2. Install/update scripts for this version (force=True to overwrite)
     install_report = install(prefix, dry_run, force=True)
     report.results.extend(install_report.results)
 
@@ -322,33 +317,14 @@ def _confirm_and_remove(
     src = Path()  # no source file for removal operations
 
     found: list[tuple[str, Path]] = []     # (command name, full path)
-    not_found: list[str] = []              # command names only
 
     for name in names:
         dest = bin_dir / name
         if dest.exists():
             found.append((name, dest))
-        else:
-            not_found.append(name)
 
-    # ── Files not in default directory ──
-    if not_found:
-        print()
-        print(f"  ⚠️   The following commands were not found in the default install directory ({bin_dir}).")
-        print(f"       Please locate and remove them manually:")
-        for name in not_found:
-            print(f"       • {name}")
-        print()
-        print(f"       To find:   which {not_found[0]}")
-        print(f"       To remove: rm -f <full path>")
-        for name in not_found:
-            results.append(InstallResult(name, src, bin_dir / name, "not_found",
-                                         f"Not found in default directory, manual removal needed: {name}"))
-
-    # ── Files found: show full paths and ask for confirmation ──
     if not found:
-        if not not_found:
-            print(f"\n  ○   Nothing to remove for {context} (none installed).")
+        print(f"\n  ○   Nothing to remove for {context} (none installed).")
         return results
 
     print()
