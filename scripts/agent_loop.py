@@ -59,6 +59,8 @@ class AgentLoop:
         # prompt_toolkit session（用于 async prompt，支持多行）
         if HAS_PT:
             from prompt_toolkit.key_binding import KeyBindings
+            from prompt_toolkit.completion import WordCompleter
+
             kb = KeyBindings()
 
             @kb.add('escape', 'enter')
@@ -67,9 +69,17 @@ class AgentLoop:
                 """插入换行而非提交"""
                 event.current_buffer.insert_text('\n')
 
+            # 命令补全
+            command_completer = WordCompleter(
+                ["/help", "/h", "/?", "/keys", "/quit", "/exit", "/q",
+                 "/clear", "/history", "/model"],
+                ignore_case=True,
+            )
+
             self._pt_session = PromptSession(
                 multiline=False,
                 key_bindings=kb,
+                completer=command_completer,
                 enable_open_in_editor=True,  # Ctrl+X Ctrl+E 打开编辑器
             )
         else:
@@ -105,7 +115,7 @@ class AgentLoop:
         if self.session.system_prompt:
             sp = self.session.system_prompt[:80]
             self._print(f"  [{label}]角色设定:[/] [{text}]{sp}[/]")
-        self._print(f"\n[dim {dim}]💡 输入消息开始对话，输入 /quit 或 Ctrl+C 退出[/]\n")
+        self._print(f"\n[dim {dim}]💡 输入消息开始对话 · /help 帮助 · /keys 快捷键 · /quit 退出[/]\n")
 
         while True:
             try:
@@ -136,20 +146,64 @@ class AgentLoop:
                 goodbye = self.skin.branding("goodbye", "Goodbye!") if self.skin else "再见！"
                 self._print(f"[bold]{goodbye}[/]")
                 break
-            elif cmd == "/help":
+            elif cmd in ("/help", "/h", "/?"):
                 help_header = self.skin.branding("help_header", "Available Commands") if self.skin else "Available Commands"
-                self._print(f"\n[bold {accent}]{help_header}[/]")
-                commands = [
-                    ("/help", "显示此帮助信息"),
-                    ("/quit, /exit, /q", "退出对话"),
-                    ("/clear", "清空对话历史"),
-                    ("/history", "查看对话历史摘要"),
-                    ("/model", "显示当前模型信息"),
-                    ("Ctrl+X Ctrl+E", "打开编辑器编辑多行输入"),
-                    ("Esc+Enter", "插入换行（多行输入）"),
-                ]
-                for name, desc in commands:
-                    self._print(f"  [{label}]{name:25}[/] [{text}]{desc}[/]")
+                if self.console:
+                    from rich.table import Table
+                    from rich.panel import Panel
+                    from rich.box import ROUNDED
+                    t = Table(show_header=False, box=ROUNDED, border_style=dim, padding=(0, 1))
+                    t.add_column("Command", style=f"bold {label}", width=26)
+                    t.add_column("Description", style=text)
+                    for name, desc in [
+                        ("/help, /h, /?", "显示此帮助信息"),
+                        ("/keys", "显示快捷键列表"),
+                        ("/quit, /exit, /q", "退出对话"),
+                        ("/clear", "清空对话历史"),
+                        ("/history", "查看对话历史摘要"),
+                        ("/model", "显示当前模型信息"),
+                    ]:
+                        t.add_row(name, desc)
+                    self.console.print(Panel(t, title=f"[bold {accent}]{help_header}[/]", border_style=dim, padding=(0, 1)))
+                else:
+                    self._print(f"\n[bold {accent}]{help_header}[/]")
+                    self._print(f"  /help       显示此帮助信息")
+                    self._print(f"  /keys       显示快捷键列表")
+                    self._print(f"  /quit       退出对话")
+                    self._print(f"  /clear      清空对话历史")
+                    self._print(f"  /history    查看对话历史")
+                    self._print(f"  /model      显示模型信息")
+                self._print()
+                continue
+            elif cmd == "/keys":
+                if self.console:
+                    from rich.table import Table
+                    from rich.panel import Panel
+                    from rich.box import ROUNDED
+                    t = Table(show_header=False, box=ROUNDED, border_style=dim, padding=(0, 1))
+                    t.add_column("Key", style=f"bold {accent}", width=24)
+                    t.add_column("Action", style=text)
+                    t.add_column("Note", style=f"dim {dim}")
+                    keys = [
+                        ("Enter", "提交消息", "发送当前输入"),
+                        ("Esc + Enter", "插入换行", "多行输入，不提交"),
+                        ("Ctrl+J", "插入换行", "等同 Esc+Enter"),
+                        ("Ctrl+X Ctrl+E", "打开编辑器", "用 $EDITOR 编辑多行内容"),
+                        ("↑ / ↓", "浏览历史", "上/下翻阅历史输入"),
+                        ("Ctrl+C", "退出", "强制退出对话"),
+                        ("Tab", "补全命令", "补全 / 开头的命令"),
+                    ]
+                    for key, action, note in keys:
+                        t.add_row(key, action, note)
+                    self.console.print(Panel(t, title=f"[bold {accent}]⌨  Keybindings[/]", border_style=dim, padding=(0, 1)))
+                else:
+                    self._print(f"\n[bold {accent}]⌨  Keybindings[/]")
+                    self._print(f"  Enter            提交消息")
+                    self._print(f"  Esc+Enter        插入换行")
+                    self._print(f"  Ctrl+J           插入换行")
+                    self._print(f"  Ctrl+X Ctrl+E    打开编辑器")
+                    self._print(f"  ↑/↓              浏览历史")
+                    self._print(f"  Ctrl+C           退出")
                 self._print()
                 continue
             elif cmd == "/clear":
