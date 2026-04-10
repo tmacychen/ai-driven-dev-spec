@@ -4,7 +4,7 @@
 
 Inspired by [Anthropic's research](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents) and [LangChain's harness engineering](https://blog.langchain.com/improving-deep-agents-with-harness-engineering/).
 
-**[中文文档](#中文文档) | [English Documentation](#english-documentation)**
+**[中文文档](README.md#中文文档) | [English Documentation](#english-documentation)**
 
 ---
 
@@ -33,10 +33,12 @@ Based on [Claude Code's design approach](https://github.com/ZhangHanDong/harness
 | **State Management** | Relies on AI memory | Agent Loop enforcement |
 | **Agent Selection** | AI judgment | Auto routing decision |
 | **State Stability** | May thrash | Latch mechanism protection |
-| **Safety** | Relies on AI judgment | Fail-closed design |
+| **Safety** | Relies on AI judgment | Fail-closed + three-tier permission |
 | **Observability** | Logs only | Compliance tracking |
+| **Context Management** | Depends on model window | Two-layer compression + two-layer memory |
+| **Memory Continuity** | Amnesia each session | Evolving memory + chained Sessions |
 
-**Core Features**: System prompt injection • Agent Loop state machine • Latch protection • Fail-safe defaults • Compliance tracking
+**Core Features**: System prompt injection • Agent Loop state machine • Latch protection • Fail-safe defaults • Compliance tracking • Two-layer compression • Two-layer memory • Three-tier permission
 
 ---
 
@@ -63,7 +65,7 @@ python3 scripts/adds.py start
 python3 scripts/adds.py status
 ```
 
-**Full Guide**: [v2-quick-start.md](docs/en/v2-quick-start.md) | [中文](docs/v2-quick-start.md)
+**Full Guide**: [quick-start.md](docs/en/quick-start.md) | [中文](docs/quick-start.md)
 
 ---
 
@@ -89,14 +91,42 @@ python3 scripts/adds.py status
 while True:
     ① Context preprocessing    # Forced check of feature_list.md
     ② Route decision           # Auto-select agent
-    ③ Execute agent            # Deterministic execution
+    ③ Execute agent            # Permission check → Deterministic execution
     ④ Update state             # Latch protection
     ⑤ Termination check        # Explicit termination condition
 ```
 
 **Advantages**: State-driven rather than AI judgment, prevents illegal state transitions
 
-### 3. Fail-Closed Mechanism
+### 3. Two-Layer Compression (P0-2)
+
+```
+Layer 1: Tool output exceeds threshold → Save to .log + replace with summary (real-time, no API call)
+Layer 2: Context exceeds 80% → LLM structured summary + .mem archive + new Session
+```
+
+**Advantages**: Error signals never compressed, historical data archived without loss
+
+### 4. Two-Layer Memory (P0-3)
+
+```
+Layer 1: index.mem (fixed memory + index clues) → Always injected into context
+Layer 2: .mem files (chained archives) → On-demand loading
+```
+
+**Advantages**: Memory evolution/detox/role-aware/reflection protocol/regression alarm/forced replay
+
+### 5. Three-Tier Permission (P0-4)
+
+```
+Allow  → Auto-approve (ls, cat, python, git status...)
+Ask    → User confirmation (rm, pip install, git push...)
+Deny   → Block entirely (sudo, mkfs, write to /etc...)
+```
+
+**Advantages**: Four modes (default/plan/auto/bypass) + dead loop protection + session-level overrides
+
+### 6. Fail-Closed Mechanism
 
 ```python
 if not pending_features:
@@ -105,7 +135,7 @@ if not pending_features:
 
 **Advantages**: Default to safest behavior, avoids error accumulation
 
-### 4. Compliance Tracking
+### 7. Compliance Tracking
 
 - ✅ Detect "one feature per session" violations
 - ✅ Validate state transition legality
@@ -116,22 +146,64 @@ if not pending_features:
 
 ---
 
+## P0 Architecture
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    CLI Entry Layer                        │
+│  adds.py — init/start/status/route/mem/session/perm      │
+├──────────────────────────────────────────────────────────┤
+│                 Agent Loop Scheduling Layer               │
+│  agent_loop.py — State machine + routing + iteration     │
+│  system_prompt_builder.py — Segmented SP + memory inject │
+│  compliance_tracker.py — Compliance tracking             │
+├────────┬──────────┬─────────────┬─────────────────────────┤
+│ P0-1   │ P0-2     │ P0-3        │ P0-4                   │
+│ Model  │ Compress │ Memory      │ Permission             │
+│ Layer  │ Layer    │ Layer       │ Layer                  │
+│        │          │             │                         │
+│ model/ │ context_ │ memory_     │ permission_             │
+│  API   │ compactor│ manager     │  manager.py             │
+│  CLI   │ token_   │ conflict_   │                         │
+│  SDK   │ budget   │ detector    │                         │
+│        │ session_ │ retriever   │                         │
+│        │ manager  │ detox       │                         │
+│        │ summary_ │ consistency │                         │
+│        │ decision │ _guard      │                         │
+│        │ _engine  │ role_       │                         │
+│        │          │ injector    │                         │
+│        │          │ memory_cli  │                         │
+│        │          │ priority_   │                         │
+│        │          │ sorter      │                         │
+├────────┴──────────┴─────────────┴─────────────────────────┤
+│                    Infrastructure Layer                    │
+│  .ai/sessions/ — .ses/.log/.mem file storage              │
+│  .ai/memories/ — SKILLS/ + role-aware memory              │
+│  .ai/settings.json — Global configuration                 │
+└──────────────────────────────────────────────────────────┘
+```
+
+See: [Architecture Document](.ai/architecture.md) | [Improvement Roadmap](.ai/roadmap/README.md)
+
+---
+
 ## Documentation Navigation
 
 ### 🚀 New Users (5-30 minutes)
 
 | Document | Time | Content |
 |----------|------|---------|
-| [Quick Start](docs/en/v2-quick-start.md) \| [中文](docs/v2-quick-start.md) | 5 min | 5-step onboarding guide |
-| [Usage Examples](docs/en/v2-usage-examples.md) \| [中文](docs/v2-usage-examples.md) | 15 min | Real project examples |
-| [Best Practices](docs/en/v2-usage-examples.md#best-practices) | 10 min | Avoid pitfalls |
+| [Quick Start](docs/en/quick-start.md) \| [中文](docs/quick-start.md) | 5 min | 5-step onboarding guide |
+| [Usage Examples](docs/en/usage-examples.md) \| [中文](docs/usage-examples.md) | 15 min | Real project examples |
+| [Core Guidelines](.ai/CORE_GUIDELINES.md) | 10 min | Agent must-read rules |
 
 ### 🎯 Technical Staff (30-120 minutes)
 
 | Document | Time | Content |
 |----------|------|---------|
-| [Improvement Plan](docs/improvement-plan.md) | 60 min | Technical implementation details |
-| [Architecture Design](docs/improvement-plan.md#核心架构改进) | 30 min | Architecture design philosophy |
+| [Improvement Roadmap](.ai/roadmap/README.md) | 60 min | P0/P1/P2 full plan |
+| [Architecture](.ai/architecture.md) | 30 min | P0 architecture & data flow |
+| [Full Specification](docs/specification.md) | 60 min | Technical spec document |
 
 ### 📊 Project Managers (10-30 minutes)
 
@@ -146,24 +218,68 @@ if not pending_features:
 
 ```
 ai-driven-dev-spec/
-├── scripts/               # Core implementation
-│   ├── adds.py           # Main CLI tool
-│   ├── system_prompt_builder.py  # Prompt builder
-│   ├── agent_loop.py        # Agent Loop state machine
-│   ├── compliance_tracker.py  # Compliance tracker
-│   ├── agents.py            # 5 agent implementations
-│   └── test_integration.py  # Integration tests (28 tests)
+├── scripts/                        # Core implementation
+│   ├── adds.py                     # Main CLI tool
+│   ├── agent_loop.py               # Agent Loop state machine
+│   ├── system_prompt_builder.py    # Prompt builder
+│   ├── compliance_tracker.py       # Compliance tracker
+│   ├── agents.py                   # 5 agent implementations
+│   │
+│   ├── model/                      # [P0-1] Model calling layer
+│   │   ├── base.py                 # ModelInterface abstract base
+│   │   ├── factory.py              # Interactive model factory
+│   │   ├── api_adapter.py          # API call adapter
+│   │   ├── cli_adapter.py          # CLI tool adapter
+│   │   ├── sdk_adapter.py          # SDK adapter
+│   │   ├── task_dispatcher.py      # CLI task dispatcher
+│   │   ├── skill_generator.py      # Skill auto-generator
+│   │   └── providers/              # Provider registry
+│   │       ├── minimax.py
+│   │       ├── codebuddy.py
+│   │       └── registry.py
+│   │
+│   ├── token_budget.py             # [P0-2] Token budget manager
+│   ├── session_manager.py          # [P0-2] Session file manager
+│   ├── summary_decision_engine.py  # [P0-2] Summary strategy engine
+│   ├── context_compactor.py        # [P0-2] Two-layer compression
+│   │
+│   ├── memory_manager.py           # [P0-3] Memory manager
+│   ├── memory_conflict_detector.py # [P0-3] Conflict detector
+│   ├── memory_retriever.py         # [P0-3] Memory retriever
+│   ├── memory_detox.py             # [P0-3] Memory detox engine
+│   ├── consistency_guard.py        # [P0-3] Consistency guard
+│   ├── role_memory_injector.py     # [P0-3] Role-aware injector
+│   ├── memory_cli.py               # [P0-3] CLI memory commands
+│   ├── index_priority_sorter.py    # [P0-3] Priority sorter
+│   │
+│   ├── permission_manager.py       # [P0-4] Permission manager
+│   │
+│   ├── test_p0_2.py               # P0-2 unit tests (57 tests)
+│   ├── test_p0_3.py               # P0-3 unit tests (74 tests)
+│   └── test_p0_4.py               # P0-4 unit tests (69 tests)
 │
-├── docs/                     # Documentation
-│   ├── en/                  # English docs
-│   ├── v2-quick-start.md    # Quick start
-│   ├── v2-usage-examples.md # Usage examples
-│   ├── v1-vs-v2-comparison.md  # Detailed comparison
-│   └── improvement-plan.md  # Improvement plan
+├── .ai/                            # Project state
+│   ├── CORE_GUIDELINES.md          # Core guidelines
+│   ├── architecture.md             # Architecture doc
+│   ├── feature_list.md             # Feature list
+│   ├── progress.md                 # Progress log
+│   ├── settings.json               # Global config
+│   ├── sessions/                   # Session + memory files
+│   ├── memories/                   # Skill library + role memory
+│   └── roadmap/                    # Improvement roadmap
 │
-├── IMPROVEMENT_SUMMARY.md    # Executive summary
-├── PROGRESS_REPORT.md       # Progress report
-└── NEXT_STEPS.md            # Completion summary
+├── docs/                           # Documentation
+│   ├── guide/                      # Usage guides
+│   ├── references/                 # Reference materials
+│   ├── specification.md            # Full technical spec
+│   └── en/                         # English docs
+│
+├── templates/                      # Template files
+├── schemas/                        # JSON Schema
+├── setup.py                        # Install script
+├── CHANGELOG.md                    # Changelog
+├── README.md                       # Project README (Chinese)
+└── LICENSE                         # License
 ```
 
 ---
@@ -171,22 +287,24 @@ ai-driven-dev-spec/
 ## Test Results
 
 ```
-Test Suite: 28 tests
-Pass Rate: 100%
-Execution Time: 0.718 seconds
+P0 Unit Tests: 200 tests | Pass Rate: 100%
 
-✅ TestSystemPromptBuilder (5 tests) - System prompt builder
-✅ TestAgentLoop (6 tests) - Agent Loop state machine
-✅ TestLatches (3 tests) - Latch mechanism
-✅ TestComplianceTracker (6 tests) - Compliance tracker
-✅ TestAgentBoundaries (6 tests) - Agent boundary constraints
-✅ TestIntegration (1 test) - Complete workflow
+✅ test_p0_2 (57 tests) - Context Compression Layer
+   TokenBudget / SessionManager / SummaryDecisionEngine / ContextCompactor
+
+✅ test_p0_3 (74 tests) - Memory System
+   MemoryManager / ConflictDetector / MemoryRetriever / MemoryDetox
+   ConsistencyGuard / RoleMemoryInjector / IndexPrioritySorter / MemoryCLI
+
+✅ test_p0_4 (69 tests) - Permission Manager
+   PermissionLevel / PermissionMode / RuleMatch / CooldownState
+   SessionOverrides / PermissionDecision / ParseToolCommand
 ```
 
 Run tests:
 ```bash
 cd scripts
-python3 test_integration.py
+python3 -m unittest test_p0_2 test_p0_3 test_p0_4 -v
 ```
 
 ---
@@ -198,34 +316,13 @@ ADDS fully implements Claude Code's six harness engineering principles:
 | Principle | Implementation | Code Location |
 |-----------|---------------|---------------|
 | **Prompt as Control Plane** | SystemPromptBuilder | `system_prompt_builder.py` |
-| **Cache-Aware Design** | Static/dynamic boundary | `system_prompt_builder.py:14` |
-| **Fail-Closed, Explicit Open** | SafetyDefaults | `agent_loop.py:167-219` |
+| **Cache-Aware Design** | Static/dynamic boundary | `system_prompt_builder.py` |
+| **Fail-Closed, Explicit Open** | SafetyDefaults | `agent_loop.py` |
 | **A/B Test Everything** | ComplianceTracker | `compliance_tracker.py` |
-| **Observe Before Fixing** | Violation tracking | `compliance_tracker.py:140-243` |
-| **Latch for Stability** | ProjectLatches | `agent_loop.py:89-121` |
+| **Observe Before Fixing** | Violation tracking | `compliance_tracker.py` |
+| **Latch for Stability** | ProjectLatches | `agent_loop.py` |
 
 **Reference Book**: [《驾驭工程：从 Claude Code 源码到 AI 编码最佳实践》](https://github.com/ZhangHanDong/harness-engineering-from-cc-to-ai-coding)
-
----
-
-## Improvement Results
-
-### Quantitative Improvements (Test Verified)
-
-| Metric | Traditional Estimate | ADDS Tested | Improvement |
-|--------|---------------------|-------------|-------------|
-| Spec Compliance Rate | ~60% | 100% | +40% |
-| State Thrashing Rate | ~20% | 0% | -100% |
-| AI Understanding Burden | Read full spec | No reading | -100% |
-| Agent Selection Accuracy | ~70% | 100% | +30% |
-| Violation Detection | Uncontrollable | Tracked | ✅ |
-
-### Qualitative Improvements
-
-- ✅ **AI doesn't need to understand spec** - System prompt auto-injects constraints
-- ✅ **State is stable and reliable** - Latch mechanism guarantees session stability
-- ✅ **Failures are recoverable** - Fail-closed + auto rollback
-- ✅ **Behavior is observable** - Spec compliance tracking + real-time monitoring
 
 ---
 
@@ -236,58 +333,28 @@ ADDS fully implements Claude Code's six harness engineering principles:
 python3 scripts/adds.py init      # Initialize project
 python3 scripts/adds.py status    # Check progress
 python3 scripts/adds.py route     # Recommend agent
-python3 scripts/adds.py validate  # Validate feature list
 
 # Development loop
 python3 scripts/adds.py start     # Start Agent Loop
-python3 scripts/adds.py stop      # Stop loop
+python3 scripts/adds.py start --perm default  # Specify permission mode
 
-# Testing
-python3 scripts/test_integration.py  # Run all tests
+# Session management
+python3 scripts/adds.py session list     # Session list
+python3 scripts/adds.py session restore <id>  # Restore session
+
+# Memory management
+python3 scripts/adds.py mem status       # Memory status
+python3 scripts/adds.py mem audit        # Interactive review
+python3 scripts/adds.py mem prune --module auth  # Clean up memory
+
+# Permission management
+python3 scripts/adds.py perm status      # Permission status
+python3 scripts/adds.py perm rules       # Permission rules
+python3 scripts/adds.py perm mode auto   # Switch mode
+
+# Test verification
+cd scripts && python3 -m unittest test_p0_2 test_p0_3 test_p0_4 -v
 ```
-
----
-
-## Real-World Scenarios
-
-### Scenario 1: Web API Project
-
-```bash
-# Initialize
-python3 scripts/adds.py init
-
-# PM Agent automatically analyzes requirements and creates feature list
-# Developer Agent implements features one by one
-# Tester Agent automatically tests and verifies
-# Reviewer Agent performs final review
-```
-
-**Detailed Example**: [v2-usage-examples.md#scenario-1-web-api-project](docs/en/v2-usage-examples.md#scenario-1-web-api-project)
-
-### Scenario 2: CLI Tool Development
-
-```bash
-# Create CLI tool from scratch
-# Includes command parsing, parameter validation, output formatting
-```
-
-**Detailed Example**: [v2-usage-examples.md#scenario-2-cli-tool-development](docs/en/v2-usage-examples.md#scenario-2-cli-tool-development)
-
----
-
-## FAQ
-
-### Q: How does ADDS ensure AI follows the specification?
-
-**A**: ADDS guarantees compliance through four mechanisms: system prompt injection, Agent Loop state machine, latch mechanism, and fail-closed design. Tests show 100% spec compliance rate without requiring AI to understand the specification.
-
-### Q: How to debug when encountering issues?
-
-**A**: Check the [Troubleshooting Guide](docs/en/v2-usage-examples.md#troubleshooting), or run the compliance tracker to detect violations.
-
-### Q: What's the difference between ADDS and traditional AI coding tools?
-
-**A**: Traditional tools rely on AI understanding specifications, while ADDS enforces behavior through architectural constraints. See [Detailed Comparison](docs/en/v1-vs-v2-comparison.md).
 
 ---
 
@@ -296,33 +363,6 @@ python3 scripts/adds.py init
 This project is licensed under the **GNU General Public License v3.0 (GPLv3)**.
 
 See the [LICENSE](LICENSE) file for full license text.
-
-### What GPLv3 Means for You
-
-**Using ADDS as a development tool** (running `adds` commands, reading templates/docs):
-No restrictions. GPLv3 governs distribution, not usage.
-
-**Copying ADDS scripts into your project** (via `init-adds.py` or manual copy):
-Your project becomes subject to GPLv3 obligations for those copied files. This means:
-
-| Scenario | Obligation |
-|----------|-----------|
-| Your project is also GPLv3 | No additional action needed |
-| Your project uses a compatible license (AGPL, LGPL) | No additional action needed |
-| Your project is proprietary / closed-source | You must disclose that GPLv3-licensed files are included and provide their source. You may place the ADDS files in a separate directory with a NOTICE file. |
-| You modify ADDS scripts | Modified versions must also be licensed under GPLv3 and source must be made available |
-| You distribute ADDS as part of a product | You must provide the complete corresponding source code of ADDS under GPLv3 |
-
-### Quick Compliance Checklist
-
-- [ ] If your project is **not** GPLv3, consider placing ADDS files in a clearly marked subdirectory (e.g., `.ai/`) with a `NOTICE` or `LICENSE.third-party` file
-- [ ] If you **modify** any ADDS scripts, ensure your modifications are also under GPLv3
-- [ ] If you **distribute** your project (including to customers or as a product), include the ADDS source code or a written offer to provide it
-- [ ] Do **not** remove or alter the GPLv3 license headers
-
-### Disclaimer
-
-This section provides general guidance and does not constitute legal advice. For specific compliance questions, consult with a legal professional familiar with open-source licensing.
 
 ---
 
@@ -339,25 +379,9 @@ This project design references [Claude Code's architecture approach](https://git
 
 ---
 
-**Project Status**: ✅ Production Ready  
-**Improvement Completion**: 100%  
-**Test Pass Rate**: 100%  
-**Documentation Completeness**: 100%  
-
-**Ready to start!** 🚀
-
----
-
-<a name="中文文档"></a>
-## 中文文档
-
-- [快速开始指南](docs/v2-quick-start.md)
-- [使用示例和最佳实践](docs/v2-usage-examples.md)
-- [详细对比](docs/v1-vs-v2-comparison.md)
-- [改进计划](docs/improvement-plan.md)
-- [执行摘要](IMPROVEMENT_SUMMARY.md)
-- [进度报告](PROGRESS_REPORT.md)
-- [完成总结](NEXT_STEPS.md)
+**Project Status**: 🚧 P0 development complete, integration testing pending  
+**P0 Progress**: 4/4 modules completed  
+**Test Pass Rate**: 100% (200/200)  
 
 ---
 
@@ -366,4 +390,7 @@ This project design references [Claude Code's architecture approach](https://git
 
 - [Quick Start Guide](docs/en/quick-start.md)
 - [Usage Examples & Best Practices](docs/en/usage-examples.md)
-- [Improvement Plan](docs/improvement-plan.md)
+- [Improvement Roadmap](.ai/roadmap/README.md)
+- [Architecture](.ai/architecture.md)
+- [Core Guidelines](.ai/CORE_GUIDELINES.md)
+- [Full Specification](docs/specification.md)
