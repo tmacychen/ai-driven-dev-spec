@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
+from model.base import ModelInterface
+
 
 # ============================================================================
 # 状态类型定义
@@ -284,6 +286,7 @@ class ADDSAgentLoop:
         self.project_latches = ProjectLatches()
         self.feature_latches = FeatureStateLatches()
         self.safety = SafetyDefaults()
+        self.model: Optional[ModelInterface] = None  # 注入模型
         
     async def run(self, initial_features: List[Feature]):
         """
@@ -421,6 +424,22 @@ class ADDSAgentLoop:
         # 模拟：状态转换
         self.safety.safe_status_transition(selected.status, FeatureStatus.IN_PROGRESS)
         selected.status = FeatureStatus.IN_PROGRESS
+        
+        # 如果有模型，调用模型获取实现建议
+        if self.model:
+            try:
+                messages = [
+                    {"role": "user", "content": f"请实现功能: {selected.name}\n描述: {selected.description}"}
+                ]
+                print(f"  📡 调用模型: {self.model.get_model_name()}")
+                async for response in self.model.chat(messages, stream=False):
+                    if response.finish_reason == "error":
+                        print(f"  ⚠️  模型调用失败: {response.content[:200]}")
+                    elif response.content:
+                        print(f"  📝 模型响应: {response.content[:200]}...")
+                    break  # 非流式，只需第一个响应
+            except Exception as e:
+                print(f"  ⚠️  模型调用异常: {e}")
         
         print(f"✅ Developer Agent 完成: 功能 '{selected.name}' 实现完成")
         

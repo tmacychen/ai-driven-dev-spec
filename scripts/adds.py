@@ -29,6 +29,7 @@ from agent_loop import (
     ProjectLatches, FeatureStateLatches, SafetyDefaults
 )
 from compliance_tracker import ComplianceTracker
+from model import ModelInterface, ModelFactory
 
 
 class ADDSCli:
@@ -53,6 +54,9 @@ class ADDSCli:
         self.feature_latches = FeatureStateLatches()
         self.safety = SafetyDefaults()
         self.compliance = ComplianceTracker()
+        
+        # 模型层
+        self.model: Optional[ModelInterface] = None
         
     def init(self):
         """
@@ -267,7 +271,7 @@ class ADDSCli:
         agent_prompt = build_agent_specific_prompt(recommended_agent.value, {})
         print(agent_prompt[:500] + "...")
     
-    def start(self, max_turns: int = 50):
+    def start(self, max_turns: int = 50, non_interactive: bool = False):
         """
         启动 ADDS Agent Loop
         
@@ -275,10 +279,16 @@ class ADDSCli:
         - 显式状态机控制
         - 自动代理切换
         - 合规性追踪
+        - 模型选择（API/CLI/SDK）
         """
         print("=" * 80)
         print("🚀 Starting ADDS Agent Loop")
         print("=" * 80)
+        
+        # 模型选择
+        print("\n📡 选择大模型...")
+        factory = ModelFactory(project_root=self.project_root)
+        self.model = factory.select_model(interactive=not non_interactive)
         
         feature_list_path = self.ai_dir / "feature_list.md"
         
@@ -304,6 +314,7 @@ class ADDSCli:
         loop = ADDSAgentLoop()
         loop.safety = self.safety
         loop.project_latches = self.project_latches
+        loop.model = self.model  # 注入模型
         
         # 运行
         result = asyncio.run(loop.run(features))
@@ -599,6 +610,7 @@ Examples:
     # start command
     start_parser = subparsers.add_parser('start', help='Start Agent Loop')
     start_parser.add_argument('--max-turns', type=int, default=50, help='Maximum iterations')
+    start_parser.add_argument('--non-interactive', action='store_true', help='Non-interactive model selection (auto-pick first available)')
     
     # validate command
     subparsers.add_parser('validate', help='Validate feature_list.md')
@@ -629,7 +641,7 @@ Examples:
     elif args.command == 'route':
         cli.route()
     elif args.command == 'start':
-        cli.start(max_turns=args.max_turns)
+        cli.start(max_turns=args.max_turns, non_interactive=args.non_interactive)
     elif args.command == 'validate':
         cli.validate()
     elif args.command == 'inject-prompt':

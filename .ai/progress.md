@@ -1,21 +1,53 @@
 # Project Progress Logs
 
 ## Current Focus
-P0 架构设计完成，准备进入 Phase 1 实现
+P0-1 模型调用层实现完成，准备进入 P0-2 上下文压缩
 
 ## Overall Status
-- ✅ Completed: 2
+- ✅ Completed: 3
 - 🔄 In Progress: 0
 - ⏳ Pending: 0
 - ⚠️ Blocked: 0
 - 🔴 Regression: 0
 
 ## Next Step
-按 improvement_roadmap.md Phase 1 计划，实现模型调用层（model/ 目录）
+按 improvement_roadmap.md Phase 2 计划，实现上下文压缩层
 
 ---
 
 ## Session History
+
+### [2026-04-10 10:00] Session — P0-1 模型调用层实现
+
+**Agent**: Developer (模型层实现)
+
+**Tasks Completed**:
+- 实现 `scripts/model/` 完整目录结构（9 个文件）
+- `base.py`: ModelInterface 抽象基类 + ModelResponse 统一响应
+- `factory.py`: ModelFactory 交互式模型选择工厂
+- `api_adapter.py`: API 调用适配器（基于 openai 库）
+- `cli_adapter.py`: CLI 工具适配器（基于 CLIProfile + TaskDispatcher）
+- `sdk_adapter.py`: SDK 适配器（基于 codebuddy-agent-sdk）
+- `task_dispatcher.py`: CLI 任务派发器 + CLIProfile 配置描述
+- `skill_generator.py`: 技能自动生成器（从文档提取技能描述）
+- `providers/minimax.py`: MiniMax Provider 配置（API + CLI）
+- `providers/codebuddy.py`: Codebuddy Provider 配置（CLI + SDK）
+- `providers/registry.py`: Provider 注册表（可扩展）
+- 修改 `adds.py`: start 命令集成模型选择
+- 修改 `agent_loop.py`: 注入 ModelInterface，Developer Agent 可调用模型
+- 新增 `requirements.txt`: 添加 openai 依赖
+
+**验证**:
+- ✅ Model layer imports OK
+- ✅ Provider registry OK（检测到 MiniMax CLI + Codebuddy CLI）
+- ✅ APIAdapter / CLIAdapter / SDKAdapter 单元测试通过
+- ✅ SkillGenerator 提取 6 个 Codebuddy 技能
+- ✅ adds.py / agent_loop.py 集成导入测试通过
+
+**Handoff Notes for Next Session**:
+> P0-1 模型调用层实现完成。下一步 P0-2：实现上下文压缩层（context_compactor.py, token_budget.py, session_manager.py, summary_decision_engine.py）。
+
+---
 
 ### [2026-04-10 09:33] Session — P0 架构设计与项目调整
 
