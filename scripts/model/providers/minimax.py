@@ -35,7 +35,7 @@ MINIMAX_CLI_PROFILE = CLIProfile(
 MINIMAX_PROVIDER = {
     "name": "MiniMax",
     "api": {
-        "base_url": "https://api.minimaxi.com/v1",
+        "base_url": "https://api.minimaxi.com/anthropic",  # Anthropic 兼容端点
         "api_key_env": "MINIMAX_API_KEY",
         "models": [
             "MiniMax-M2.7",
@@ -47,6 +47,7 @@ MINIMAX_PROVIDER = {
             "MiniMax-M2",
         ],
         "context_window": 204800,
+        "thinking_budget": 10000,  # 推理过程 token 预算
     },
     "cli": {
         "command": "mmx",

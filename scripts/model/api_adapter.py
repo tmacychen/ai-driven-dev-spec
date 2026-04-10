@@ -1,7 +1,8 @@
 """
 ADDS Model Layer — API 调用适配器
 
-基于 openai 库，兼容 OpenAI/Anthropic 格式的 HTTP API 调用。
+基于 anthropic 库，使用 Anthropic 兼容格式调用 MiniMax 等模型。
+优势：原生支持 thinking 块，可获取模型推理过程。
 """
 
 import os
@@ -11,40 +12,60 @@ from .base import ModelInterface, ModelResponse
 
 
 class APIAdapter(ModelInterface):
-    """API 调用适配器 — 基于 openai 库
+    """API 调用适配器 — 基于 anthropic 库
 
-    支持 OpenAI 兼容格式的 API 调用（MiniMax、DeepSeek 等均兼容）。
+    支持 Anthropic 兼容格式的 API 调用（MiniMax 官方推荐方式）。
+    原生支持 thinking 块，可分离模型推理过程和最终回复。
     """
 
     def __init__(self, provider_config: dict):
         self.base_url = provider_config["base_url"]
-        self.api_key_env = provider_config.get("api_key_env", "OPENAI_API_KEY")
+        self.api_key_env = provider_config.get("api_key_env", "ANTHROPIC_API_KEY")
         self.api_key = os.environ.get(self.api_key_env, provider_config.get("api_key", ""))
-        self.model = provider_config.get("model", "gpt-4")
-        self.context_window = provider_config.get("context_window", 128000)
+        self.model = provider_config.get("model", "MiniMax-M2.7")
+        self.context_window = provider_config.get("context_window", 204800)
+        self.thinking_budget = provider_config.get("thinking_budget", 10000)
         self._features = {
             "streaming": True,
             "tools": True,
             "vision": False,
             "system_prompt": True,
+            "thinking": True,  # 支持 thinking 块
         }
         self._client = None
 
     def _get_client(self):
-        """延迟初始化 openai 客户端"""
+        """延迟初始化 anthropic 客户端"""
         if self._client is None:
             try:
-                from openai import AsyncOpenAI
+                from anthropic import AsyncAnthropic
 
-                self._client = AsyncOpenAI(
+                self._client = AsyncAnthropic(
                     base_url=self.base_url,
                     api_key=self.api_key,
                 )
             except ImportError:
                 raise ImportError(
-                    "openai 库未安装。请运行: pip install openai"
+                    "anthropic 库未安装。请运行: pip install anthropic"
                 )
         return self._client
+
+    def _build_anthropic_messages(self, messages: list[dict]) -> list[dict]:
+        """将 OpenAI 格式消息转为 Anthropic 格式
+
+        OpenAI: [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}]
+        Anthropic: system 单独传, messages 只含 user/assistant
+        """
+        result = []
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            # 跳过 system 消息（通过 system_prompt 参数单独传）
+            if role == "system":
+                continue
+            # 转换为 Anthropic 格式
+            result.append({"role": role, "content": content})
+        return result
 
     async def chat(
         self,
@@ -57,67 +78,103 @@ class APIAdapter(ModelInterface):
         """流式聊天接口"""
         client = self._get_client()
 
-        # 构建消息列表
-        api_messages = []
-        if system_prompt:
-            api_messages.append({"role": "system", "content": system_prompt})
-        api_messages.extend(messages)
+        # 构建消息列表（过滤 system 消息）
+        api_messages = self._build_anthropic_messages(messages)
 
         # 构建请求参数
         request_params = {
             "model": kwargs.pop("model", self.model),
+            "max_tokens": kwargs.pop("max_tokens", 16384),
             "messages": api_messages,
-            "stream": stream,
         }
+
+        # 系统提示词（Anthropic 格式：单独传）
+        if system_prompt:
+            request_params["system"] = system_prompt
+
+        # 启用 thinking（extended thinking）
+        # MiniMax-M2.x 支持推理过程输出
+        request_params["thinking"] = {
+            "type": "enabled",
+            "budget_tokens": self.thinking_budget,
+        }
+
+        # 工具定义
         if tools:
             request_params["tools"] = tools
+
         request_params.update(kwargs)
 
         try:
             if stream:
-                response = await client.chat.completions.create(**request_params)
-                collected_content = []
-                collected_usage = {"input_tokens": 0, "output_tokens": 0}
+                # 流式调用
+                async with client.messages.stream(**request_params) as stream_ctx:
+                    collected_content = []
+                    collected_thinking = []
+                    collected_usage = {"input_tokens": 0, "output_tokens": 0}
 
-                async for chunk in response:
-                    if chunk.choices:
-                        delta = chunk.choices[0].delta
-                        if delta.content:
-                            collected_content.append(delta.content)
-                            yield ModelResponse(
-                                content=delta.content,
-                                model=chunk.model or self.model,
-                                usage=collected_usage,
-                                finish_reason="streaming",
-                            )
-                        # 最后一个 chunk 可能有 usage
-                        if hasattr(chunk, "usage") and chunk.usage:
+                    async for event in stream_ctx:
+                        # 处理 thinking 事件
+                        if event.type == "content_block_delta":
+                            delta = event.delta
+                            if hasattr(delta, "thinking") and delta.thinking:
+                                collected_thinking.append(delta.thinking)
+                                yield ModelResponse(
+                                    content="",
+                                    model=request_params["model"],
+                                    usage=collected_usage,
+                                    finish_reason="thinking",
+                                    thinking=delta.thinking,
+                                )
+                            elif hasattr(delta, "text") and delta.text:
+                                collected_content.append(delta.text)
+                                yield ModelResponse(
+                                    content=delta.text,
+                                    model=request_params["model"],
+                                    usage=collected_usage,
+                                    finish_reason="streaming",
+                                )
+
+                        # 处理 message_stop 事件
+                        elif event.type == "message_stop":
+                            # 获取最终 usage
+                            msg = await stream_ctx.get_final_message()
                             collected_usage = {
-                                "input_tokens": getattr(chunk.usage, "prompt_tokens", 0) or 0,
-                                "output_tokens": getattr(chunk.usage, "completion_tokens", 0) or 0,
+                                "input_tokens": getattr(msg.usage, "input_tokens", 0),
+                                "output_tokens": getattr(msg.usage, "output_tokens", 0),
                             }
+                            yield ModelResponse(
+                                content="",
+                                model=msg.model or self.model,
+                                usage=collected_usage,
+                                finish_reason="stop",
+                                thinking="".join(collected_thinking) or None,
+                            )
 
-                    # 流结束
-                    if chunk.choices and chunk.choices[0].finish_reason:
-                        yield ModelResponse(
-                            content="",
-                            model=chunk.model or self.model,
-                            usage=collected_usage,
-                            finish_reason=chunk.choices[0].finish_reason,
-                        )
             else:
-                response = await client.chat.completions.create(**request_params)
-                choice = response.choices[0]
+                # 非流式调用
+                response = await client.messages.create(**request_params)
+
+                # 提取 thinking 和 text 内容
+                thinking_text = ""
+                response_text = ""
+                for block in response.content:
+                    if block.type == "thinking":
+                        thinking_text += block.thinking
+                    elif block.type == "text":
+                        response_text += block.text
+
                 usage_data = {
-                    "input_tokens": getattr(response.usage, "prompt_tokens", 0) or 0,
-                    "output_tokens": getattr(response.usage, "completion_tokens", 0) or 0,
+                    "input_tokens": getattr(response.usage, "input_tokens", 0),
+                    "output_tokens": getattr(response.usage, "output_tokens", 0),
                 }
+
                 yield ModelResponse(
-                    content=choice.message.content or "",
+                    content=response_text,
                     model=response.model or self.model,
                     usage=usage_data,
-                    tool_calls=choice.message.tool_calls,
-                    finish_reason=choice.finish_reason or "stop",
+                    finish_reason=response.stop_reason or "stop",
+                    thinking=thinking_text or None,
                 )
 
         except Exception as e:
@@ -130,7 +187,6 @@ class APIAdapter(ModelInterface):
 
     def count_tokens(self, text: str) -> int:
         """Token 计数（近似估算）"""
-        # 简单估算：英文 ~4 字符/token，中文 ~2 字符/token
         cn_chars = sum(1 for c in text if "\u4e00" <= c <= "\u9fff")
         en_chars = len(text) - cn_chars
         return cn_chars // 2 + en_chars // 4

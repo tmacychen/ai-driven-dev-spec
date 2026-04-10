@@ -20,6 +20,7 @@ class ModelResponse:
     usage: dict = field(default_factory=lambda: {"input_tokens": 0, "output_tokens": 0})
     tool_calls: Optional[list] = None
     finish_reason: str = "stop"
+    thinking: Optional[str] = None  # 模型推理过程（Anthropic thinking 块）
     progress_hints: Optional[list[dict]] = None
     # progress_hints 示例:
     # [{"phase": "compiling", "progress": 30, "detail": "Building contracts..."},
