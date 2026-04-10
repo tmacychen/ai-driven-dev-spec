@@ -246,6 +246,69 @@ class ADDSCli:
         print(f"\n💡 用法: adds start --role {list(BUILTIN_ROLES.keys())[0]}")
         print(f"   或自定义: adds start --role \"你的自定义提示词\"")
 
+    def list_skins(self, preview: bool = False):
+        """列出可用皮肤主题"""
+        try:
+            from skins import (
+                SkinConfig, load_skin, list_skins as get_skin_list,
+                render_banner, create_console, ADDS_LOGO, ADDS_LOGO_COLORS,
+            )
+            from rich.text import Text
+            from rich.align import Align
+            from rich.table import Table
+            from rich.panel import Panel
+        except ImportError:
+            print("⚠️  皮肤引擎需要 rich 和 pyyaml，请运行: adds install-deps")
+            return
+
+        console = create_console()
+
+        # 收集所有皮肤：内置 + 用户目录
+        builtin_skins_dir = str(_SCRIPT_DIR / "skins")
+        builtin_skins = get_skin_list(builtin_skins_dir)
+        user_skins = get_skin_list()  # ~/.adds/skins/
+
+        all_skins = {}
+        for name in builtin_skins:
+            skin = load_skin(name, config_dir=builtin_skins_dir)
+            all_skins[name] = (skin, "内置")
+        for name in user_skins:
+            if name not in all_skins:
+                skin = load_skin(name)
+                all_skins[name] = (skin, "自定义")
+
+        # 默认主题（无 YAML 文件）
+        all_skins["adds_default"] = (SkinConfig({}), "内置 (默认)")
+
+        # 按名称排序
+        sorted_skins = sorted(all_skins.items())
+
+        # 列表
+        t = Table(show_header=True, box=None, padding=(0, 2))
+        t.add_column("名称", style="bold #FFD700", width=20)
+        t.add_column("来源", style="#4dd0e1", width=14)
+        t.add_column("描述", style="#FFF8DC")
+
+        for name, (skin, source) in sorted_skins:
+            t.add_row(name, source, skin.description or "-")
+
+        console.print(Panel(
+            t,
+            title="[bold #FFD700]🎨 可用皮肤主题[/]",
+            border_style="#CD7F32",
+            padding=(0, 1),
+        ))
+        console.print("\n[dim #B8860B]用法: adds start --skin adds_cyberpunk[/]")
+
+        # 预览模式
+        if preview:
+            console.print()
+            for name, (skin, source) in sorted_skins:
+                console.rule(f"[bold #FFD700]{name}[/]")
+                render_banner(console, skin, model_name="Demo-Model",
+                             context_window=128000, role="pm")
+                console.print()
+
     def status(self):
         """查看项目状态"""
         print("=" * 60)
@@ -332,7 +395,10 @@ Examples:
   adds start --role developer       启动开发者 Agent
   adds start --role "你是Rust专家"   自定义角色提示词
   adds start --non-interactive      非交互式选择模型
+  adds start --skin adds_cyberpunk  使用赛博朋克皮肤
   adds list-roles                   列出内置角色
+  adds list-skins                   列出可用皮肤主题
+  adds list-skins --preview         预览每个皮肤效果
   adds init                         初始化项目
   adds status                       查看项目状态
   adds validate                   校验 feature_list.md
@@ -357,6 +423,11 @@ Examples:
 
     # list-roles command
     subparsers.add_parser("list-roles", help="列出内置角色")
+
+    # list-skins command
+    list_skins_parser = subparsers.add_parser("list-skins", help="列出可用皮肤主题")
+    list_skins_parser.add_argument("--preview", action="store_true",
+                                   help="预览每个主题的 Banner")
 
     # init command
     subparsers.add_parser("init", help="初始化 ADDS 项目")
@@ -386,6 +457,12 @@ Examples:
         cli = ADDSCli()
         ok = cli.validate()
         sys.exit(0 if ok else 1)
+
+    # list-skins 不需要检查依赖
+    if args.command == "list-skins":
+        cli = ADDSCli()
+        cli.list_skins(preview=args.preview)
+        return
 
     # 其他命令需要检查依赖
     if not check_dependencies():
