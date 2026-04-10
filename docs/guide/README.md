@@ -21,10 +21,18 @@ New to ADDS? Start here:
 
 ---
 
+## Architecture & Roadmap
+
+- [Architecture Document](../../.ai/architecture.md) - P0 architecture design
+- [P0 Roadmap](../../.ai/roadmap/README.md) - Improvement roadmap
+
+---
+
 ## Other Documentation
 
 - [IDE Integration](../ide-integration.md) - Using ADDS with Cursor, Windsurf, etc.
 - [Full Specification](../specification.md) - Complete technical specification
+- [Reference Materials](../references/) - Research reports (read-only)
 
 ---
 
@@ -36,3 +44,4 @@ If you're an AI Agent reading this:
 2. Use the [Agent Selection Guide](./03-agent-selection.md) to determine your role
 3. Follow the [Session Workflow](./04-session-workflow.md) for operations
 4. Always update `feature_list.md` and `progress.md` before ending
+5. Check `.ai/sessions/index.mem` for fixed memory and session history

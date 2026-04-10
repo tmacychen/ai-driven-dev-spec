@@ -53,7 +53,47 @@ Each agent has a dedicated prompt file in `.ai/prompts/`:
 | `.ai/feature_list.md` | Feature list (truth source): 50-200 discrete features, each with test cases |
 | `.ai/progress.md` | Progress log: incremental session output |
 | `.ai/architecture.md` | Architecture design: tech stack, structure, decisions |
+| `.ai/settings.json` | Global configuration: permissions, model, compaction, memory |
+| `.ai/sessions/index.mem` | Memory index: fixed memory + session clues |
 | `app_spec.md` | Application specification: original requirements source |
+
+---
+
+## 🏗️ P0 Architecture Modules
+
+### P0-1: Model Calling Layer
+
+| Mode | Description |
+|------|------------|
+| API | Direct HTTP calls (OpenAI/Anthropic compatible) |
+| CLI | Task dispatch protocol for CLI tools (mmx, codebuddy) |
+| SDK | Direct programming calls (codebuddy-agent-sdk) |
+
+### P0-2: Context Compression
+
+| Layer | Trigger | Strategy |
+|-------|---------|----------|
+| Layer 1 | Tool output > threshold | Save to .log, replace with summary |
+| Layer 2 | Context > 80% window | LLM structured summary → .mem archive |
+
+Token Budget: 15% SP + 10% memory + 55% history + 15% tools + 5% reserve
+
+### P0-3: Memory System
+
+| Layer | Content | Always in context |
+|-------|---------|-------------------|
+| Index layer | Fixed memory + memory index (index.mem) | ✅ Yes |
+| Memory layer | Session archives (.mem files, chain-linked) | ❌ On-demand |
+
+Key mechanisms: Evolution (upgrade), Detox (invalidation), Role-aware injection, ConsistencyGuard
+
+### P0-4: Permission System
+
+| Level | Behavior |
+|-------|----------|
+| Allow | Execute automatically |
+| Ask | User confirmation required |
+| Deny | Blocked entirely |
 
 ---
 
@@ -70,10 +110,10 @@ pending → in_progress → testing → completed
 ### Session Flow
 
 ```
-1. Orient → Read CORE_GUIDELINES.md → Read progress.md → Read feature_list.md
+1. Orient → Read CORE_GUIDELINES.md → Read progress.md → Read feature_list.md → Read index.mem
 2. Check → Environment health → Regression test (core features)
 3. Work → Implement ONE feature → Run tests → Verify acceptance criteria
-4. Persist → Update feature_list.md → Append progress.md → Git commit
+4. Persist → Update feature_list.md → Append progress.md → Git commit → Save .mem
 5. Handoff → Clear message to next agent
 ```
 
@@ -113,13 +153,26 @@ ELSE IF any feature has status = "blocked" or "regression"
 
 ## 📦 Context Management
 
+### Compression
+
 When `progress.md` grows large (>1000 lines), compress it to maintain context efficiency:
 
 ```bash
 python scripts/compress_context.py --project-dir .
 ```
 
-This archives old sessions and keeps only recent ones in detail.
+### Memory
+
+- Fixed memory in `index.mem` is always injected into context
+- Session archives in `.mem` files are loaded on-demand via chain traversal or `rg` search
+- Memory priority: System Prompt > Fixed Memory > Session Summary
+
+### Token Budget
+
+Monitor token usage via TokenBudget:
+- > 50% utilization → Layer 1 compression
+- > 80% utilization → Layer 2 archive (new session)
+- > 85% utilization → Warn agent to wrap up
 
 ---
 
@@ -151,9 +204,10 @@ This archives old sessions and keeps only recent ones in detail.
 
 **Pre-Execution Checks**:
 1. Is the command in the whitelist?
-2. Are the parameters safe?
-3. Does it affect system files?
-4. If in doubt, ask the user first.
+2. Is the permission level appropriate (Allow/Ask/Deny)?
+3. Are the parameters safe?
+4. Does it affect system files?
+5. If in doubt, ask the user first.
 
 ---
 
@@ -164,6 +218,8 @@ This archives old sessions and keeps only recent ones in detail.
 - **Atomic Commits**: One Git Commit per feature
 - **Evidence Required**: All tests must provide execution results as completion evidence
 - **Clear Handoff**: Always leave clear handoff notes for the next agent
+- **Memory Immutability**: .mem files are APPEND-ONLY, never modify historical records
+- **Error Preservation**: Error signals (exit code != 0, Exception) are NEVER compressed
 
 ---
 
@@ -184,6 +240,10 @@ This archives old sessions and keeps only recent ones in detail.
 
 ### Status Changes
 - [Feature ID]: pending → in_progress → testing → completed
+
+### Memory Updates
+- New fixed memory: [description] (role: [dev/architect/qa/common])
+- Invalidation: [memory_id] → [reason]
 
 ### Handoff
 → [Next Agent]: [Message]

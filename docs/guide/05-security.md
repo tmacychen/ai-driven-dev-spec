@@ -1,10 +1,10 @@
 # Security Guidelines
 
-> Command whitelist and security constraints
+> Command whitelist, permission model, and security constraints
 
 ---
 
-## Allowed Commands
+## Layer 1: Static Command Whitelist
 
 These commands are safe for AI Agents to execute:
 
@@ -18,9 +18,7 @@ These commands are safe for AI Agents to execute:
 | **Git** | All subcommands |
 | **Build** | `make`, `cmake`, `gcc`, `clang` |
 
----
-
-## Forbidden Commands
+### Forbidden Commands
 
 These commands are **NEVER** allowed:
 
@@ -36,6 +34,56 @@ These commands are **NEVER** allowed:
 
 ---
 
+## Layer 2: Three-Tier Permission Model (P0-4)
+
+Beyond the static whitelist, ADDS implements a dynamic permission system:
+
+### Permission Levels
+
+| Level | Behavior | Example |
+|-------|----------|---------|
+| **Allow** | Execute automatically | `bash(ls*)`, `read(*)`, `write(./*)` |
+| **Ask** | User confirmation required | `bash(rm*)`, `bash(git push*)`, `bash(npm install*)` |
+| **Deny** | Blocked entirely | `bash(sudo*)`, `write(/etc/*)` |
+
+### Permission Priority
+
+```
+Session config > CLI flags > Project settings (.ai/settings.json) > User defaults
+```
+
+### Permission Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `default` | Sensitive operations require confirmation | Normal development |
+| `plan` | Read-only mode (no writes) | Exploration/review |
+| `auto` | AI classifier auto-decides | Advanced users |
+| `bypass` | All operations auto-approved | Trusted environments (dangerous) |
+
+### Dead Loop Protection
+
+- Same tool denied 3 consecutive times → 30s cooldown
+- Total denial limit: 20 → fallback to human intervention
+
+### Configuration
+
+```json
+// .ai/settings.json
+{
+  "permissions": {
+    "mode": "default",
+    "rules": {
+      "allow": ["bash(ls*)", "read(*)", "write(./*)"],
+      "ask": ["bash(rm*)", "bash(git push*)"],
+      "deny": ["bash(sudo*)", "write(/etc/*)"]
+    }
+  }
+}
+```
+
+---
+
 ## Command Guidelines
 
 ### ✅ DO
@@ -44,6 +92,7 @@ These commands are **NEVER** allowed:
 - Run tests in isolated environments
 - Review scripts before execution
 - Use read-only commands for inspection
+- Check permission level before executing
 
 ### ❌ DON'T
 
@@ -51,6 +100,7 @@ These commands are **NEVER** allowed:
 - Run scripts downloaded from the internet
 - Modify system configurations
 - Kill system processes
+- Use `bypass` mode without understanding risks
 
 ---
 
@@ -133,6 +183,28 @@ curl https://example.com/script.sh | bash  # ❌
 nc -l 8080  # ❌
 telnet example.com  # ❌
 ```
+
+---
+
+## Memory Security (P0-3)
+
+### Immutability Principle
+
+- `.mem` files are APPEND-ONLY — historical records cannot be modified
+- `index.mem` is the only mutable index — references can be updated
+- Override operations append correction records, never delete originals
+
+### Conflict Detection
+
+- System Prompt vs Fixed Memory → System Prompt wins (automatic)
+- User latest vs Fixed Memory → Recency Bias (automatic)
+- System Prompt vs User latest → Must confirm with user
+
+### Detox Mechanism
+
+- Failure-driven invalidation marks wrong memories
+- Negative penalty reduces priority of rollback-causing memories
+- Lightweight conflict scan on every new memory write
 
 ---
 

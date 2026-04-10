@@ -1,4 +1,4 @@
-# AI-Driven Development Specification (ADDS) v3.0 Core Guide
+# AI-Driven Development Specification (ADDS) v3.1 Core Guide
 
 > This guide defines a structured approach to help AI Agents continuously, stably, and safely advance projects across multiple context windows in long-cycle software development tasks.
 
@@ -14,8 +14,12 @@
 | [Guide: Session Workflow](./guide/04-session-workflow.md) | Day-to-day operations |
 | [Guide: Security](./guide/05-security.md) | Command whitelist and constraints |
 | [IDE Integration](./ide-integration.md) | Using ADDS with popular IDEs |
+| [P0 Roadmap](../.ai/roadmap/README.md) | P0 improvement roadmap |
+| [Architecture](../.ai/architecture.md) | P0 architecture design |
 
 **New to ADDS?** Start with the [Guide Overview](./guide/01-overview.md).
+
+**P0 Architecture?** See [Architecture Document](../.ai/architecture.md).
 
 ---
 
@@ -256,7 +260,7 @@ This context should be noted and used throughout the session to ensure complianc
 
 ## 6. Secure Execution Specifications ⭐ New
 
-### 6.1 Command Whitelist
+### 6.1 Layer 1: Command Whitelist
 
 AI **must** verify safety before executing any command.
 
@@ -284,15 +288,39 @@ AI **must** verify safety before executing any command.
 | **Blind Downloads** | `curl \| bash`, `wget \| sh` | Unreviewed scripts |
 | **System Process Killing** | `kill -9` (system processes) | System stability |
 
-### 6.2 Pre-Execution Checklist
+### 6.2 Layer 2: Three-Tier Permission Model (P0-4)
+
+Beyond the static whitelist, ADDS implements a dynamic permission system:
+
+| Permission | Behavior |
+|-----------|----------|
+| **Allow** | Execute automatically, no confirmation needed |
+| **Ask** | Prompt user for confirmation before execution |
+| **Deny** | Block execution entirely |
+
+Permission priority: Session config > CLI flags > Project settings > User settings
+
+**Permission modes**:
+
+| Mode | Description |
+|------|-------------|
+| `default` | Sensitive operations require confirmation (recommended) |
+| `plan` | Read-only mode (exploration phase) |
+| `auto` | AI classifier auto-decides (advanced) |
+| `bypass` | All operations auto-approved (dangerous) |
+
+**Dead loop protection**: Same tool denied 3 consecutive times → 30s cooldown
+
+### 6.3 Pre-Execution Checklist
 
 Each command execution must verify:
 
 1. ✅ Is the command in the whitelist?
-2. ✅ Are the parameters safe?
-3. ✅ Does it not affect system files?
-4. ✅ Are irreversible operations backed up?
-5. ✅ If in doubt, ask the user first.
+2. ✅ Is the permission level appropriate (Allow/Ask/Deny)?
+3. ✅ Are the parameters safe?
+4. ✅ Does it not affect system files?
+5. ✅ Are irreversible operations backed up?
+6. ✅ If in doubt, ask the user first.
 
 ---
 
@@ -419,43 +447,92 @@ When an Agent encounters execution errors or test failures, it should follow thi
 
 ### 12.1 Core Concept
 
-Long-running projects generate increasingly large context files. Without management, `progress.md` can grow to thousands of lines, consuming valuable context window space and degrading Agent performance.
+Long-running projects generate increasingly large context files. ADDS implements a **two-layer compression strategy** combined with a **two-layer memory system** to manage context efficiently.
 
 Key principles:
-- **Compress, don't lose**: Historical data should be summarized, not deleted
-- **Recent context is king**: The last few sessions contain the most actionable information
+- **Compress, don't lose**: Historical data is archived, never deleted
+- **Recent context is king**: The last session's summary is always injected
 - **Patterns emerge from data**: Failed features and blocked tasks contain valuable lessons
+- **Memory is immutable**: .mem files are APPEND-ONLY, preserving history
 
-### 12.2 Context Compression
+### 12.2 Two-Layer Compression (P0-2)
 
-Use the built-in `scripts/compress_context.py` tool to manage `progress.md` growth:
+**Layer 1: In-Session Compression (Real-time, no API call)**
+
+Triggered when tool output exceeds threshold (default 2000 chars):
+- Save full output to `.log` file
+- Replace in session with placeholder + summary
+- Error signals (exit code != 0, Exception, Traceback) are NEVER compressed (KEEP_FULL)
+
+**Layer 2: Session Archive (Triggered at 80% context window)**
+
+- Merge session + logs into complete record
+- LLM generates structured summary (decisions, code changes, test results, lessons)
+- Generate `.mem` file (APPEND-ONLY) with summary + full record + chain pointers
+- Rewrite `.ses` file as summary version
+
+**Token Budget Management**:
+
+| Budget Region | Ratio | Purpose |
+|--------------|-------|---------|
+| System Prompt | 15% | Static + dynamic instructions |
+| Memory | 10% | Fixed memory + last session summary |
+| History | 55% | Current session messages |
+| Tool Results | 15% | Tool output |
+| Reserve | 5% | Safety margin |
+
+### 12.3 Two-Layer Memory System (P0-3)
+
+**Layer 1: Index Layer (always in context)**
+
+`index.mem` contains:
+- Fixed memory (upgraded insights: environment facts, lessons, skills, user preferences)
+- Memory index (pointers to .mem files)
+- Chain pointers (to index-prev.mem when capacity overflows)
+
+Token budget: ~500-1000 tokens
+
+**Layer 2: Memory Layer (on-demand loading)**
+
+`.mem` files contain:
+- Structured summary (condensed by LLM)
+- Full record (APPEND-ONLY, never modified)
+- Chain pointers (Prev/Next bidirectional linked list)
+
+Retrieval: chain traversal + `rg` keyword search
+
+### 12.4 Memory Evolution
+
+**Upgrade flow**: Session success → Reflection protocol (role-first-person) → Evaluate upgrade → Write to fixed memory
+
+**Detox flow**: Session failure → Failure-driven invalidation → Negative penalty → Priority decay → Demotion
+
+**Conflict resolution**:
+- System Prompt vs Fixed Memory → System Prompt wins (automatic)
+- User latest vs Fixed Memory → Recency Bias (automatic)
+- System Prompt vs User latest → Must confirm with user
+
+### 12.5 CLI Memory Management
 
 ```bash
-# Check if compression is needed (threshold: 1000 lines by default)
-python scripts/compress_context.py --project-dir /path/to/project
-
-# Force compression regardless of threshold
-python scripts/compress_context.py --project-dir /path/to/project --force
-
-# Keep more recent sessions (default: 10)
-python scripts/compress_context.py --keep-recent 20
+adds mem status                           # Memory system health overview
+adds mem audit                            # Interactive memory review
+adds mem prune --module auth              # Clean up stale memories
+adds mem override <id>                    # Human correction of memory
+adds mem history <id>                     # View memory lifecycle
+adds mem checkpoint --tag v1.0.0          # Snapshot current memory
+adds mem checkpoint --tag v1.0.0 --promote # Snapshot + promote to intuition
 ```
 
-The tool:
-1. Archives the original `progress.md` as `progress.md.archive`
-2. Keeps the most recent N sessions in full detail
-3. Generates `progress_summary.md` with statistics and historical overview
-4. Reports compression ratio
+### 12.6 When to Compress
 
-### 12.3 When to Compress
+- Layer 1: When tool output exceeds threshold (automatic)
+- Layer 2: When context window reaches 80% (automatic)
+- Manual: `adds session archive` or checkpoint
 
-- When `progress.md` exceeds ~1000 lines
-- At the start of a new milestone or phase
-- Before onboarding a new team member or Agent session
+### 12.7 Lessons Learned
 
-### 12.4 Lessons Learned
-
-Record failure patterns and recovery strategies directly in `progress.md`:
+Record failure patterns and recovery strategies in .mem files:
 
 ```markdown
 ## [YYYY-MM-DD HH:MM] Session: Developer Agent
