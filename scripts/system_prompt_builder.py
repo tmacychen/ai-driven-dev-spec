@@ -71,6 +71,11 @@ class SystemPromptBuilder:
         if prev_summary:
             sections.append(self._build_prev_session_section(prev_summary, context))
         
+        # === P0-3: Agent 记忆注入 ===
+        memory_injection = context.get('memory_injection')
+        if memory_injection:
+            sections.append(memory_injection)
+        
         # 过滤空段落
         return [s for s in sections if s]
     

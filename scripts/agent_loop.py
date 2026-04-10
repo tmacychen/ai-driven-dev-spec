@@ -8,7 +8,10 @@ ADDS Agent Loop — Rich 美化版
 """
 
 import asyncio
+import logging
 from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 from model.base import ModelInterface
@@ -16,6 +19,9 @@ from token_budget import TokenBudget, estimate_tokens, load_budget_config
 from session_manager import SessionManager
 from context_compactor import ContextCompactor
 from summary_decision_engine import SummaryStrategy
+from memory_manager import MemoryManager
+
+logger = logging.getLogger(__name__)
 
 # prompt_toolkit 用于处理中文输入的退格问题
 try:
@@ -361,7 +367,7 @@ class AgentLoop:
         )
 
     def _archive_session(self) -> None:
-        """P0-2: Session 归档"""
+        """P0-2: Session 归档 + P0-3: 记忆进化"""
         if not self._session_id:
             return
 
@@ -372,5 +378,33 @@ class AgentLoop:
                     f"Session archived: {result.session_id}, "
                     f"mem: {result.mem_path}"
                 )
+
+                # P0-3: 记忆进化评估
+                try:
+                    mem_path = Path(result.mem_path)
+                    if mem_path.exists():
+                        mem_content = mem_path.read_text(encoding="utf-8")
+                        evaluations = asyncio.get_event_loop().run_until_complete(
+                            self.memory_mgr.evaluate_and_upgrade(
+                                mem_content, role=self.agent_role
+                            )
+                        )
+                        for ev in evaluations:
+                            if ev.should_upgrade:
+                                logger.info(
+                                    f"Memory upgraded: [{ev.category}] {ev.content[:40]} "
+                                    f"(confidence={ev.confidence:.2f})"
+                                )
+
+                        # 添加记忆索引
+                        self.memory_mgr.add_index_entry(
+                            time=datetime.now().strftime("%m-%d %H:%M"),
+                            file=f"{result.session_id}.mem",
+                            summary=f"Session 归档 (agent={self.agent_role})",
+                            priority="高" if self.session.turn_count > 5 else "中",
+                        )
+                except Exception as e:
+                    logger.warning(f"Memory evolution failed: {e}")
+
         except Exception as e:
             logger.error(f"Session archive failed: {e}")

@@ -497,6 +497,10 @@ Examples:
     session_logs = session_sub.add_parser("logs", help="查看 Session 的 .log 文件")
     session_logs.add_argument("session_id", type=str, help="Session ID")
 
+    # mem command (P0-3)
+    from memory_cli import add_mem_subparser
+    add_mem_subparser(subparsers)
+
     args = parser.parse_args()
 
     if not args.command:
