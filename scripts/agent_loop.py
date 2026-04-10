@@ -56,8 +56,24 @@ class AgentLoop:
                 self.console = None
                 self.skin = None
 
-        # prompt_toolkit session（用于 async prompt）
-        self._pt_session = PromptSession() if HAS_PT else None
+        # prompt_toolkit session（用于 async prompt，支持多行）
+        if HAS_PT:
+            from prompt_toolkit.key_binding import KeyBindings
+            kb = KeyBindings()
+
+            @kb.add('escape', 'enter')
+            @kb.add('c-j')  # Ctrl+J (Shift+Enter on some terminals)
+            def _(event):
+                """插入换行而非提交"""
+                event.current_buffer.insert_text('\n')
+
+            self._pt_session = PromptSession(
+                multiline=False,
+                key_bindings=kb,
+                enable_open_in_editor=True,  # Ctrl+X Ctrl+E 打开编辑器
+            )
+        else:
+            self._pt_session = None
 
     def _print(self, *args, **kwargs):
         """兼容 Rich 和普通 print"""
@@ -97,7 +113,11 @@ class AgentLoop:
                 if self.console:
                     if self._pt_session:
                         prompt_str = HTML(f'<style fg="{prompt_color}">{prompt_symbol}</style> ')
-                        user_input = (await self._pt_session.prompt_async(prompt_str)).strip()
+                        user_input = (await self._pt_session.prompt_async(
+                            prompt_str,
+                            multiline=False,
+                            prompt_continuation=HTML(f'<style fg="{dim}">... </style> '),
+                        )).strip()
                     else:
                         self.console.print(f"[{prompt_color}]{prompt_symbol}[/] ", end="")
                         user_input = input().strip()
@@ -109,16 +129,60 @@ class AgentLoop:
 
             if not user_input:
                 continue
-            if user_input.lower() in ("/quit", "/exit", "/q"):
+
+            # 命令处理
+            cmd = user_input.lower().split()[0]
+            if cmd in ("/quit", "/exit", "/q"):
                 goodbye = self.skin.branding("goodbye", "Goodbye!") if self.skin else "再见！"
                 self._print(f"[bold]{goodbye}[/]")
                 break
+            elif cmd == "/help":
+                help_header = self.skin.branding("help_header", "Available Commands") if self.skin else "Available Commands"
+                self._print(f"\n[bold {accent}]{help_header}[/]")
+                commands = [
+                    ("/help", "显示此帮助信息"),
+                    ("/quit, /exit, /q", "退出对话"),
+                    ("/clear", "清空对话历史"),
+                    ("/history", "查看对话历史摘要"),
+                    ("/model", "显示当前模型信息"),
+                    ("Ctrl+X Ctrl+E", "打开编辑器编辑多行输入"),
+                    ("Esc+Enter", "插入换行（多行输入）"),
+                ]
+                for name, desc in commands:
+                    self._print(f"  [{label}]{name:25}[/] [{text}]{desc}[/]")
+                self._print()
+                continue
+            elif cmd == "/clear":
+                self.session.messages.clear()
+                self.session.turn_count = 0
+                ok_color = self.skin.color("ui_ok", "#4caf50") if self.skin else "#4caf50"
+                self._print(f"[{ok_color}]✅ 对话历史已清空[/]\n")
+                continue
+            elif cmd == "/history":
+                if not self.session.messages:
+                    self._print(f"[dim {dim}]（暂无对话历史）[/]")
+                else:
+                    self._print(f"[bold {accent}]📜 对话历史 ({len(self.session.messages)} 条)[/]")
+                    for i, msg in enumerate(self.session.messages[-6:]):
+                        role = msg["role"]
+                        content = msg["content"][:60].replace("\n", " ")
+                        role_color = prompt_color if role == "user" else dim
+                        self._print(f"  [{role_color}]{role}:[/] [{text}]{content}{'...' if len(msg['content']) > 60 else ''}[/]")
+                self._print()
+                continue
+            elif cmd == "/model":
+                self._print(f"  [{label}]模型:[/] [{text}]{model_name}[/]")
+                self._print(f"  [{label}]上下文:[/] [{text}]{ctx_window:,} tokens[/]")
+                self._print(f"  [{label}]对话轮数:[/] [{text}]{self.session.turn_count}[/]")
+                self._print(f"  [{label}]消息数:[/] [{text}]{len(self.session.messages)}[/]")
+                self._print()
+                continue
 
             # 追加用户消息
             self.session.messages.append({"role": "user", "content": user_input})
-            self.session.turn_count += 1
 
             # 调用模型
+            self.session.turn_count += 1
             full_response = []
             thinking_text = ""
             is_streaming = False
