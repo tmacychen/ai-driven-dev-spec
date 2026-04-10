@@ -244,6 +244,27 @@ class ADDSCli:
         else:
             print("\n⚠️  feature_list.md 不存在")
 
+    def validate(self):
+        """校验 feature_list.md 格式"""
+        feature_list_path = self.ai_dir / "feature_list.md"
+        if not feature_list_path.exists():
+            print("⚠️  feature_list.md 不存在，跳过校验")
+            return True
+        try:
+            features = self._parse_feature_list(feature_list_path)
+            if not features:
+                print("⚠️  feature_list.md 中未找到功能定义")
+                return False
+            for f in features:
+                if not f["name"] or not f["status"]:
+                    print(f"❌ 功能定义不完整: {f}")
+                    return False
+            print(f"✅ feature_list.md 校验通过 ({len(features)} 个功能)")
+            return True
+        except Exception as e:
+            print(f"❌ feature_list.md 解析失败: {e}")
+            return False
+
     def init(self):
         """初始化 ADDS 项目"""
         print("=" * 60)
@@ -297,6 +318,7 @@ Examples:
   adds list-roles                   列出内置角色
   adds init                         初始化项目
   adds status                       查看项目状态
+  adds validate                   校验 feature_list.md
   adds install-deps                 安装 Python 依赖
         """
     )
@@ -323,6 +345,9 @@ Examples:
     # status command
     subparsers.add_parser("status", help="查看项目状态")
 
+    # validate command
+    subparsers.add_parser("validate", help="校验 feature_list.md 格式")
+
     # install-deps command
     subparsers.add_parser("install-deps", help="安装 Python 依赖（自动创建 venv）")
 
@@ -336,6 +361,12 @@ Examples:
     if args.command == "install-deps":
         install_deps()
         return
+
+    # validate 不需要检查依赖
+    if args.command == "validate":
+        cli = ADDSCli()
+        ok = cli.validate()
+        sys.exit(0 if ok else 1)
 
     # 其他命令需要检查依赖
     if not check_dependencies():
@@ -351,7 +382,3 @@ Examples:
         cli.init()
     elif args.command == "status":
         cli.status()
-
-
-if __name__ == "__main__":
-    main()
