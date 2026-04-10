@@ -4,3 +4,4 @@ anthropic>=0.40.0
 # P0-2: CLI Skin Engine
 rich>=13.0.0
 pyyaml>=6.0
+prompt_toolkit>=3.0.0

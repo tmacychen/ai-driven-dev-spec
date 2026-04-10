@@ -12,6 +12,14 @@ from typing import Optional, List, Dict, Any
 
 from model.base import ModelInterface
 
+# prompt_toolkit 用于处理中文输入的退格问题
+try:
+    from prompt_toolkit import prompt as pt_prompt
+    from prompt_toolkit.formatted_text import HTML
+    HAS_PT = True
+except ImportError:
+    HAS_PT = False
+
 
 @dataclass
 class AgentSession:
@@ -82,10 +90,14 @@ class AgentLoop:
 
         while True:
             try:
-                # Rich 彩色提示符
+                # 使用 prompt_toolkit 解决中文退格问题
                 if self.console:
-                    self.console.print(f"[{prompt_color}]{prompt_symbol}[/] ", end="")
-                    user_input = input().strip()
+                    if HAS_PT:
+                        prompt_str = HTML(f'<style fg="{prompt_color}">{prompt_symbol}</style> ')
+                        user_input = pt_prompt(prompt_str).strip()
+                    else:
+                        self.console.print(f"[{prompt_color}]{prompt_symbol}[/] ", end="")
+                        user_input = input().strip()
                 else:
                     user_input = input("你> ").strip()
             except (EOFError, KeyboardInterrupt):
@@ -107,6 +119,7 @@ class AgentLoop:
             full_response = []
             thinking_text = ""
             thinking_shown = False
+            is_streaming = False
 
             try:
                 async for resp in self.model.chat(
@@ -129,10 +142,10 @@ class AgentLoop:
 
                     # 流式回复内容
                     if resp.content and resp.finish_reason == "streaming":
+                        is_streaming = True
                         if thinking_shown:
                             self._print()
                             thinking_shown = False
-                        # 流式直接打印，不做 Rich markup
                         print(resp.content, end="", flush=True)
                         full_response.append(resp.content)
 
@@ -143,29 +156,31 @@ class AgentLoop:
                         if resp.content:
                             full_response.append(resp.content)
 
-                # 思考过程显示
-                if thinking_text and self.console:
-                    dim_c = self.skin.color("banner_dim") if self.skin else "#B8860B"
-                    self._print(f"[dim {dim_c}]🧠 {thinking_text[:200]}{'...' if len(thinking_text) > 200 else ''}[/]")
-
-                # 响应面板
+                # 响应渲染
                 assistant_content = "".join(full_response)
                 if assistant_content:
                     self.session.messages.append({"role": "assistant", "content": assistant_content})
-                    if self.console:
-                        # 流式时内容已打印，只需换行；非流式时用面板
-                        if not any(r.finish_reason == "streaming" for r in []):
-                            border = self.skin.color("response_border") if self.skin else "#FFD700"
-                            response_label = self.skin.branding("response_label", " ⚡ ADDS ") if self.skin else " ⚡ ADDS "
-                            from rich.panel import Panel
-                            panel = Panel(
-                                assistant_content,
-                                title=f"[{border}]{response_label}[/]",
-                                border_style=border,
-                                padding=(0, 1),
-                            )
-                            self.console.print(panel)
-                    print()  # 换行
+
+                    if self.console and not is_streaming:
+                        # 非流式：用面板渲染
+                        border = self.skin.color("response_border") if self.skin else "#FFD700"
+                        response_label = self.skin.branding("response_label", " ⚡ ADDS ") if self.skin else " ⚡ ADDS "
+                        from rich.panel import Panel
+                        panel = Panel(
+                            assistant_content,
+                            title=f"[{border}]{response_label}[/]",
+                            border_style=border,
+                            padding=(0, 1),
+                        )
+                        self.console.print(panel)
+                    elif is_streaming:
+                        print()  # 流式打印完换行
+
+                # 思考过程显示（放在响应后）
+                if thinking_text and self.console:
+                    dim_c = self.skin.color("banner_dim") if self.skin else "#B8860B"
+                    short = thinking_text[:200] + ("..." if len(thinking_text) > 200 else "")
+                    self._print(f"[dim {dim_c}]🧠 {short}[/]")
 
             except Exception as e:
                 error_color = self.skin.color("ui_error", "#ef5350") if self.skin else "#ef5350"

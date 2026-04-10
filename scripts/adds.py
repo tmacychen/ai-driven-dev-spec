@@ -64,6 +64,7 @@ REQUIRED_PACKAGES = {
     "anthropic": "anthropic>=0.40.0",
     "rich": "rich>=13.0.0",
     "yaml": "pyyaml>=6.0",
+    "prompt_toolkit": "prompt_toolkit>=3.0.0",
 }
 
 
