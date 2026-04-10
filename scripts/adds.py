@@ -10,6 +10,8 @@ ADDS - AI-Driven Development Specification CLI Tool
 
 import argparse
 import asyncio
+import importlib
+import subprocess
 import sys
 from pathlib import Path
 from typing import List
@@ -17,8 +19,103 @@ from typing import List
 _SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPT_DIR))
 
-from agent_loop import AgentLoop
-from model import ModelFactory, ModelInterface
+
+# ═══════════════════════════════════════════════════════════════
+# 依赖检测与安装引导
+# ═══════════════════════════════════════════════════════════════
+
+REQUIRED_PACKAGES = {
+    "anthropic": "anthropic>=0.40.0",
+}
+
+
+def check_dependencies() -> bool:
+    """检测依赖是否已安装，返回 True 表示全部就绪"""
+    missing = {}
+    for pkg, spec in REQUIRED_PACKAGES.items():
+        try:
+            importlib.import_module(pkg)
+        except ImportError:
+            missing[pkg] = spec
+
+    if not missing:
+        return True
+
+    print("❌ 缺少以下 Python 依赖：\n")
+    for pkg, spec in missing.items():
+        print(f"   • {spec}")
+
+    print("\n📦 请选择安装方式：\n")
+    print("   方式一：项目虚拟环境（推荐）")
+    print("   ─────────────────────────────")
+    print("   python3 -m venv .venv")
+    print("   source .venv/bin/activate        # Fish: source .venv/bin/activate.fish")
+    print(f"   pip install {' '.join(missing.values())}")
+    print()
+    print("   方式二：一键安装（自动创建 venv + 安装依赖）")
+    print("   ─────────────────────────────")
+    print("   python3 scripts/adds.py install-deps")
+    print()
+    print("   方式三：全局安装")
+    print("   ─────────────────────────────")
+    print(f"   pip3 install {' '.join(missing.values())}")
+    print()
+
+    return False
+
+
+def install_deps():
+    """自动安装依赖：创建 venv + pip install"""
+    project_root = _SCRIPT_DIR.parent
+    venv_dir = project_root / ".venv"
+
+    # 检测当前是否已在 venv 中
+    in_venv = hasattr(sys, "real_prefix") or (
+        hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix
+    )
+
+    if in_venv:
+        # 已在虚拟环境中，直接安装
+        print("📦 当前已在虚拟环境中，直接安装依赖...\n")
+        _pip_install(sys.executable)
+        return
+
+    # 不在 venv 中，创建/使用项目 venv
+    if not venv_dir.exists():
+        print(f"📦 创建虚拟环境: {venv_dir}")
+        subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
+        print("✅ 虚拟环境创建成功\n")
+    else:
+        print(f"📦 使用已有虚拟环境: {venv_dir}\n")
+
+    # 确定 venv 的 python 路径
+    venv_python = venv_dir / "bin" / "python3"
+    if not venv_python.exists():
+        venv_python = venv_dir / "bin" / "python"
+
+    _pip_install(str(venv_python))
+
+    # 提示激活
+    print("\n✅ 依赖安装完成！")
+    print("\n💡 使用以下命令启动：")
+    print(f"   source {venv_dir}/bin/activate")
+    print("   adds start")
+    print()
+    print("   或直接用 venv 的 python：")
+    print(f"   {venv_dir}/bin/python3 scripts/adds.py start")
+
+
+def _pip_install(python_path: str):
+    """执行 pip install"""
+    packages = list(REQUIRED_PACKAGES.values())
+    print(f"📥 安装依赖: {' '.join(packages)}\n")
+    result = subprocess.run(
+        [python_path, "-m", "pip", "install", "--upgrade"] + packages,
+    )
+    if result.returncode != 0:
+        print("\n❌ 安装失败，请尝试手动安装：")
+        print(f"   {python_path} -m pip install {' '.join(packages)}")
+        sys.exit(1)
 
 
 # 内置角色提示词
@@ -47,6 +144,10 @@ class ADDSCli:
         2. 解析角色提示词（--role 或默认 PM）
         3. 进入交互对话
         """
+        # 延迟导入（依赖检查通过后才执行）
+        from agent_loop import AgentLoop
+        from model import ModelFactory
+
         # 解析角色提示词
         if role in BUILTIN_ROLES:
             system_prompt = BUILTIN_ROLES[role]
@@ -152,6 +253,7 @@ Examples:
   adds list-roles                   列出内置角色
   adds init                         初始化项目
   adds status                       查看项目状态
+  adds install-deps                 安装 Python 依赖
         """
     )
 
@@ -175,11 +277,23 @@ Examples:
     # status command
     subparsers.add_parser("status", help="查看项目状态")
 
+    # install-deps command
+    subparsers.add_parser("install-deps", help="安装 Python 依赖（自动创建 venv）")
+
     args = parser.parse_args()
 
     if not args.command:
         parser.print_help()
         return
+
+    # install-deps 不需要检查依赖
+    if args.command == "install-deps":
+        install_deps()
+        return
+
+    # 其他命令需要检查依赖
+    if not check_dependencies():
+        sys.exit(1)
 
     cli = ADDSCli()
 

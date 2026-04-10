@@ -134,6 +134,9 @@ def check_environment(prefix: Path) -> bool:
     else:
         print(f"  ✅  Python {vi.major}.{vi.minor}.{vi.micro}")
 
+    # Python dependencies
+    _check_python_deps(ok)
+
     # Install directory
     bin_dir = prefix / "bin"
     if bin_dir.exists():
@@ -159,6 +162,28 @@ def check_environment(prefix: Path) -> bool:
             print(f"       - {m}")
 
     return ok
+
+
+def _check_python_deps(ok_ref: bool) -> None:
+    """检查 Python 依赖是否已安装"""
+    required = {
+        "anthropic": "anthropic>=0.40.0",
+    }
+    missing = []
+    for pkg, spec in required.items():
+        try:
+            __import__(pkg)
+        except ImportError:
+            missing.append(spec)
+
+    if missing:
+        print(f"  ⚠️   Python 依赖缺失: {', '.join(missing)}")
+        print(f"       安装方式:")
+        print(f"         python3 -m venv .venv && source .venv/bin/activate")
+        print(f"         pip install {' '.join(missing)}")
+        print(f"       或运行: python3 scripts/adds.py install-deps")
+    else:
+        print(f"  ✅  Python 依赖已安装")
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -420,12 +445,13 @@ def _print_post_install(prefix: Path, report: SetupReport) -> None:
 
     print("🚀 Quick start:")
     print()
-    print("   adds status          Overall project progress")
-    print("   adds next            Next feature to implement")
-    print("   adds route           Recommended agent role")
-    print("   adds validate        Validate feature_list.md format")
-    print("   adds dag             Visualize dependency graph")
-    print("   adds compress        Compress progress.md context")
+    print("   # 1. 安装 Python 依赖（首次使用）")
+    print("   python3 scripts/adds.py install-deps")
+    print()
+    print("   # 2. 启动 Agent 对话")
+    print("   adds start                      PM Agent (默认)")
+    print("   adds start --role developer     开发者 Agent")
+    print("   adds start --role \"你是Rust专家\"  自定义角色")
     print()
 
     if not in_path:
