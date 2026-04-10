@@ -38,7 +38,7 @@ class SummaryStrategy(Enum):
 
 # 错误信号正则模式
 ERROR_SIGNAL_PATTERNS = [
-    r'exit\s+code\s+[1-9]\d*',                              # Exit Code != 0
+    r'exit\s+code[:\s]+\d*[1-9]\d*',                          # Exit Code != 0
     r'(?:Error|Exception|Traceback|FAILED?|CRITICAL)',       # 大写变体
     r'(?:error|exception|traceback|failed?|critical)',       # 小写变体
     r'WARNING',                                               # 警告信号

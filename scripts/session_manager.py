@@ -570,14 +570,14 @@ class SessionManager:
         metadata_lines = []
         body_start = 0
         for i, line in enumerate(text.split("\n")):
-            if line.startswith("# ") and not line.startswith("# Session:") and body_start == 0:
-                # 仍在头部
-                pass
-            elif line.startswith("# "):
-                metadata_lines.append(line)
-            elif line.strip() == "---":
+            if line.strip() == "---":
                 body_start = i + 1
                 break
+            elif line.startswith("#"):
+                metadata_lines.append(line)
+            elif not line.strip():
+                # 空行仍在头部
+                pass
             else:
                 metadata_lines.append(line)
 
