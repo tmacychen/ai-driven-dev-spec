@@ -1,0 +1,80 @@
+name: adds_cyberpunk
+description: 霓虹赛博朋克风格 — 青色和品红配色，深紫底色
+
+colors:
+  banner_border: "#6B1FB1"
+  banner_title: "#FF2975"
+  banner_accent: "#00FFFF"
+  banner_dim: "#4400AA"
+  banner_text: "#B0A4B8"
+  ui_accent: "#FF2975"
+  ui_label: "#F222FF"
+  ui_ok: "#00FF88"
+  ui_error: "#FF0044"
+  ui_warn: "#FFA726"
+  prompt: "#B0A4B8"
+  input_rule: "#6B1FB1"
+  response_border: "#FF2975"
+  session_label: "#00FFFF"
+  session_border: "#241734"
+
+spinner:
+  waiting_faces:
+    - "(▲)"
+    - "(◇)"
+    - "(⬡)"
+    - "(◎)"
+    - "(⊕)"
+  thinking_faces:
+    - "(▲)"
+    - "(⊕)"
+    - "(⬡)"
+    - "(⌁)"
+    - "(◇)"
+  thinking_verbs:
+    - "scanning the grid"
+    - "tracing neon signal"
+    - "syncing retro protocol"
+    - "modulating frequency"
+    - "rendering wireframe"
+  wings:
+    - ["⟪▲", "▲⟫"]
+    - ["⟪◇", "◇⟫"]
+    - ["⟪⬡", "⬡⟫"]
+
+branding:
+  agent_name: "ADDS::NEON"
+  welcome: "[bold #FF2975]N[/][bold #FF2975]E[/][bold #FF2D75]O[/][bold #FF3175]N[/][bold #FF3575] [/][bold #00FFFF]O[/][bold #00FFFF]N[/][bold #00FFFF]L[/][bold #00FFFF]I[/][bold #00FFFF]N[/][bold #00FFFF]E[/][#00FFFF].[/] [#B0A4B8]Type /help for protocols.[/]"
+  goodbye: "[bold #FF2975]D[/][bold #FF2D75]I[/][bold #FF3175]S[/][bold #FF3575]C[/][bold #00FFFF]O[/][bold #00FFFF]N[/][bold #00FFFF]N[/][bold #00FFFF]E[/][bold #00FFFF]C[/][bold #00FFFF]T[/][bold #00FFFF]E[/][bold #00FFFF]D[/][#00FFFF].[/]"
+  response_label: " ▲ ADDS::NEON "
+  prompt_symbol: "▲ ❯"
+  help_header: "(▲) Available Protocols"
+
+tool_prefix: "▏"
+
+tool_emojis:
+  terminal: "▲"
+  web_search: "◎"
+  read_file: "◇"
+  write_file: "◆"
+  search_files: "⬡"
+  execute_code: "⌁"
+  browser_navigate: "⊕"
+
+banner_logo: |
+  [#4400AA]███╗   ██╗    ███████╗     ██████╗     ███╗   ██╗    ██╗    ██╗     █████╗     ██╗   ██╗    ███████╗[/]
+  [#8E08A0]████╗  ██║    ██╔════╝    ██╔═══██╗    ████╗  ██║    ██║    ██║    ██╔══██╗    ██║   ██║    ██╔════╝[/]
+  [#D91097]██╔██╗ ██║    █████╗      ██║   ██║    ██╔██╗ ██║    ██║ █╗ ██║    ███████║    ██║   ██║    █████╗  [/]
+  [#CC43A8]██║╚██╗██║    ██╔══╝      ██║   ██║    ██║╚██╗██║    ██║███╗██║    ██╔══██║    ╚██╗ ██╔╝    ██╔══╝  [/]
+  [#65A1D3]██║ ╚████║    ███████╗    ╚██████╔╝    ██║ ╚████║    ╚███╔███╔╝    ██║  ██║     ╚████╔╝     ███████╗[/]
+  [#00FFFF]╚═╝  ╚═══╝    ╚══════╝     ╚═════╝     ╚═╝  ╚═══╝     ╚══╝╚══╝     ╚═╝  ╚═╝      ╚═══╝      ╚══════╝[/]
+  [#7B2D8E]                       A  D  D  S[/]
+  [bold #00FFFF]                            ▲[/] [bold #FF2975]N E O N[/] [bold #00FFFF]▲[/]
+
+banner_hero: |
+  [#FF00FF]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣤⣶⣶⣶⣾⣶⣶⣶⣦⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF1493]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣈⣉⣉⣉⣉⣉⣉⣉⣉⣉⣉⣉⣉⣉⣉⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FF6EC7]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠠⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠧⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+  [#FFFFFF]⣤⣤⣤⣤⣤⣤⣤⣤⣬⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣯⣤⣤⣤⣤⣤⣤⣤⣤[/]
+  [#00FFFF]⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣴⣻⣱⣝⣇⣿⣸⣫⣞⣕⣧⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀[/]
+  [bold #00FFFF]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀▲[/] [#6B1FB1]NEON GRID[/] [bold #00FFFF]▲⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]

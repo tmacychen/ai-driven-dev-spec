@@ -62,6 +62,8 @@ _try_activate_venv()
 
 REQUIRED_PACKAGES = {
     "anthropic": "anthropic>=0.40.0",
+    "rich": "rich>=13.0.0",
+    "yaml": "pyyaml>=6.0",
 }
 
 
@@ -171,7 +173,8 @@ class ADDSCli:
         self.project_root = Path(project_root)
         self.ai_dir = self.project_root / ".ai"
 
-    def start(self, role: str = "", non_interactive: bool = False, debug: bool = False):
+    def start(self, role: str = "", non_interactive: bool = False, debug: bool = False,
+              skin_name: str = ""):
         """
         启动 ADDS Agent 对话
 
@@ -191,6 +194,11 @@ class ADDSCli:
         # 延迟导入（依赖检查通过后才执行）
         from agent_loop import AgentLoop
         from model import ModelFactory
+        from skins import SkinConfig, load_skin, render_banner, create_console
+
+        # 加载皮肤
+        skin = load_skin(skin_name) if skin_name else SkinConfig({})
+        console = create_console()
 
         # 解析角色提示词
         if role in BUILTIN_ROLES:
@@ -207,17 +215,25 @@ class ADDSCli:
         factory = ModelFactory(project_root=self.project_root)
         model = factory.select_model(interactive=not non_interactive)
 
+        model_name = model.get_model_name()
+        ctx_window = model.get_context_window()
+
+        # 渲染 Banner
+        render_banner(console, skin, model_name=model_name,
+                      context_window=ctx_window, role=role_label)
+
         # 创建 Agent
-        loop = AgentLoop(model=model, system_prompt=system_prompt)
-        print(f"\n📋 角色设定: {role_label}")
-        print(f"   提示词: {system_prompt}")
+        loop = AgentLoop(model=model, system_prompt=system_prompt,
+                         console=console, skin=skin)
 
         # 运行交互对话
         try:
             turns = asyncio.run(loop.run())
-            print(f"\n📊 本次对话: {turns} 轮")
+            goodbye = skin.branding("goodbye", "Goodbye!")
+            console.print(f"\n📊 本次对话: [bold]{turns}[/] 轮")
+            console.print(f"[dim]{goodbye}[/]")
         except KeyboardInterrupt:
-            print("\n\n👋 强制退出")
+            console.print("\n\n[bold red]👋 强制退出[/]")
 
     def list_roles(self):
         """列出内置角色"""
@@ -335,6 +351,8 @@ Examples:
                               help="非交互式模型选择（自动选第一个）")
     start_parser.add_argument("--debug", action="store_true",
                               help="启用 debug 日志，显示 CLI 调用详情")
+    start_parser.add_argument("--skin", type=str, default="",
+                              help="皮肤名称（如 adds_cyberpunk）")
 
     # list-roles command
     subparsers.add_parser("list-roles", help="列出内置角色")
@@ -375,7 +393,8 @@ Examples:
     cli = ADDSCli()
 
     if args.command == "start":
-        cli.start(role=args.role, non_interactive=args.non_interactive, debug=args.debug)
+        cli.start(role=args.role, non_interactive=args.non_interactive,
+                  debug=args.debug, skin_name=args.skin)
     elif args.command == "list-roles":
         cli.list_roles()
     elif args.command == "init":
