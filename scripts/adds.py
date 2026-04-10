@@ -175,7 +175,7 @@ class ADDSCli:
         self.ai_dir = self.project_root / ".ai"
 
     def start(self, role: str = "", non_interactive: bool = False, debug: bool = False,
-              skin_name: str = ""):
+              skin_name: str = "", perm_mode: str = "default"):
         """
         启动 ADDS Agent 对话
 
@@ -223,12 +223,13 @@ class ADDSCli:
         render_banner(console, skin, model_name=model_name,
                       context_window=ctx_window, role=role_label)
 
-        # 创建 Agent（P0-2: 传入 project_root 和 agent_role）
+        # 创建 Agent（P0-2: 传入 project_root 和 agent_role, P0-4: 传入 permission_mode）
         loop = AgentLoop(model=model, system_prompt=system_prompt,
                          console=console, skin=skin,
                          project_root=str(self.project_root),
                          agent_role=role or "pm",
-                         feature="")
+                         feature="",
+                         permission_mode=perm_mode)
 
         # 运行交互对话
         try:
@@ -427,6 +428,48 @@ class ADDSCli:
                 for log in logs:
                     print(f"  📄 {log}")
 
+    def perm_command(self, args):
+        """P0-4: 权限管理子命令"""
+        from permission_manager import PermissionManager
+
+        pm = PermissionManager(project_root=str(self.project_root))
+
+        if not args.perm_command or args.perm_command == "status":
+            stats = pm.get_stats()
+            print("=" * 50)
+            print("🔒 权限状态")
+            print("=" * 50)
+            print(f"  模式: {stats['mode']}")
+            print(f"  检查次数: {stats['total_checks']}")
+            print(f"  允许/确认/拒绝: {stats['allowed']}/{stats['asked']}/{stats['denied']}")
+            if stats['cooldown_tools']:
+                print(f"  冷却中: {', '.join(stats['cooldown_tools'])}")
+            print()
+            print("  模式说明:")
+            print("    default  — 敏感操作逐一确认（推荐）")
+            print("    plan     — 只能读不能写（探索阶段）")
+            print("    auto     — AI 分类器自动决策（高级）")
+            print("    bypass   — 所有操作自动放行（危险）")
+
+        elif args.perm_command == "rules":
+            print("=" * 50)
+            print("📋 权限规则")
+            print("=" * 50)
+            for level_name, level in [("allow", "允许"), ("ask", "确认"), ("deny", "拒绝")]:
+                from permission_manager import PermissionLevel
+                rules = pm._rules[PermissionLevel(level_name)]
+                if rules:
+                    print(f"\n  [{level}] ({len(rules)} 条)")
+                    for pattern, source in rules:
+                        print(f"    {pattern:30s}  ← {source}")
+
+        elif args.perm_command == "mode":
+            new_mode = args.mode
+            pm.set_mode(new_mode)
+            if new_mode == "bypass":
+                print("⚠️  bypass 模式已启用！所有操作将自动放行，请谨慎使用！")
+            print(f"✅ 权限模式已切换为: {new_mode}")
+
 
 def main():
     """CLI 入口"""
@@ -466,6 +509,9 @@ Examples:
                               help="启用 debug 日志，显示 CLI 调用详情")
     start_parser.add_argument("--skin", type=str, default="",
                               help="皮肤名称（如 adds_cyberpunk）")
+    start_parser.add_argument("--perm", type=str, default="default",
+                              choices=["default", "plan", "auto", "bypass"],
+                              help="权限模式: default(推荐)/plan(只读)/auto(AI决策)/bypass(危险)")
 
     # list-roles command
     subparsers.add_parser("list-roles", help="列出内置角色")
@@ -501,6 +547,16 @@ Examples:
     from memory_cli import add_mem_subparser
     add_mem_subparser(subparsers)
 
+    # perm command (P0-4)
+    perm_parser = subparsers.add_parser("perm", help="权限管理（P0-4）")
+    perm_sub = perm_parser.add_subparsers(dest="perm_command")
+    perm_sub.add_parser("status", help="显示权限状态")
+    perm_sub.add_parser("rules", help="显示当前权限规则")
+    perm_mode_parser = perm_sub.add_parser("mode", help="切换权限模式")
+    perm_mode_parser.add_argument("mode", type=str,
+                                  choices=["default", "plan", "auto", "bypass"],
+                                  help="权限模式")
+
     args = parser.parse_args()
 
     if not args.command:
@@ -531,8 +587,10 @@ Examples:
     cli = ADDSCli()
 
     if args.command == "start":
+        perm_mode = getattr(args, 'perm', 'default') or 'default'
         cli.start(role=args.role, non_interactive=args.non_interactive,
-                  debug=args.debug, skin_name=args.skin)
+                  debug=args.debug, skin_name=args.skin,
+                  perm_mode=perm_mode)
     elif args.command == "list-roles":
         cli.list_roles()
     elif args.command == "init":
@@ -541,6 +599,8 @@ Examples:
         cli.status()
     elif args.command == "session":
         cli.session_command(args)
+    elif args.command == "perm":
+        cli.perm_command(args)
 
 
 if __name__ == "__main__":

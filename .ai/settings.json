@@ -16,6 +16,7 @@
         "bash(git log*)",
         "bash(git diff*)",
         "bash(git add*)",
+        "bash(git branch*)",
         "read(*)",
         "write(./*)"
       ],
@@ -32,7 +33,7 @@
       ],
       "deny": [
         "bash(sudo*)",
-        "bash(su*)",
+        "bash(su *)",
         "bash(chmod 777*)",
         "bash(mkfs*)",
         "bash(dd*)",

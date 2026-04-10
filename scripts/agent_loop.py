@@ -20,6 +20,7 @@ from session_manager import SessionManager
 from context_compactor import ContextCompactor
 from summary_decision_engine import SummaryStrategy
 from memory_manager import MemoryManager
+from permission_manager import PermissionManager, confirm_action_with_session
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,8 @@ class AgentLoop:
 
     def __init__(self, model: ModelInterface, system_prompt: str = "",
                  console=None, skin=None, project_root: str = ".",
-                 agent_role: str = "", feature: str = ""):
+                 agent_role: str = "", feature: str = "",
+                 permission_mode: str = "default"):
         self.model = model
         self.session = AgentSession(system_prompt=system_prompt)
         self.console = console
@@ -70,6 +72,11 @@ class AgentLoop:
         self.budget = TokenBudget(context_window=ctx_window, config=budget_config)
         self.session_mgr = SessionManager(sessions_dir=sessions_dir)
         self.compactor = ContextCompactor(self.budget, self.session_mgr)
+
+        # P0-4: 权限管理器
+        self.permission = PermissionManager(
+            project_root=project_root, mode=permission_mode
+        )
 
         # 如果没有传入 console/skin，使用简单模式
         if self.console is None:
@@ -97,7 +104,7 @@ class AgentLoop:
             # 命令补全
             command_completer = WordCompleter(
                 ["/help", "/h", "/?", "/keys", "/quit", "/exit", "/q",
-                 "/clear", "/history", "/model"],
+                 "/clear", "/history", "/model", "/perm"],
                 ignore_case=True,
             )
 
@@ -190,6 +197,7 @@ class AgentLoop:
                         ("/clear", "清空对话历史"),
                         ("/history", "查看对话历史摘要"),
                         ("/model", "显示当前模型信息"),
+                        ("/perm", "显示权限状态和统计"),
                     ]:
                         t.add_row(name, desc)
                     self.console.print(Panel(t, title=f"[bold {accent}]{help_header}[/]", border_style=dim, padding=(0, 1)))
@@ -201,6 +209,7 @@ class AgentLoop:
                     self._print(f"  /clear      清空对话历史")
                     self._print(f"  /history    查看对话历史")
                     self._print(f"  /model      显示模型信息")
+                    self._print(f"  /perm       显示权限状态")
                 self._print()
                 continue
             elif cmd == "/keys":
@@ -260,6 +269,31 @@ class AgentLoop:
                 # P0-2: 显示 token 预算
                 self._print(f"  [{label}]Token 使用:[/] [{text}]{self.budget.used:,}/{self.budget.context_window:,} ({self.budget.utilization:.1%})[/]")
                 self._print(f"  [{label}]推荐操作:[/] [{text}]{self.budget.recommend_action()}[/]")
+                self._print()
+                continue
+            elif cmd == "/perm":
+                # P0-4: 权限状态
+                stats = self.permission.get_stats()
+                self._print(f"  [{label}]权限模式:[/] [{text}]{stats['mode']}[/]")
+                self._print(f"  [{label}]检查次数:[/] [{text}]{stats['total_checks']}[/]")
+                self._print(f"  [{label}]允许/确认/拒绝:[/] [{text}]{stats['allowed']}/{stats['asked']}/{stats['denied']}[/]")
+                if stats['cooldown_tools']:
+                    self._print(f"  [{label}]冷却中:[/] [{text}]{', '.join(stats['cooldown_tools'])}[/]")
+                self._print(f"\n  [{dim}]权限模式: default(推荐) / plan(只读) / auto(AI决策) / bypass(危险)[/]")
+                self._print(f"  [{dim}]切换模式: /perm mode <mode>[/]")
+                # 子命令: /perm mode <mode>
+                parts = user_input.split()
+                if len(parts) >= 3 and parts[1] == "mode":
+                    new_mode = parts[2]
+                    if new_mode in ("default", "plan", "auto", "bypass"):
+                        self.permission.set_mode(new_mode)
+                        warn_c = self.skin.color("ui_error", "#ef5350") if self.skin else "#ef5350"
+                        if new_mode == "bypass":
+                            self._print(f"\n[bold {warn_c}]⚠️  bypass 模式已启用！所有操作将自动放行，请谨慎使用！[/]")
+                        ok_c = self.skin.color("ui_ok", "#4caf50") if self.skin else "#4caf50"
+                        self._print(f"[{ok_c}]✅ 权限模式已切换为: {new_mode}[/]")
+                    else:
+                        self._print(f"  ❌ 未知模式: {new_mode}")
                 self._print()
                 continue
 

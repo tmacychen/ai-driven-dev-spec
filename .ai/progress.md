@@ -1,21 +1,64 @@
 # Project Progress Logs
 
 ## Current Focus
-P0-3 记忆系统实现完成，准备进入 P0-4 权限管理器
+P0-4 权限管理器实现完成，P0 全部功能已完成
 
 ## Overall Status
-- ✅ Completed: 5
+- ✅ Completed: 6
 - 🔄 In Progress: 0
 - ⏳ Pending: 0
 - ⚠️ Blocked: 0
 - 🔴 Regression: 0
 
 ## Next Step
-按 improvement_roadmap.md Phase 4 计划，实现权限管理器层
+P0 全流程集成测试，然后进入 P1 阶段
 
 ---
 
 ## Session History
+
+### [2026-04-10 17:30] Session — P0-4 权限管理器实现
+
+**Agent**: Developer (权限层实现)
+
+**Tasks Completed**:
+- 实现 `scripts/permission_manager.py` — 权限管理器
+  - PermissionLevel 枚举: ALLOW / ASK / DENY
+  - PermissionMode 枚举: DEFAULT / PLAN / AUTO / BYPASS
+  - PermissionDecision 数据类: 决策结果 + 属性判断 + 格式化
+  - match_rule() 规则匹配: tool(command_pattern) 格式 + fnmatch 通配符
+  - CooldownState 死循环防护: 连续拒绝 3 次后冷却 30 秒
+  - SessionOverrides 会话级覆盖: 运行时添加允许/拒绝规则
+  - PermissionManager 核心逻辑:
+    - default 模式: 按规则匹配（deny > ask > allow > 保守ask）
+    - plan 模式: 只读放行，写操作拒绝
+    - auto 模式: AI 分类器（内置高风险/低风险模式）
+    - bypass 模式: 全部放行（危险）
+  - 从 .ai/settings.json 和 ~/.adds/settings.json 加载规则
+  - 交互式确认 confirm_action_with_session() + 会话级覆盖
+  - parse_tool_command() 工具命令解析
+  - create_permission_manager() 便捷函数
+- 修改 `scripts/agent_loop.py` — 集成权限管理器
+  - 导入 PermissionManager + confirm_action_with_session
+  - 构造函数增加 permission_mode 参数
+  - 新增 /perm 命令: 显示权限状态 + 模式切换
+  - 命令补全增加 /perm
+- 修改 `scripts/adds.py` — CLI 集成
+  - start 命令增加 --perm 参数
+  - 新增 perm 子命令: status/rules/mode
+  - perm_command() 方法实现
+- 更新 `.ai/settings.json` — 完善权限配置
+  - 新增 bash(git branch*) 到 allow 列表
+  - 修复 bash(su*) → bash(su *) 防止误匹配
+
+**验证**:
+- ✅ test_p0_4.py: 69 个测试全部通过
+- ✅ test_p0_2 + test_p0_3 + test_p0_4: 200 个测试全部通过
+
+**Handoff Notes for Next Session**:
+> P0-4 权限管理器实现完成，P0 全部四层（模型/压缩/记忆/权限）已全部实现。下一步：P0 全流程集成测试，验证四层模块协同工作；然后进入 P1 阶段。
+
+---
 
 ### [2026-04-10 15:27] Session — P0-2 上下文压缩层实现
 
