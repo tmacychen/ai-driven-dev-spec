@@ -1,0 +1,64 @@
+name: adds_sakura
+description: 樱花主题 — 柔粉色与白色，宁静春日美学
+
+colors:
+  banner_border: "#CC5B8F"
+  banner_title: "#FFB7C5"
+  banner_accent: "#FFB7C5"
+  banner_dim: "#8F7AA0"
+  banner_text: "#FFF0F5"
+  ui_accent: "#CC5B8F"
+  ui_label: "#B76BA3"
+  ui_ok: "#7B9F6E"
+  ui_error: "#D94466"
+  ui_warn: "#E8A86B"
+  prompt: "#FFF0F5"
+  input_rule: "#5B3256"
+  response_border: "#FFB7C5"
+  session_label: "#FFDDE4"
+  session_border: "#4A3728"
+
+spinner:
+  waiting_faces:
+    - "(✿)"
+    - "(❀)"
+    - "(◌)"
+  thinking_faces:
+    - "(✿)"
+    - "(❁)"
+    - "(◌)"
+  thinking_verbs:
+    - "watching petals fall"
+    - "tracing branches"
+    - "reading the wind"
+    - "counting blossoms"
+    - "feeling the breeze"
+  wings:
+    - ["⟪✿", "✿⟫"]
+    - ["⟪❀", "❀⟫"]
+
+branding:
+  agent_name: "ADDS::SAKURA"
+  welcome: "[bold #CC3366]P[/][bold #CC3567]e[/][bold #CE3B6C]t[/][bold #CF4070]a[/][bold #D04674]l[/][bold #D14C78]s[/] [bold #D3547F]f[/][bold #D55D85]a[/][bold #D7678D]l[/][#D97194]l[/][#DB7B9C] [/][#DE87A7]s[/][#E093B1]o[/][#E3A0BC]f[/][#E6ADC7]t[/][#E9BBD2]l[/][#ECC9DD]y[/][#F0D8E8].[/] [#F4E7F3]T[/][#F8F5FA]y[/][#FFF0F5]p[/][#FFF0F5]e[/] [#FFF0F5]/[/][#FFF0F5]h[/][#FFF0F5]e[/][#FFF0F5]l[/][#FFF0F5]p[/] [#FFF0F5]f[/][#FFF0F5]o[/][#FFF0F5]r[/] [#FFF0F5]g[/][#FFF0F5]u[/][#FFF0F5]i[/][#FFF0F5]d[/][#FFF0F5]a[/][#FFF0F5]n[/][#FFF0F5]c[/][#FFF0F5]e[/][#FFF0F5].[/]"
+  goodbye: "[bold #CC3366]T[/][bold #CC3467]h[/][bold #CD3769]e[/] [bold #CE396A]b[/][bold #CF3C6C]l[/][bold #D03F6E]o[/][bold #D14371]s[/][bold #D24774]s[/][bold #D34C78]o[/][bold #D5517C]m[/][bold #D65781]s[/] [bold #D85D86]s[/][bold #DA648C]c[/][#DC6C92]a[/][#DE7498]t[/][#E07D9F]t[/][#E287A6]e[/][#E491AE]r[/][#E69CB6].[/] [#E8A7BE]U[/][#EAB3C7]n[/][#ECBFD0]t[/][#EECCD9]i[/][#F0D9E3]l[/] [#F2E6ED]n[/][#F4F3F7]e[/][#FFFFFF]x[/][#FFFFFF]t[/] [#FFFFFF]s[/][#FFFFFF]p[/][#FFFFFF]r[/][#FFFFFF]i[/][#FFFFFF]n[/][#FFFFFF]g[/][#FFFFFF].[/]"
+  response_label: " ✿ ADDS::SAKURA "
+  prompt_symbol: "✿ ❯"
+  help_header: "(✿) Available Commands"
+
+tool_prefix: "┊"
+
+tool_emojis:
+  terminal: "✿"
+  web_search: "◌"
+  read_file: "❀"
+  write_file: "❁"
+  search_files: "✾"
+  execute_code: "⌁"
+
+logo_font: "bubble"
+logo_text: "ADDS"
+banner_logo: ""
+
+banner_hero: |
+  [bold #FFB7C5]ADDS::SAKURA[/]  [#8F7AA0]·[/]  [#FFF0F5]桜 Serenity in every keystroke[/]
+  [dim #8F7AA0]──────────────────────────────────[/]

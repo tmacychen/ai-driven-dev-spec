@@ -1,0 +1,64 @@
+name: adds_matrix
+description: 黑客帝国绿色终端 — 经典绿屏 CRT 美学，代码雨风格
+
+colors:
+  banner_border: "#003300"
+  banner_title: "#00FF00"
+  banner_accent: "#00CC00"
+  banner_dim: "#004400"
+  banner_text: "#00FF00"
+  ui_accent: "#00FF00"
+  ui_label: "#00AA00"
+  ui_ok: "#00FF00"
+  ui_error: "#FF0000"
+  ui_warn: "#FFFF00"
+  prompt: "#00FF00"
+  input_rule: "#003300"
+  response_border: "#00FF00"
+  session_label: "#00CC00"
+  session_border: "#004400"
+
+spinner:
+  waiting_faces:
+    - "(⌬)"
+    - "(▣)"
+    - "(◈)"
+  thinking_faces:
+    - "(⌬)"
+    - "(◉)"
+    - "(◎)"
+  thinking_verbs:
+    - "decrypting"
+    - "accessing"
+    - "loading"
+    - "tracing"
+    - "hacking the matrix"
+  wings:
+    - ["⟪⌬", "⌬⟫"]
+    - ["⟪▣", "▣⟫"]
+
+branding:
+  agent_name: "ADDS::MATRIX"
+  welcome: "[bold #00FF00]W[/][bold #00FF00]A[/][bold #00CC00]K[/][bold #00CC00]E[/][bold #00AA00]U[/][bold #00AA00]P[/][#008800],[/] [#00FF00]A[/][#00FF00]D[/][#00CC00]D[/][#00CC00]S[/][#00AA00].[/] [dim #004400]The Matrix has you.[/]"
+  goodbye: "[bold #00FF00]T[/][bold #00CC00]H[/][bold #00AA00]E[/][#008800]R[/][#00CC00]E[/][#00AA00] [/][#008800]I[/][#00CC00]S[/][#00AA00] [/][#008800]N[/][#00CC00]O[/][#00AA00] [/][#008800]S[/][#00CC00]P[/][#00AA00]O[/][#008800]O[/][#00CC00]N[/][#00AA00].[/]"
+  response_label: " ▣ ADDS::MATRIX "
+  prompt_symbol: "▣ ❯"
+  help_header: "(▣) Available Commands"
+
+tool_prefix: "┊"
+
+tool_emojis:
+  terminal: "⌬"
+  web_search: "◈"
+  read_file: "▷"
+  write_file: "◆"
+  search_files: "⦿"
+  execute_code: "⌁"
+
+logo_font: "cybermedium"
+logo_text: "ADDS"
+banner_logo: ""
+
+banner_hero: |
+  [bold #00FF00]ADDS::MATRIX[/]  [#004400]·[/]  [#00FF00]S Y S T E M   S T A T U S :   A C T I V E[/]
+  [dim #004400]──────────────────────────────────[/]

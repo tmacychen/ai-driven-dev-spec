@@ -18,6 +18,8 @@ colors:
   session_label: "#DAA520"
   session_border: "#8B8682"
 
+logo_font: "standard"
+logo_text: "ADDS"
 banner_logo: ""
 banner_hero: ""
 

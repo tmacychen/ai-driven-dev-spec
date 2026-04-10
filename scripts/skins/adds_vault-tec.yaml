@@ -1,0 +1,67 @@
+name: adds_vault-tec
+description: 辐射终端 — 绿色磷光 CRT，复古终端美学
+
+colors:
+  banner_border: "#1a5c14"
+  banner_title: "#1bff80"
+  banner_accent: "#33ff33"
+  banner_dim: "#0e4e0b"
+  banner_text: "#20c040"
+  ui_accent: "#33ff33"
+  ui_label: "#1bff80"
+  ui_ok: "#33ff33"
+  ui_error: "#ff3333"
+  ui_warn: "#ffb641"
+  prompt: "#20c040"
+  input_rule: "#145b11"
+  response_border: "#1bff80"
+  session_label: "#33ff33"
+  session_border: "#0e4e0b"
+
+spinner:
+  waiting_faces:
+    - "(☢)"
+    - "(⚙)"
+    - "(◈)"
+  thinking_faces:
+    - "(☢)"
+    - "(⚙)"
+    - "(⌁)"
+  thinking_verbs:
+    - "accessing mainframe"
+    - "decrypting holotape"
+    - "querying database"
+    - "loading protocol"
+    - "scanning frequencies"
+    - "parsing telemetry"
+  wings:
+    - ["⟪☢", "☢⟫"]
+    - ["⟪◈", "◈⟫"]
+
+branding:
+  agent_name: "ADDS::VAULT-TEC"
+  welcome: "ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL — ENTER QUERY OR /HELP FOR COMMANDS"
+  goodbye: "CONNECTION TERMINATED. STAY SAFE, VAULT DWELLER. ☢"
+  response_label: " ☢ ADDS::VAULT-TEC "
+  prompt_symbol: "☢ ❯"
+  help_header: "(☢) VAULT-TEC COMMAND DIRECTORY"
+
+tool_prefix: "│"
+
+tool_emojis:
+  terminal: "⚙"
+  web_search: "📡"
+  read_file: "📋"
+  write_file: "✏"
+  search_files: "🔍"
+  execute_code: "⌁"
+
+logo_font: "cyberlarge"
+logo_text: "ADDS"
+banner_logo: ""
+
+
+
+banner_hero: |
+  [bold #1bff80]ADDS::VAULT-TEC[/]  [#0e4e0b]·[/]  [#20c040]TERMLINK PROTOCOL: ACTIVE[/]
+  [dim #0e4e0b]──────────────────────────────────[/]

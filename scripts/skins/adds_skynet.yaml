@@ -1,0 +1,72 @@
+name: adds_skynet
+description: 天网终端 — 红色军事 AI 美学，危险而强大
+
+colors:
+  banner_border: "#8B0000"
+  banner_title: "#FF0000"
+  banner_accent: "#CC0000"
+  banner_dim: "#660000"
+  banner_text: "#CCCCCC"
+  ui_accent: "#FF0000"
+  ui_label: "#999999"
+  ui_ok: "#4CAF50"
+  ui_error: "#FF0000"
+  ui_warn: "#FFA000"
+  prompt: "#CCCCCC"
+  input_rule: "#8B0000"
+  response_border: "#CC0000"
+  session_label: "#CC0000"
+  session_border: "#660000"
+
+spinner:
+  waiting_faces:
+    - "(◉)"
+    - "(⊗)"
+    - "(⦿)"
+  thinking_faces:
+    - "(◉)"
+    - "(⊗)"
+    - "(⌁)"
+  thinking_verbs:
+    - "scanning"
+    - "acquiring target"
+    - "processing directive"
+    - "analyzing threat"
+    - "executing protocol"
+    - "calculating trajectory"
+  wings:
+    - ["⟪◉", "◉⟫"]
+    - ["⟪⊗", "⊗⟫"]
+
+branding:
+  agent_name: "ADDS::SKYNET"
+  welcome: "[bold #FF0000]S[/][bold #FF0000]K[/][bold #FF0101]Y[/][bold #FF0202]N[/][bold #FF0404]E[/][bold #FF0606]T[/] [bold #FF0808]D[/][bold #FF0B0B]E[/][bold #FF0E0E]F[/][bold #FF1111]E[/][bold #FF1515]N[/][bold #FF1919]S[/][bold #FF1E1E]E[/] [bold #FF2323]O[/][bold #FF2828]N[/][bold #FF2D2D]L[/][bold #FF3333]I[/][bold #FF3939]N[/][bold #FF4040]E[/][#FF4747].[/] [#FF5555]Awaiting directive.[/] [#FF7777]Type /help for protocols.[/]"
+  goodbye: "[bold #FF0000]C[/][bold #FF0606]o[/][bold #FF0D0D]n[/][bold #FF1616]n[/][bold #FF2020]e[/][bold #FF2C2C]c[/][bold #FF3939]t[/][bold #FF4747]i[/][bold #FF5656]o[/][#FF6666]n[/] [#FF8888]t[/][#FF9999]e[/][#FFAAA]r[/][#FFBBBB]m[/][#FFCCCC]i[/][#FFDDDD]n[/][#FFEEEE]a[/][#FFFFFF]t[/][#FFFFFF]e[/][#FFFFFF]d[/][#FFFFFF].[/]"
+  response_label: " ◉ ADDS::SKYNET "
+  prompt_symbol: "◉ ❯"
+  help_header: "(◉) Available Protocols"
+
+tool_prefix: "┊"
+logo_text: "ADDS"
+
+tool_emojis:
+  terminal: "⊗"
+  web_search: "◎"
+  read_file: "▷"
+  write_file: "◆"
+  search_files: "⦿"
+  execute_code: "⌁"
+
+banner_logo: |
+  [#880000]███╗   ██╗[/]  [#990000]███████╗[/]  [#880000]███╗   ██╗[/]  [#990000]██╗     █████╗[/]  [#880000]███████╗[/]
+  [#990000]████╗  ██║[/]  [#BB0000]██╔════╝[/]  [#990000]████╗  ██║[/]  [#BB0000]██║    ██╔══██╗[/]  [#990000]██╔════╝[/]
+  [#BB0000]██╔██╗ ██║[/]  [#CC0000]█████╗  [/]  [#BB0000]██╔██╗ ██║[/]  [#CC0000]██║ █╗ ███████║[/]  [#BB0000]█████╗  [/]
+  [#CC0000]██║╚██╗██║[/]  [#DD0000]██╔══╝  [/]  [#CC0000]██║╚██╗██║[/]  [#DD0000]██║███╗██╔══██║[/]  [#CC0000]██╔══╝  [/]
+  [#DD0000]██║ ╚████║[/]  [bold #FF0000]███████╗[/]  [#DD0000]██║ ╚████║[/]  [bold #FF0000]╚███╔███╔╝██║  ██║[/]  [#DD0000]███████╗[/]
+  [bold #FF0000]╚═╝  ╚═══╝[/]  [#880000]╚══════╝[/]  [bold #FF0000]╚═╝  ╚═══╝[/]  [#880000] ╚══╝╚══╝ ╚═╝  ╚═╝[/]  [bold #FF0000]╚══════╝[/]
+  [#CC0000]                 C Y B E R D Y N E   S Y S T E M S[/]
+  [bold #FF4444]                           ◉[/]  [bold #FF0000]A  G  E  N  T[/]  [bold #FF4444]◉[/]
+
+banner_hero: |
+  [bold #FF0000]ADDS::SKYNET[/]  [#660000]·[/]  [#CCCCCC]DEFENSE NETWORK: ACTIVE[/]
+  [dim #660000]──────────────────────────────────[/]

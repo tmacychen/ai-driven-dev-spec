@@ -1,0 +1,63 @@
+name: adds_nordic
+description: 北欧极简 — Nord 调色板，柔和蓝白，清晰沉稳
+
+colors:
+  banner_border: "#5E81AC"
+  banner_title: "#ECEFF4"
+  banner_accent: "#88C0D0"
+  banner_dim: "#4C566A"
+  banner_text: "#ECEFF4"
+  ui_accent: "#88C0D0"
+  ui_label: "#81A1C1"
+  ui_ok: "#A3BE8C"
+  ui_error: "#BF616A"
+  ui_warn: "#EBCB8B"
+  prompt: "#ECEFF4"
+  input_rule: "#5E81AC"
+  response_border: "#88C0D0"
+  session_label: "#8FBCBB"
+  session_border: "#4C566A"
+
+spinner:
+  waiting_faces:
+    - "(•)"
+    - "(○)"
+    - "(◦)"
+  thinking_faces:
+    - "(•)"
+    - "(◦)"
+    - "(‿)"
+  thinking_verbs:
+    - "thinking"
+    - "pondering"
+    - "reflecting"
+    - "contemplating"
+  wings:
+    - ["⟪•", "•⟫"]
+    - ["⟪○", "○⟫"]
+
+branding:
+  agent_name: "ADDS::NORDIC"
+  welcome: "[bold #88C0D0]S[/][bold #88C0D0]æ[/][bold #88C0D0]l[/][bold #88C0D0]u[/][#81A1C1]d[/][#81A1C1]o[/][#81A1C1].[/] [dim #4C566A]A calm, clear mind. Type /help for guidance.[/]"
+  goodbye: "[bold #88C0D0]H[/][bold #88C0D0]æ[/][bold #88C0D0]d[/][bold #88C0D0]e[/][#81A1C1]t[/][#81A1C1].[/] [#5E81AC]Vi ses.[/]"
+  response_label: " • ADDS::NORDIC "
+  prompt_symbol: "• ❯"
+  help_header: "(•) Commands"
+
+tool_prefix: "│"
+
+tool_emojis:
+  terminal: "▸"
+  web_search: "◇"
+  read_file: "◈"
+  write_file: "◆"
+  search_files: "▷"
+  execute_code: "⇒"
+
+logo_font: "thin"
+logo_text: "ADDS"
+banner_logo: ""
+
+banner_hero: |
+  [bold #88C0D0]ADDS::NORDIC[/]  [#4C566A]·[/]  [#ECEFF4]Nordic serenity[/]
+  [dim #4C566A]──────────────────────────────────[/]

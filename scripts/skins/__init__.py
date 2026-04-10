@@ -11,6 +11,11 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 
 try:
+    import pyfiglet
+except ImportError:
+    pyfiglet = None
+
+try:
     import yaml
 except ImportError:
     yaml = None
@@ -65,6 +70,7 @@ DEFAULT_SKIN = {
     },
     "tool_prefix": "┊",
     "tool_emojis": {},
+    "logo_font": "standard",
     "banner_logo": "",
     "banner_hero": "",
 }
@@ -109,6 +115,16 @@ class SkinConfig:
         return self._config.get("tool_emojis", {}).get(tool_name)
 
     @property
+    def logo_font(self) -> str:
+        """Logo 字体（pyfiglet 字体名）"""
+        return self._config.get("logo_font", "standard")
+
+    @property
+    def logo_text(self) -> str:
+        """Logo 文字（默认为 agent_name）"""
+        return self._config.get("logo_text", "") or self.branding("agent_name", "ADDS")
+
+    @property
     def banner_logo(self) -> str:
         return self._config.get("banner_logo", "")
 
@@ -147,9 +163,11 @@ ADDS_LOGO_COLORS = [
 ]
 
 ADDS_HERO = """
-[dim #555555]⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁[/]
-[dim #666666]  [bold #AAAAAA]ADDS[/]  [dim #444444]═══════════════════════════════  [bold #AAAAAA]AGENT[/]  [dim #444444][/]
-[dim #555555]⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁[/]"""
+[dim #555555]┌──────────────────────────────────────────────────────────┐[/]
+[dim #555555]│[/]  [bold #FFD700]⚡[/]  [dim #444444]═══════════════════════════════════════════  [bold #FFD700]⚡[/]  [dim #555555]│[/]
+[dim #555555]│[/]  [bold #FFBF00]A D D S[/]  [dim #B8860B]·[/]  [dim #FFF8DC]A I - D r i v e n   A g e n t[/]             [dim #555555]│[/]
+[dim #555555]│[/]  [bold #FFD700]⚡[/]  [dim #444444]═══════════════════════════════════════════  [bold #FFD700]⚡[/]  [dim #555555]│[/]
+[dim #555555]└──────────────────────────────────────────────────────────┘[/]"""
 
 
 def load_skin(skin_name: str, config_dir: Optional[str] = None) -> SkinConfig:
@@ -188,6 +206,17 @@ def list_skins(config_dir: Optional[str] = None) -> List[str]:
 # Banner 渲染
 # ═══════════════════════════════════════════════════════════════
 
+def _render_builtin_logo(console: Console, title_color: str, accent_color: str, dim_color: str) -> None:
+    """渲染内置 ADDS_LOGO（用皮肤颜色上色）"""
+    logo_text = Text()
+    for i, line in enumerate(ADDS_LOGO):
+        style = f"bold {title_color}" if i % 2 == 0 else accent_color
+        logo_text.append(line + "\n", style=style)
+    subtitle = "A I - D r i v e n   D e v   S p e c"
+    logo_text.append(subtitle, style=f"dim {dim_color}")
+    console.print(Align.center(logo_text))
+
+
 def render_banner(console: Console, skin: SkinConfig, model_name: str = "",
                   context_window: int = 0, role: str = "") -> None:
     """渲染 ADDS 启动 Banner"""
@@ -201,29 +230,44 @@ def render_banner(console: Console, skin: SkinConfig, model_name: str = "",
         "session": skin.color("session_border"),
     }
 
-    logo = skin.banner_logo or ADDS_LOGO
-    hero = skin.banner_hero or ADDS_HERO
+    logo = skin.banner_logo
+    logo_font = skin.logo_font
+    logo_text_str = skin.logo_text
+    hero = skin.banner_hero
     agent_name = skin.branding("agent_name", "ADDS")
 
-    # 渲染 Logo（用 Rich Text 逐行上色）
-    logo_lines = logo if isinstance(logo, list) else logo.strip().split("\n")
-    logo_text = Text()
-    for i, line in enumerate(logo_lines):
-        # 查找此行的颜色配置
-        color, bold = "#FFD700", False
-        for row_idx, row_color, row_bold in ADDS_LOGO_COLORS:
-            if row_idx == i:
-                color, bold = row_color, row_bold
-                break
-        style = f"bold {color}" if bold else color
-        logo_text.append(line + "\n", style=style)
-
-    # 副标题
-    subtitle = "A I - D r i v e n   D e v   S p e c"
-    logo_text.append(subtitle, style=f"dim {c['dim']}")
-
     console.print()
-    console.print(Align.center(logo_text))
+
+    # 渲染 Logo
+    title_color = c["title"]
+    accent_color = c["accent"]
+    dim_color = c["dim"]
+
+    if isinstance(logo, str) and logo.strip():
+        # 方案 A：YAML 中的自定义 Rich markup 文本 — 直接渲染
+        for line in logo.strip().split("\n"):
+            console.print(Align.center(line))
+    elif logo_font and pyfiglet:
+        # 方案 B：pyfiglet 动态生成（推荐，无转义问题）
+        try:
+            fig_text = pyfiglet.figlet_format(logo_text_str, font=logo_font)
+            logo_text = Text()
+            for i, line in enumerate(fig_text.split("\n")):
+                if not line.strip():
+                    continue
+                # 交替使用 title/accent 颜色
+                style = f"bold {title_color}" if i % 2 == 0 else accent_color
+                logo_text.append(line + "\n", style=style)
+            subtitle = "A I - D r i v e n   D e v   S p e c"
+            logo_text.append(subtitle, style=f"dim {dim_color}")
+            console.print(Align.center(logo_text))
+        except Exception:
+            # 字体不存在时回退
+            _render_builtin_logo(console, title_color, accent_color, dim_color)
+    else:
+        # 方案 C：内置 ADDS_LOGO
+        _render_builtin_logo(console, title_color, accent_color, dim_color)
+
     console.print()
 
     # 左右分栏布局
@@ -232,7 +276,16 @@ def render_banner(console: Console, skin: SkinConfig, model_name: str = "",
     layout.add_column("right", justify="left")
 
     # 左侧：Hero + 模型信息
-    left_lines = ["", hero, ""]
+    left_lines = [""]
+    if isinstance(hero, str) and hero.strip():
+        # 自定义 hero（YAML 中的 Rich markup）
+        for line in hero.strip().split("\n"):
+            left_lines.append(line)
+    else:
+        # 默认 Hero：简洁文字风格（在 grid 中能正确渲染）
+        left_lines.append(f"[bold {c['title']}]{agent_name}[/]  [{c['dim']}]·[/]  [{c['text']}]A I - D r i v e n   A g e n t[/]")
+        left_lines.append(f"[dim {c['dim']}]──────────────────────────────────[/]")
+    left_lines.append("")
     if model_name:
         left_lines.append(
             f"[{c['accent']}]{model_name}[/] [{c['dim']}]·[/] "
