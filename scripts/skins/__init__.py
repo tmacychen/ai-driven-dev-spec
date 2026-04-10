@@ -129,14 +129,18 @@ class SkinConfig:
 # ADDS Logo 和 Banner
 # ═══════════════════════════════════════════════════════════════
 
-ADDS_LOGO = r"""
-[bold #FFD700]     █████╗ ███████╗ ██████╗ ███████╗██╗  ██╗[/]
-[#FFD700]    ██╔══██╗██╔════╝██╔════╝ ██╔════╝╚██╗██╔╝[/]
-[bold #FFBF00]    ███████║███████╗██║  ███╗█████╗  ╚███╔╝[/]
-[#FFBF00]    ██╔══██║╚════██║██║   ██║╚════╝  ██╔██╗[/]
-[bold #FFD700]    ██║  ██║███████║╚██████╔╝       ██╔╝ ██╗[/]
-[#FFD700]    ╚═╝  ╚═╝╚══════╝ ╚═════╝        ╚═╝  ╚═╝[/]
-[dim #B8860B]       A I - D r i v e n   D e v   S p e c[/]"""
+ADDS_LOGO = r"""   ___  ____ ___  _  _  ___  _  _
+ / _ \/ ___/ _ \| \| |/ _ \| \| |
+| (_) | |  | | | | .` | | | | .` |
+ \___/|_|  \___/|_|\_|\___/|_|\_|"""
+
+# Logo 每行的颜色配置：(行号, 颜色, 是否加粗)
+ADDS_LOGO_COLORS = [
+    (0, "#FFD700", True),
+    (1, "#FFD700", False),
+    (2, "#FFBF00", True),
+    (3, "#FFBF00", False),
+]
 
 ADDS_HERO = """
 [dim #555555]⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁⠁[/]
@@ -197,8 +201,25 @@ def render_banner(console: Console, skin: SkinConfig, model_name: str = "",
     hero = skin.banner_hero or ADDS_HERO
     agent_name = skin.branding("agent_name", "ADDS")
 
+    # 渲染 Logo（用 Rich Text 逐行上色）
+    logo_lines = logo.strip().split("\n")
+    logo_text = Text()
+    for i, line in enumerate(logo_lines):
+        # 查找此行的颜色配置
+        color, bold = "#FFD700", False
+        for row_idx, row_color, row_bold in ADDS_LOGO_COLORS:
+            if row_idx == i:
+                color, bold = row_color, row_bold
+                break
+        style = f"bold {color}" if bold else color
+        logo_text.append(line + "\n", style=style)
+
+    # 副标题
+    subtitle = "A I - D r i v e n   D e v   S p e c"
+    logo_text.append(subtitle, style=f"dim {c['dim']}")
+
     console.print()
-    console.print(Align.center(logo))
+    console.print(Align.center(logo_text))
     console.print()
 
     # 左右分栏布局
