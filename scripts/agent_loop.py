@@ -3,6 +3,7 @@
 ADDS Agent Loop — Rich 美化版
 
 核心能力：创建 agent → 注入系统提示词 → 调用大模型 → 交互对话
+集成 P0-2 上下文压缩：Token 预算管理 + 两层压缩引擎 + Session 管理
 使用 Rich 库实现彩色终端输出、思考过程面板、响应面板等。
 """
 
@@ -11,6 +12,10 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 
 from model.base import ModelInterface
+from token_budget import TokenBudget, estimate_tokens, load_budget_config
+from session_manager import SessionManager
+from context_compactor import ContextCompactor
+from summary_decision_engine import SummaryStrategy
 
 # prompt_toolkit 用于处理中文输入的退格问题
 try:
@@ -37,14 +42,28 @@ class AgentLoop:
     1. 注入 system_prompt
     2. 用户输入 → 模型响应 → Rich 渲染
     3. 循环直到用户退出
+    4. P0-2: Token 预算管理 + 两层压缩 + Session 归档
     """
 
     def __init__(self, model: ModelInterface, system_prompt: str = "",
-                 console=None, skin=None):
+                 console=None, skin=None, project_root: str = ".",
+                 agent_role: str = "", feature: str = ""):
         self.model = model
         self.session = AgentSession(system_prompt=system_prompt)
         self.console = console
         self.skin = skin
+        self.project_root = project_root
+        self.agent_role = agent_role
+        self.feature = feature
+
+        # P0-2: Token 预算 + Session 管理 + 压缩引擎
+        ctx_window = model.get_context_window()
+        budget_config = load_budget_config(project_root)
+        sessions_dir = f"{project_root}/.ai/sessions"
+
+        self.budget = TokenBudget(context_window=ctx_window, config=budget_config)
+        self.session_mgr = SessionManager(sessions_dir=sessions_dir)
+        self.compactor = ContextCompactor(self.budget, self.session_mgr)
 
         # 如果没有传入 console/skin，使用简单模式
         if self.console is None:
@@ -116,6 +135,9 @@ class AgentLoop:
             sp = self.session.system_prompt[:80]
             self._print(f"  [{label}]角色设定:[/] [{text}]{sp}[/]")
         self._print(f"\n[dim {dim}]💡 输入消息开始对话 · /help 帮助 · /keys 快捷键 · /quit 退出[/]\n")
+
+        # P0-2: 初始化 session 和 token 预算
+        self._init_session_budget(ctx_window)
 
         while True:
             try:
@@ -229,6 +251,9 @@ class AgentLoop:
                 self._print(f"  [{label}]上下文:[/] [{text}]{ctx_window:,} tokens[/]")
                 self._print(f"  [{label}]对话轮数:[/] [{text}]{self.session.turn_count}[/]")
                 self._print(f"  [{label}]消息数:[/] [{text}]{len(self.session.messages)}[/]")
+                # P0-2: 显示 token 预算
+                self._print(f"  [{label}]Token 使用:[/] [{text}]{self.budget.used:,}/{self.budget.context_window:,} ({self.budget.utilization:.1%})[/]")
+                self._print(f"  [{label}]推荐操作:[/] [{text}]{self.budget.recommend_action()}[/]")
                 self._print()
                 continue
 
@@ -307,4 +332,45 @@ class AgentLoop:
 
             self._print()  # 空行分隔
 
+            # P0-2: 检查 token 预算并发出警告
+            warning = self.compactor.get_warning()
+            if warning:
+                warn_color = self.skin.color("ui_error", "#ef5350") if self.skin else "#ef5350"
+                self._print(f"[bold {warn_color}]{warning}[/]\n")
+
+        # P0-2: Session 结束 → 归档
+        self._archive_session()
+
         return self.session.turn_count
+
+    def _init_session_budget(self, ctx_window: int) -> None:
+        """P0-2: 初始化 session 和 token 预算"""
+        # 创建 session
+        self._session_id = self.session_mgr.create_session(
+            agent=self.agent_role,
+            feature=self.feature,
+        )
+
+        # 分配系统提示词和记忆的 token 预算
+        sp_tokens = estimate_tokens(self.session.system_prompt) if self.session.system_prompt else 0
+        self.budget.allocate(system_prompt=sp_tokens, memory=0)
+
+        logger.debug(
+            f"Session initialized: {self._session_id}, "
+            f"SP tokens: {sp_tokens}, budget: {self.budget.summary()}"
+        )
+
+    def _archive_session(self) -> None:
+        """P0-2: Session 归档"""
+        if not self._session_id:
+            return
+
+        try:
+            result = self.compactor.layer2_archive(model_interface=self.model)
+            if result:
+                logger.info(
+                    f"Session archived: {result.session_id}, "
+                    f"mem: {result.mem_path}"
+                )
+        except Exception as e:
+            logger.error(f"Session archive failed: {e}")

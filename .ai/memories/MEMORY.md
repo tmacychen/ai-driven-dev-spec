@@ -21,7 +21,10 @@
 
 ## 经验教训
 
-（待积累：每次会话结束时会自动更新此区域）
+- P0-1 模型层：三种适配器（API/CLI/SDK）+ TaskDispatcher 统一协议 + SkillGenerator 技能自动生成
+- P0-2 压缩层：错误信号检测要排除测试结果中的 "0 failed" 等非错误信号；Session 时间戳可能冲突需处理
+- Token 预算分配：SP 15% + Memory 10% + History 55% + Tool 15% + Reserve 5%
+- 链式 Session：.mem 文件双区结构（摘要+完整记录），APPEND-ONLY 原则
 
 ## 工作模式
 
@@ -31,6 +34,7 @@
 
 ## 已知限制
 
-- 无上下文压缩机制（长会话可能爆 token）
-- 无跨会话记忆（正在改进中）
-- 无工具执行沙箱（直接本地执行）
+- ~~无上下文压缩机制（长会话可能爆 token）~~ → P0-2 已解决
+- 无跨会话记忆（正在改进中）→ P0-3 将解决
+- 无工具执行沙箱（直接本地执行）→ P2 将解决
+- 旧版 test_integration.py 引用了已删除的 ADDSAgentLoop 等类，需要重写

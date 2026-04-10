@@ -46,6 +46,7 @@ class SystemPromptBuilder:
             静态区：identity, core_principles → 可全局缓存
             STATIC_BOUNDARY
             动态区：state_management, feature_workflow, agent_routing, safety_constraints
+            P0-2: prev_session_summary（上一个 session 的结构化摘要）
         ]
         
         参考：Claude Code 第5章 - getSystemPrompt
@@ -64,6 +65,11 @@ class SystemPromptBuilder:
         sections.append(self._build_feature_workflow_section(context))
         sections.append(self._build_agent_routing_section(context))
         sections.append(self._build_safety_constraints_section(context))
+        
+        # === P0-2: 上一个 session 摘要 ===
+        prev_summary = context.get('prev_session_summary')
+        if prev_summary:
+            sections.append(self._build_prev_session_section(prev_summary, context))
         
         # 过滤空段落
         return [s for s in sections if s]
@@ -285,6 +291,34 @@ bug → in_progress      （开始修复）
 - **必须**：每个功能一个提交，提交信息包含功能名称
 
 违反任何安全约束将导致系统**立即停止执行**。
+"""
+
+    def _build_prev_session_section(self, prev_summary: str, context: Dict) -> str:
+        """
+        上一个 Session 摘要 — P0-2 新增
+
+        注入到新 session 的上下文中，帮助 AI 无缝衔接上一个 session 的工作。
+
+        Args:
+            prev_summary: 上一个 session 的结构化摘要
+            context: 上下文信息
+        """
+        prev_session_id = context.get('prev_session_id', 'unknown')
+
+        return f"""## 上一个 Session 摘要（P0-2 链式上下文）
+
+### 来源
+- Session ID: `{prev_session_id}`
+- 完整记录: `.ai/sessions/{prev_session_id}.mem`（可按需回溯）
+- 回溯方式: 读取 .mem 文件的完整记录区，或用 `rg` 搜索关键词
+
+### 摘要内容
+
+{prev_summary}
+
+---
+
+**注意**: 以上是上一个 session 的工作摘要。如需了解细节，请读取 `{prev_session_id}.mem` 文件。
 """
 
 

@@ -223,9 +223,12 @@ class ADDSCli:
         render_banner(console, skin, model_name=model_name,
                       context_window=ctx_window, role=role_label)
 
-        # 创建 Agent
+        # 创建 Agent（P0-2: 传入 project_root 和 agent_role）
         loop = AgentLoop(model=model, system_prompt=system_prompt,
-                         console=console, skin=skin)
+                         console=console, skin=skin,
+                         project_root=str(self.project_root),
+                         agent_role=role or "pm",
+                         feature="")
 
         # 运行交互对话
         try:
@@ -350,7 +353,7 @@ class ADDSCli:
         print("=" * 60)
         print("🚀 ADDS Project Initialization")
         print("=" * 60)
-        dirs = [self.ai_dir, self.ai_dir / "sessions"]
+        dirs = [self.ai_dir, self.ai_dir / "sessions", self.ai_dir / "memories"]
         for d in dirs:
             d.mkdir(parents=True, exist_ok=True)
             print(f"✅ 创建目录: {d}")
@@ -380,6 +383,49 @@ class ADDSCli:
             {"name": m.group(1), "description": m.group(3) or "", "status": m.group(4)}
             for m in re.finditer(pattern, content, re.MULTILINE)
         ]
+
+    def session_command(self, args):
+        """P0-2: Session 管理子命令"""
+        from session_manager import SessionManager
+
+        sessions_dir = str(self.ai_dir / "sessions")
+        mgr = SessionManager(sessions_dir=sessions_dir)
+
+        if not args.session_command or args.session_command == "list":
+            sessions = mgr.list_sessions()
+            if not sessions:
+                print("📭 暂无 Session 记录")
+                return
+            print("=" * 70)
+            print("📋 Session 列表")
+            print("=" * 70)
+            for s in sessions:
+                if "error" in s:
+                    print(f"  ❌ {s['session_id']}: {s['error']}")
+                else:
+                    status_icon = "🟢" if s.get("status") == "active" else "📦"
+                    print(f"  {status_icon} {s['session_id']}  agent={s.get('agent', '?')}  "
+                          f"feature={s.get('feature', '?')}  status={s.get('status', '?')}")
+            print()
+
+        elif args.session_command == "restore":
+            session_id = args.session_id
+            try:
+                path = mgr.restore_session(session_id)
+                print(f"✅ Session 已恢复: {session_id}")
+                print(f"   文件: {path}")
+            except FileNotFoundError as e:
+                print(f"❌ 恢复失败: {e}")
+
+        elif args.session_command == "logs":
+            session_id = args.session_id
+            logs = mgr.list_logs(session_id)
+            if not logs:
+                print(f"📭 Session {session_id} 无 .log 文件")
+            else:
+                print(f"📋 Session {session_id} 的 .log 文件:")
+                for log in logs:
+                    print(f"  📄 {log}")
 
 
 def main():
@@ -441,6 +487,16 @@ Examples:
     # install-deps command
     subparsers.add_parser("install-deps", help="安装 Python 依赖（自动创建 venv）")
 
+    # session command (P0-2)
+    session_parser = subparsers.add_parser("session", help="Session 管理（P0-2）")
+    session_sub = session_parser.add_subparsers(dest="session_command")
+    session_sub.add_parser("list", help="列出所有 Session")
+    session_sub.add_parser("status", help="显示当前 Session 状态")
+    session_restore = session_sub.add_parser("restore", help="从 .mem 恢复 Session")
+    session_restore.add_argument("session_id", type=str, help="Session ID")
+    session_logs = session_sub.add_parser("logs", help="查看 Session 的 .log 文件")
+    session_logs.add_argument("session_id", type=str, help="Session ID")
+
     args = parser.parse_args()
 
     if not args.command:
@@ -479,6 +535,8 @@ Examples:
         cli.init()
     elif args.command == "status":
         cli.status()
+    elif args.command == "session":
+        cli.session_command(args)
 
 
 if __name__ == "__main__":

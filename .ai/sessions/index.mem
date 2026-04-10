@@ -1,6 +1,6 @@
 # ADDS 记忆索引
 # Page: 1
-# 更新时间: 2026-04-10 09:33
+# 更新时间: 2026-04-10 15:30
 # 此文件始终注入上下文，是 Agent 的"长期记忆索引"
 # Prev: null
 # Next: null
@@ -30,6 +30,9 @@
 - [agent-loop] Agent Loop 五阶段：上下文预处理 → 路由决策 → 执行代理 → 状态更新 → 终止判定
 - [compliance] 合规追踪：主动检测违规
 - [safety] 安全约束：失败关闭，默认最安全行为
+- [token-budget] Token 预算管理：Layer1 >50% → Layer2 >80% → Warn >85% → Hard >95%
+- [compaction] 两层压缩：Layer1 实时过滤 + Layer2 LLM 归档
+- [session] 链式 Session：.ses/.log/.mem 文件 + Prev/Next 指针 + 回溯机制
 
 ### 用户偏好
 - 中文沟通，简洁直接
@@ -42,6 +45,7 @@
 
 | 时间 | 文件 | 摘要 | 优先级 |
 |------|------|------|--------|
+| 04-10 15:27 | — | P0-2 上下文压缩层实现完成（token_budget/session_manager/summary_decision_engine/context_compactor + 集成） | 高 |
 | 04-10 09:33 | — | P0 架构设计完成，四层架构 + 文档调整 | 高 |
 | 04-09 18:07 | — | 改进路线图创建，记忆系统基础文件创建 | 高 |
 

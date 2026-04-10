@@ -1,21 +1,82 @@
 # Project Progress Logs
 
 ## Current Focus
-P0-1 模型调用层实现完成，准备进入 P0-2 上下文压缩
+P0-2 上下文压缩层实现完成，准备进入 P0-3 记忆系统
 
 ## Overall Status
-- ✅ Completed: 3
+- ✅ Completed: 4
 - 🔄 In Progress: 0
 - ⏳ Pending: 0
 - ⚠️ Blocked: 0
 - 🔴 Regression: 0
 
 ## Next Step
-按 improvement_roadmap.md Phase 2 计划，实现上下文压缩层
+按 improvement_roadmap.md Phase 3 计划，实现记忆系统层
 
 ---
 
 ## Session History
+
+### [2026-04-10 15:27] Session — P0-2 上下文压缩层实现
+
+**Agent**: Developer (压缩层实现)
+
+**Tasks Completed**:
+- 实现 `scripts/token_budget.py` — Token 预算管理器
+  - TokenBudget 类：预算分配、追踪、触发判断
+  - estimate_tokens() 混合中英文 Token 估算
+  - load_budget_config() 从 settings.json 加载配置
+  - Layer1/Layer2/Warn/HardLimit 触发阈值
+  - 预算分配比例: SP 15% + Memory 10% + History 55% + Tool 15% + Reserve 5%
+- 实现 `scripts/session_manager.py` — Session 文件管理
+  - SessionManager 类：创建/读取/归档/恢复 Session
+  - SessionHeader / MemoryHeader 数据结构
+  - 链式 Session 结构（Prev/Next 指针）
+  - .ses/.log/.mem 文件格式读写
+  - reconstruct_full_session() 合并 .ses + .log
+  - get_prev_session_summary() 获取上一个 session 摘要
+  - 时间戳冲突处理（同一秒创建多个 session）
+- 实现 `scripts/summary_decision_engine.py` — 摘要策略决策引擎
+  - SummaryStrategy 枚举: KEEP_FULL / TOOL_FILTER / LLM_ANALYZE / HYBRID
+  - SummaryDecisionEngine 类：为每条消息决定摘要策略
+  - has_error_signals() 错误信号检测（排除测试结果中的 "0 failed"）
+  - apply_tool_filter() 工具过滤规则（pytest/git/文件内容）
+  - is_redundant_message() 冗余消息检测
+  - LAYER2_SUMMARY_PROMPT LLM 摘要 Prompt 模板
+- 实现 `scripts/context_compactor.py` — 两层压缩引擎
+  - ContextCompactor 类：Layer1 实时压缩 + Layer2 归档压缩
+  - Layer1: 工具输出超阈值 → 保存 .log + 替换为摘要
+  - Layer2: LLM 生成结构化摘要 → .mem 归档 + .ses 摘要版
+  - 错误信号永不压缩（KEEP_FULL 最高优先级）
+  - create_compactor() 便捷函数
+- 修改 `scripts/agent_loop.py` — 集成 Token 预算和压缩
+  - 导入 TokenBudget, SessionManager, ContextCompactor
+  - AgentLoop 构造函数增加 project_root/agent_role/feature 参数
+  - _init_session_budget() 初始化 session 和预算
+  - _archive_session() Session 结束时归档
+  - /model 命令显示 Token 使用情况
+  - 预算警告注入对话
+- 修改 `scripts/system_prompt_builder.py` — 注入上一个 session 摘要
+  - build_system_prompt() 增加 prev_session_summary 上下文
+  - _build_prev_session_section() 构建链式上下文段落
+- 修改 `scripts/adds.py` — CLI 集成
+  - start 命令传入 project_root/agent_role/feature
+  - 新增 session 子命令: list/status/restore/logs
+  - init 命令增加 memories/ 目录
+
+**验证**:
+- ✅ token_budget 单元测试通过（预算分配、阈值判断、Token 估算）
+- ✅ summary_decision_engine 单元测试通过（KEEP_FULL/TOOL_FILTER/LLM_ANALYZE 策略）
+- ✅ session_manager 单元测试通过（创建/归档/恢复/链式指针/摘要获取）
+- ✅ context_compactor 单元测试通过（Layer1 压缩/Layer2 归档/统计）
+- ✅ P0-2 完整集成测试通过（多轮对话 + 压缩 + 归档 + prev summary）
+- ✅ 所有模块导入正常
+- ✅ system_prompt_builder prev session 注入正常
+
+**Handoff Notes for Next Session**:
+> P0-2 上下文压缩层实现完成。下一步 P0-3：实现记忆系统（memory_manager.py, memory_conflict_detector.py, memory_retriever.py, memory_detox.py, consistency_guard.py, role_memory_injector.py, memory_cli.py, index_priority_sorter.py）。这是最复杂的模块，包含记忆进化/排毒/角色化/反思协议/回归警报/注意力热点/晋升仪式等子功能。
+
+---
 
 ### [2026-04-10 10:00] Session — P0-1 模型调用层实现
 
