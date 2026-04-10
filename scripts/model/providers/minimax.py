@@ -4,8 +4,6 @@ ADDS Model Layer — MiniMax Provider 配置
 支持 API 和 CLI 两种调用模式。
 """
 
-from ..task_dispatcher import CLIProfile
-
 # MiniMax Provider 完整配置
 MINIMAX_PROVIDER = {
     "name": "MiniMax",

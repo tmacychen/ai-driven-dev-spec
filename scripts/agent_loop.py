@@ -82,14 +82,24 @@ class AgentLoop:
                             print("🧠 ", end="", flush=True)
                             thinking_shown = True
                         print(resp.thinking, end="", flush=True)
-                    # 显示回复内容
+                    # 显示回复内容（流式片段）
                     if resp.content and resp.finish_reason == "streaming":
                         if thinking_shown:
                             print("\n")  # 思考结束，换行
                             thinking_shown = False
                         print(resp.content, end="", flush=True)
                         full_response.append(resp.content)
+                    # 非流式一次性响应（CLI 适配器等）
                     if resp.finish_reason == "stop":
+                        if resp.thinking:
+                            print(f"🧠 {resp.thinking}")
+                            thinking_shown = True
+                        if resp.content:
+                            if thinking_shown:
+                                print()
+                                thinking_shown = False
+                            print(resp.content, end="", flush=True)
+                            full_response.append(resp.content)
                         print()  # 换行
 
                 assistant_content = "".join(full_response)

@@ -7,10 +7,13 @@ ADDS Model Layer — CLI 工具适配器
 
 import asyncio
 import json
+import logging
 import shutil
 from typing import AsyncIterator, Optional
 
 from .base import ModelInterface, ModelResponse
+
+logger = logging.getLogger("addc.cli_adapter")
 
 
 class CLIAdapter(ModelInterface):
@@ -92,6 +95,7 @@ class CLIAdapter(ModelInterface):
 
         # 执行
         try:
+            logger.debug("🔍 mmx 命令: %s", " ".join(cmd))
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
@@ -101,10 +105,16 @@ class CLIAdapter(ModelInterface):
                 proc.communicate(), timeout=120
             )
 
+            raw = stdout.decode(errors="replace").strip()
+            err_output = stderr.decode(errors="replace").strip()
+
+            logger.debug("🔍 mmx exit=%d, stdout=%d bytes, stderr=%s",
+                         proc.returncode, len(raw), err_output[:200] if err_output else "(empty)")
+
             if proc.returncode != 0:
-                err = stderr.decode(errors="replace").strip()
+                logger.error("❌ mmx 调用失败: exit=%d, stderr=%s", proc.returncode, err_output[:500])
                 yield ModelResponse(
-                    content=f"mmx 调用失败 (exit {proc.returncode}): {err[:500]}",
+                    content=f"mmx 调用失败 (exit {proc.returncode}): {err_output[:500]}",
                     model=self.model,
                     usage={"input_tokens": 0, "output_tokens": 0},
                     finish_reason="error",
@@ -112,7 +122,17 @@ class CLIAdapter(ModelInterface):
                 return
 
             # 解析 JSON 输出
-            raw = stdout.decode(errors="replace").strip()
+            if not raw:
+                logger.warning("⚠️ mmx 返回空输出")
+                yield ModelResponse(
+                    content="mmx 返回空输出（可能未登录，请运行: mmx auth login）",
+                    model=self.model,
+                    usage={"input_tokens": 0, "output_tokens": 0},
+                    finish_reason="error",
+                )
+                return
+
+            logger.debug("🔍 mmx 原始输出 (前500字符): %s", raw[:500])
             data = json.loads(raw)
 
             # 提取 thinking + text
@@ -137,13 +157,15 @@ class CLIAdapter(ModelInterface):
             )
 
         except json.JSONDecodeError:
+            logger.error("❌ mmx 返回非 JSON: %s", raw[:300] if raw else "(empty)")
             yield ModelResponse(
-                content=raw if 'raw' in dir() else "mmx 返回了非 JSON 格式",
+                content=raw if raw else "mmx 返回了非 JSON 格式",
                 model=self.model,
                 usage={"input_tokens": 0, "output_tokens": 0},
                 finish_reason="error",
             )
         except asyncio.TimeoutError:
+            logger.error("❌ mmx 调用超时 (120s)")
             yield ModelResponse(
                 content="mmx 调用超时 (120s)",
                 model=self.model,
@@ -151,6 +173,7 @@ class CLIAdapter(ModelInterface):
                 finish_reason="error",
             )
         except Exception as e:
+            logger.error("❌ mmx 调用异常: %s", e)
             yield ModelResponse(
                 content=f"mmx 调用异常: {e}",
                 model=self.model,
@@ -190,6 +213,7 @@ class CLIAdapter(ModelInterface):
 
         # 执行
         try:
+            logger.debug("🔍 codebuddy 命令: %s", " ".join(cmd))
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
@@ -199,10 +223,16 @@ class CLIAdapter(ModelInterface):
                 proc.communicate(), timeout=300
             )
 
+            raw = stdout.decode(errors="replace").strip()
+            err_output = stderr.decode(errors="replace").strip()
+
+            logger.debug("🔍 codebuddy exit=%d, stdout=%d bytes, stderr=%s",
+                         proc.returncode, len(raw), err_output[:200] if err_output else "(empty)")
+
             if proc.returncode != 0:
-                err = stderr.decode(errors="replace").strip()
+                logger.error("❌ codebuddy 调用失败: exit=%d, stderr=%s", proc.returncode, err_output[:500])
                 yield ModelResponse(
-                    content=f"codebuddy 调用失败 (exit {proc.returncode}): {err[:500]}",
+                    content=f"codebuddy 调用失败 (exit {proc.returncode}): {err_output[:500]}",
                     model=self.model,
                     usage={"input_tokens": 0, "output_tokens": 0},
                     finish_reason="error",
@@ -210,7 +240,17 @@ class CLIAdapter(ModelInterface):
                 return
 
             # 解析 JSON 输出（codebuddy 返回 JSON 数组）
-            raw = stdout.decode(errors="replace").strip()
+            if not raw:
+                logger.warning("⚠️ codebuddy 返回空输出")
+                yield ModelResponse(
+                    content="codebuddy 返回空输出（可能未登录，请运行: codebuddy 登录）",
+                    model=self.model,
+                    usage={"input_tokens": 0, "output_tokens": 0},
+                    finish_reason="error",
+                )
+                return
+
+            logger.debug("🔍 codebuddy 原始输出 (前500字符): %s", raw[:500])
             response_text = ""
             thinking_text = ""
 
@@ -234,8 +274,11 @@ class CLIAdapter(ModelInterface):
                             response_text += block.get("text", "")
             except json.JSONDecodeError:
                 # 非 JSON，直接用文本
+                logger.warning("⚠️ codebuddy 返回非 JSON，作为纯文本处理")
                 response_text = raw
 
+            logger.debug("✅ codebuddy 解析结果: text=%d chars, thinking=%d chars",
+                         len(response_text), len(thinking_text))
             yield ModelResponse(
                 content=response_text,
                 model="codebuddy",
@@ -245,6 +288,7 @@ class CLIAdapter(ModelInterface):
             )
 
         except asyncio.TimeoutError:
+            logger.error("❌ codebuddy 调用超时 (300s)")
             yield ModelResponse(
                 content="codebuddy 调用超时 (300s)",
                 model=self.model,
@@ -252,6 +296,7 @@ class CLIAdapter(ModelInterface):
                 finish_reason="error",
             )
         except Exception as e:
+            logger.error("❌ codebuddy 调用异常: %s", e)
             yield ModelResponse(
                 content=f"codebuddy 调用异常: {e}",
                 model=self.model,

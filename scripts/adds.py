@@ -11,6 +11,7 @@ ADDS - AI-Driven Development Specification CLI Tool
 import argparse
 import asyncio
 import importlib
+import logging
 import subprocess
 import sys
 from pathlib import Path
@@ -170,7 +171,7 @@ class ADDSCli:
         self.project_root = Path(project_root)
         self.ai_dir = self.project_root / ".ai"
 
-    def start(self, role: str = "", non_interactive: bool = False):
+    def start(self, role: str = "", non_interactive: bool = False, debug: bool = False):
         """
         启动 ADDS Agent 对话
 
@@ -179,6 +180,14 @@ class ADDSCli:
         2. 解析角色提示词（--role 或默认 PM）
         3. 进入交互对话
         """
+        # 配置日志
+        log_level = logging.DEBUG if debug else logging.WARNING
+        logging.basicConfig(
+            level=log_level,
+            format="%(levelname)s [%(name)s] %(message)s",
+            stream=sys.stderr,
+        )
+
         # 延迟导入（依赖检查通过后才执行）
         from agent_loop import AgentLoop
         from model import ModelFactory
@@ -302,6 +311,8 @@ Examples:
                               help="角色提示词（内置名如 pm/developer，或自定义文本）")
     start_parser.add_argument("--non-interactive", action="store_true",
                               help="非交互式模型选择（自动选第一个）")
+    start_parser.add_argument("--debug", action="store_true",
+                              help="启用 debug 日志，显示 CLI 调用详情")
 
     # list-roles command
     subparsers.add_parser("list-roles", help="列出内置角色")
@@ -333,7 +344,7 @@ Examples:
     cli = ADDSCli()
 
     if args.command == "start":
-        cli.start(role=args.role, non_interactive=args.non_interactive)
+        cli.start(role=args.role, non_interactive=args.non_interactive, debug=args.debug)
     elif args.command == "list-roles":
         cli.list_roles()
     elif args.command == "init":
