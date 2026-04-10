@@ -14,7 +14,7 @@ from model.base import ModelInterface
 
 # prompt_toolkit 用于处理中文输入的退格问题
 try:
-    from prompt_toolkit import prompt as pt_prompt
+    from prompt_toolkit import PromptSession
     from prompt_toolkit.formatted_text import HTML
     HAS_PT = True
 except ImportError:
@@ -56,6 +56,9 @@ class AgentLoop:
                 self.console = None
                 self.skin = None
 
+        # prompt_toolkit session（用于 async prompt）
+        self._pt_session = PromptSession() if HAS_PT else None
+
     def _print(self, *args, **kwargs):
         """兼容 Rich 和普通 print"""
         if self.console:
@@ -90,11 +93,11 @@ class AgentLoop:
 
         while True:
             try:
-                # 使用 prompt_toolkit 解决中文退格问题
+                # 使用 prompt_toolkit async 版本解决中文退格问题
                 if self.console:
-                    if HAS_PT:
+                    if self._pt_session:
                         prompt_str = HTML(f'<style fg="{prompt_color}">{prompt_symbol}</style> ')
-                        user_input = pt_prompt(prompt_str).strip()
+                        user_input = (await self._pt_session.prompt_async(prompt_str)).strip()
                     else:
                         self.console.print(f"[{prompt_color}]{prompt_symbol}[/] ", end="")
                         user_input = input().strip()
