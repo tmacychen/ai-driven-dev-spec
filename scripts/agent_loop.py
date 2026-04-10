@@ -121,8 +121,8 @@ class AgentLoop:
             # 调用模型
             full_response = []
             thinking_text = ""
-            thinking_shown = False
             is_streaming = False
+            has_thinking = False
 
             try:
                 async for resp in self.model.chat(
@@ -135,20 +135,14 @@ class AgentLoop:
                         self._print(f"[bold {error_color}]❌ {resp.content}[/]")
                         break
 
-                    # 收集思考过程
+                    # 收集思考过程（流式）
                     if resp.thinking and resp.finish_reason == "thinking":
                         thinking_text += resp.thinking
-                        if not thinking_shown:
-                            dim_c = self.skin.color("banner_dim") if self.skin else "#B8860B"
-                            self._print(f"[dim {dim_c}]🧠 思考中...[/]", end="")
-                            thinking_shown = True
+                        has_thinking = True
 
                     # 流式回复内容
                     if resp.content and resp.finish_reason == "streaming":
                         is_streaming = True
-                        if thinking_shown:
-                            self._print()
-                            thinking_shown = False
                         print(resp.content, end="", flush=True)
                         full_response.append(resp.content)
 
@@ -156,6 +150,7 @@ class AgentLoop:
                     if resp.finish_reason == "stop":
                         if resp.thinking:
                             thinking_text = resp.thinking
+                            has_thinking = True
                         if resp.content:
                             full_response.append(resp.content)
 
@@ -164,7 +159,11 @@ class AgentLoop:
                 if assistant_content:
                     self.session.messages.append({"role": "assistant", "content": assistant_content})
 
-                    if self.console and not is_streaming:
+                    if is_streaming:
+                        # 流式：先换行结束，再用面板重新包裹
+                        print()  # 结束流式打印
+                        # 流式内容已打印到终端，不需要面板再打印一次
+                    elif self.console:
                         # 非流式：用面板渲染
                         border = self.skin.color("response_border") if self.skin else "#FFD700"
                         response_label = self.skin.branding("response_label", " ⚡ ADDS ") if self.skin else " ⚡ ADDS "
@@ -176,14 +175,13 @@ class AgentLoop:
                             padding=(0, 1),
                         )
                         self.console.print(panel)
-                    elif is_streaming:
-                        print()  # 流式打印完换行
 
-                # 思考过程显示（放在响应后）
-                if thinking_text and self.console:
+                # 思考过程显示（放在响应后，缩短展示）
+                if has_thinking and thinking_text and self.console:
                     dim_c = self.skin.color("banner_dim") if self.skin else "#B8860B"
-                    short = thinking_text[:200] + ("..." if len(thinking_text) > 200 else "")
-                    self._print(f"[dim {dim_c}]🧠 {short}[/]")
+                    # 只显示第一行或前 100 字符
+                    first_line = thinking_text.split("\n")[0][:100]
+                    self._print(f"[dim {dim_c}]💭 {first_line}{'...' if len(thinking_text) > 100 else ''}[/]")
 
             except Exception as e:
                 error_color = self.skin.color("ui_error", "#ef5350") if self.skin else "#ef5350"
