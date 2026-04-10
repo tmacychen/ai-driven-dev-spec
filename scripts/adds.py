@@ -19,6 +19,41 @@ from typing import List
 _SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPT_DIR))
 
+# 项目根目录
+_PROJECT_ROOT = _SCRIPT_DIR.parent
+
+
+# ═══════════════════════════════════════════════════════════════
+# 自动激活项目 .venv
+# 当 adds 命令通过 symlink 调用时，用的是系统 Python，
+# 但 anthropic 等依赖装在 .venv 里。此处自动检测并重启。
+# ═══════════════════════════════════════════════════════════════
+
+def _in_venv() -> bool:
+    """当前是否已在虚拟环境中"""
+    return hasattr(sys, "real_prefix") or (
+        hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix
+    )
+
+
+def _try_activate_venv() -> None:
+    """如果不在 venv 中，但项目 .venv 存在，则用 venv Python 重启自己"""
+    if _in_venv():
+        return  # 已在 venv 中
+
+    venv_python = _PROJECT_ROOT / ".venv" / "bin" / "python3"
+    if not venv_python.exists():
+        venv_python = _PROJECT_ROOT / ".venv" / "bin" / "python"
+    if not venv_python.exists():
+        return  # .venv 不存在，稍后由依赖检测引导安装
+
+    # 用 venv 的 Python 重新执行本脚本
+    os.execv(str(venv_python), [str(venv_python)] + sys.argv)
+
+
+import os
+_try_activate_venv()
+
 
 # ═══════════════════════════════════════════════════════════════
 # 依赖检测与安装引导
