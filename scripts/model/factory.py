@@ -16,8 +16,6 @@ from .api_adapter import APIAdapter
 from .cli_adapter import CLIAdapter
 from .sdk_adapter import SDKAdapter
 from .providers.registry import ProviderRegistry, get_registry
-from .skill_generator import SkillGenerator
-from .task_dispatcher import CLIProfile
 
 
 class ModelFactory:
@@ -28,13 +26,11 @@ class ModelFactory:
     2. 列出可用选项让用户选择
     3. 如果有多个模型，让用户选择模型
     4. 返回对应的 Adapter 实例
-    5. 首次使用某个 CLI Provider 时，触发技能生成
     """
 
     def __init__(self, registry: Optional[ProviderRegistry] = None, project_root: Optional[Path] = None):
         self.registry = registry or get_registry()
         self.project_root = project_root or Path(".")
-        self._skill_generator = SkillGenerator(self.project_root)
 
     def select_model(self, interactive: bool = True) -> ModelInterface:
         """交互式选择模型
@@ -101,19 +97,9 @@ class ModelFactory:
 
         return adapter
 
-    async def select_model_async(self, interactive: bool = True) -> ModelInterface:
-        """异步版本的 select_model，支持技能生成"""
-        adapter = self.select_model(interactive=interactive)
-
-        # 首次使用 CLI/SDK Provider 时，检查/生成技能
-        await self._check_skill_generation(adapter)
-
-        return adapter
-
     def _create_adapter(self, selected: dict, provider: dict, model_name: str) -> ModelInterface:
         """根据选择创建适配器"""
         mode = selected["mode"]
-        provider_id = selected["provider"]
 
         if mode == "api":
             api_config = provider["api"]
@@ -122,12 +108,14 @@ class ModelFactory:
                 "api_key_env": api_config.get("api_key_env", ""),
                 "model": model_name,
                 "context_window": api_config.get("context_window", 128000),
+                "thinking_budget": api_config.get("thinking_budget", 10000),
             })
 
         elif mode == "cli":
             cli_config = provider["cli"]
             return CLIAdapter({
-                "profile": cli_config["profile"],
+                "cli_type": cli_config.get("cli_type", "generic"),
+                "command": cli_config["command"],
                 "model": model_name,
                 "context_window": cli_config.get("context_window", 204800),
             })
@@ -142,20 +130,3 @@ class ModelFactory:
 
         else:
             raise ValueError(f"未知的调用模式: {mode}")
-
-    async def _check_skill_generation(self, adapter: ModelInterface) -> None:
-        """首次使用 CLI/SDK Provider 时，检查/生成技能"""
-        if not isinstance(adapter, (CLIAdapter, SDKAdapter)):
-            return
-
-        profile = adapter.profile if isinstance(adapter, CLIAdapter) else None
-        if profile is None and isinstance(adapter, SDKAdapter):
-            # SDK 也可能有 profile
-            profile = adapter._sdk_config.get("profile")
-
-        if profile and profile.skill_generation.get("enabled"):
-            skill_path = self.project_root / ".ai" / "memories" / "SKILLS" / profile.name
-            if not skill_path.exists() or not list(skill_path.glob("*.md")):
-                print(f"\n📖 首次使用 {profile.name}，正在从文档生成技能描述...")
-                await self._skill_generator.generate_from_docs(profile)
-                print(f"✅ 技能生成完成，存入 .ai/memories/SKILLS/{profile.name}/")

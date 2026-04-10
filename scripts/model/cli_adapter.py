@@ -1,35 +1,37 @@
 """
 ADDS Model Layer — CLI 工具适配器
 
-基于 subprocess + CLIProfile 的 CLI 工具调用适配器。
-支持 mmx、codebuddy 等 CLI 工具。
+基于 subprocess 调用 mmx / codebuddy 等 CLI 工具。
+支持流式和非流式输出。
 """
 
+import asyncio
+import json
 import shutil
 from typing import AsyncIterator, Optional
 
 from .base import ModelInterface, ModelResponse
-from .task_dispatcher import CLIProfile, TaskDispatcher
 
 
 class CLIAdapter(ModelInterface):
-    """CLI 工具适配器 — 基于 subprocess + CLIProfile
+    """CLI 工具适配器
 
-    将 CLI 工具的调用封装为 ModelInterface 接口，
-    通过 TaskDispatcher 统一派发任务。
+    支持的 CLI 工具：
+    - mmx (MiniMax CLI): mmx text chat --message ... --output json
+    - codebuddy: codebuddy -p --output-format json
     """
 
     def __init__(self, cli_config: dict):
-        self.profile: CLIProfile = cli_config["profile"]
-        self.model = cli_config.get("model", self.profile.name)
+        self.cli_type = cli_config.get("cli_type", "generic")
+        self.command = cli_config.get("command", "")
+        self.model = cli_config.get("model", "")
         self.context_window = cli_config.get("context_window", 204800)
-        self.dispatcher = TaskDispatcher(self.profile)
-
         self._features = {
-            "streaming": self.profile.dispatch.get("stream_supported", True),
-            "tools": False,  # CLI 工具一般不支持 function calling
+            "streaming": True,
+            "tools": False,
             "vision": False,
-            "system_prompt": self.profile.dispatch.get("system_prompt_method") is not None,
+            "system_prompt": True,
+            "thinking": self.cli_type == "mmx",
         }
 
     async def chat(
@@ -40,67 +42,236 @@ class CLIAdapter(ModelInterface):
         stream: bool = True,
         **kwargs,
     ) -> AsyncIterator[ModelResponse]:
-        """聊天接口 — 通过 CLI 工具执行
+        """聊天接口 — 通过 CLI 工具执行"""
+        if self.cli_type == "mmx":
+            async for resp in self._chat_mmx(messages, system_prompt, stream, **kwargs):
+                yield resp
+        elif self.cli_type == "codebuddy":
+            async for resp in self._chat_codebuddy(messages, system_prompt, stream, **kwargs):
+                yield resp
+        else:
+            yield ModelResponse(
+                content=f"不支持的 CLI 类型: {self.cli_type}",
+                model=self.model,
+                usage={"input_tokens": 0, "output_tokens": 0},
+                finish_reason="error",
+            )
 
-        将消息列表合并为 prompt，调用 TaskDispatcher 执行。
-        """
-        # 将消息列表合并为单个 prompt
-        prompt_parts = []
+    # ─── mmx (MiniMax CLI) ──────────────────────────────────────
+
+    async def _chat_mmx(
+        self,
+        messages: list[dict],
+        system_prompt: Optional[str] = None,
+        stream: bool = True,
+        **kwargs,
+    ) -> AsyncIterator[ModelResponse]:
+        """调用 mmx text chat"""
+        # 构建命令
+        cmd = ["mmx", "text", "chat", "--output", "json"]
+
+        # 添加 model
+        if self.model:
+            cmd.extend(["--model", self.model])
+
+        # 添加 system prompt
+        if system_prompt:
+            cmd.extend(["--system", system_prompt])
+
+        # 添加消息
         for msg in messages:
             role = msg.get("role", "user")
             content = msg.get("content", "")
             if role == "system":
-                prompt_parts.append(f"[System] {content}")
+                # system 消息通过 --system 传递，跳过
+                continue
             elif role == "assistant":
+                cmd.extend(["--message", f"assistant:{content}"])
+            else:
+                cmd.extend(["--message", content])
+
+        # 执行
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await asyncio.wait_for(
+                proc.communicate(), timeout=120
+            )
+
+            if proc.returncode != 0:
+                err = stderr.decode(errors="replace").strip()
+                yield ModelResponse(
+                    content=f"mmx 调用失败 (exit {proc.returncode}): {err[:500]}",
+                    model=self.model,
+                    usage={"input_tokens": 0, "output_tokens": 0},
+                    finish_reason="error",
+                )
+                return
+
+            # 解析 JSON 输出
+            raw = stdout.decode(errors="replace").strip()
+            data = json.loads(raw)
+
+            # 提取 thinking + text
+            thinking_text = ""
+            response_text = ""
+            for block in data.get("content", []):
+                if block.get("type") == "thinking":
+                    thinking_text += block.get("thinking", "")
+                elif block.get("type") == "text":
+                    response_text += block.get("text", "")
+
+            usage = data.get("usage", {})
+            yield ModelResponse(
+                content=response_text,
+                model=data.get("model", self.model),
+                usage={
+                    "input_tokens": usage.get("input_tokens", 0),
+                    "output_tokens": usage.get("output_tokens", 0),
+                },
+                finish_reason="stop",
+                thinking=thinking_text or None,
+            )
+
+        except json.JSONDecodeError:
+            yield ModelResponse(
+                content=raw if 'raw' in dir() else "mmx 返回了非 JSON 格式",
+                model=self.model,
+                usage={"input_tokens": 0, "output_tokens": 0},
+                finish_reason="error",
+            )
+        except asyncio.TimeoutError:
+            yield ModelResponse(
+                content="mmx 调用超时 (120s)",
+                model=self.model,
+                usage={"input_tokens": 0, "output_tokens": 0},
+                finish_reason="error",
+            )
+        except Exception as e:
+            yield ModelResponse(
+                content=f"mmx 调用异常: {e}",
+                model=self.model,
+                usage={"input_tokens": 0, "output_tokens": 0},
+                finish_reason="error",
+            )
+
+    # ─── codebuddy CLI ──────────────────────────────────────────
+
+    async def _chat_codebuddy(
+        self,
+        messages: list[dict],
+        system_prompt: Optional[str] = None,
+        stream: bool = True,
+        **kwargs,
+    ) -> AsyncIterator[ModelResponse]:
+        """调用 codebuddy -p"""
+        # 构建命令
+        cmd = ["codebuddy", "-p", "--output-format", "json", "--tools", ""]
+
+        # codebuddy 不支持 --system-prompt-file，通过消息前缀注入
+        prompt_parts = []
+        if system_prompt:
+            prompt_parts.append(f"[System Instructions] {system_prompt}\n")
+
+        # 合并消息
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role == "assistant":
                 prompt_parts.append(f"[Assistant] {content}")
             else:
                 prompt_parts.append(content)
 
         prompt = "\n".join(prompt_parts)
+        cmd.append(prompt)
 
-        # 如果有多轮对话且 profile 支持多轮
-        if len(messages) > 1 and self.profile.name == "minimax":
-            # mmx 支持多轮 --message 格式
-            prompt = self._format_mmx_messages(messages)
+        # 执行
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await asyncio.wait_for(
+                proc.communicate(), timeout=300
+            )
 
-        # 确定输出格式
-        output_format = kwargs.pop("output_format", self.profile.dispatch.get("output_format", "json"))
+            if proc.returncode != 0:
+                err = stderr.decode(errors="replace").strip()
+                yield ModelResponse(
+                    content=f"codebuddy 调用失败 (exit {proc.returncode}): {err[:500]}",
+                    model=self.model,
+                    usage={"input_tokens": 0, "output_tokens": 0},
+                    finish_reason="error",
+                )
+                return
 
-        # 派发任务
-        response = await self.dispatcher.dispatch(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            output_format=output_format,
-            resume_session=kwargs.pop("resume_session", None),
-            bypass_permissions=kwargs.pop("bypass_permissions", False),
-            extra_args=kwargs.pop("extra_args", None),
-        )
+            # 解析 JSON 输出（codebuddy 返回 JSON 数组）
+            raw = stdout.decode(errors="replace").strip()
+            response_text = ""
+            thinking_text = ""
 
-        yield response
+            try:
+                data = json.loads(raw)
+                if isinstance(data, list):
+                    # codebuddy 返回完整对话记录，提取所有 assistant 的 output_text
+                    for item in data:
+                        if item.get("role") == "assistant" and item.get("type") == "message":
+                            for block in item.get("content", []):
+                                if block.get("type") == "output_text":
+                                    response_text += block.get("text", "")
+                        # 提取 reasoning
+                        if item.get("type") == "reasoning":
+                            for block in item.get("rawContent", []):
+                                if block.get("type") == "reasoning_text":
+                                    thinking_text += block.get("text", "")
+                elif isinstance(data, dict):
+                    for block in data.get("content", []):
+                        if block.get("type") in ("text", "output_text"):
+                            response_text += block.get("text", "")
+            except json.JSONDecodeError:
+                # 非 JSON，直接用文本
+                response_text = raw
 
-    def _format_mmx_messages(self, messages: list[dict]) -> str:
-        """为 mmx CLI 格式化多轮消息"""
-        parts = []
-        for msg in messages:
-            role = msg.get("role", "user")
-            content = msg.get("content", "")
-            parts.append(f"{role}:{content}")
-        return "\n".join(parts)
+            yield ModelResponse(
+                content=response_text,
+                model="codebuddy",
+                usage={"input_tokens": 0, "output_tokens": max(1, len(response_text) // 4)},
+                finish_reason="stop",
+                thinking=thinking_text or None,
+            )
+
+        except asyncio.TimeoutError:
+            yield ModelResponse(
+                content="codebuddy 调用超时 (300s)",
+                model=self.model,
+                usage={"input_tokens": 0, "output_tokens": 0},
+                finish_reason="error",
+            )
+        except Exception as e:
+            yield ModelResponse(
+                content=f"codebuddy 调用异常: {e}",
+                model=self.model,
+                usage={"input_tokens": 0, "output_tokens": 0},
+                finish_reason="error",
+            )
+
+    # ─── 通用接口 ───────────────────────────────────────────────
 
     def count_tokens(self, text: str) -> int:
-        """Token 计数（近似估算）"""
         cn_chars = sum(1 for c in text if "\u4e00" <= c <= "\u9fff")
         en_chars = len(text) - cn_chars
         return cn_chars // 2 + en_chars // 4
 
     def get_context_window(self) -> int:
-        """返回模型上下文窗口大小"""
         return self.context_window
 
     def supports_feature(self, name: str) -> bool:
-        """查询模型支持的功能"""
         return self._features.get(name, False)
 
     def is_available(self) -> bool:
         """检查 CLI 工具是否已安装"""
-        return shutil.which(self.profile.command) is not None
+        return shutil.which(self.command) is not None
