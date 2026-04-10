@@ -401,3 +401,7 @@ Examples:
         cli.init()
     elif args.command == "status":
         cli.status()
+
+
+if __name__ == "__main__":
+    main()
