@@ -1,21 +1,49 @@
 # Project Progress Logs
 
 ## Current Focus
-P0-4 权限管理器实现完成，P0 全部功能已完成
+P0 全流程集成测试通过，P0 完整交付
 
 ## Overall Status
-- ✅ Completed: 6
+- ✅ Completed: 7
 - 🔄 In Progress: 0
 - ⏳ Pending: 0
 - ⚠️ Blocked: 0
 - 🔴 Regression: 0
 
 ## Next Step
-P0 全流程集成测试，然后进入 P1 阶段
+进入 P1 阶段（技能渐进式披露 + Agent Loop 韧性增强）
 
 ---
 
 ## Session History
+
+### [2026-04-11 09:30] Session — P0 集成测试 + Bug 修复
+
+**Agent**: Developer (集成测试)
+
+**Tasks Completed**:
+- 编写 `scripts/test_p0_integration.py` — P0 四层协同集成测试
+  - 场景 1: 四层模块初始化与数据流串联（3 tests）
+  - 场景 2: 压缩触发与 Session 归档（5 tests）
+  - 场景 3: 记忆注入与 SystemPromptBuilder（4 tests）
+  - 场景 4: 权限拦截与决策流转（4 tests）
+  - 场景 5: 完整会话生命周期（3 tests）
+  - 场景 6: 跨层数据一致性（6 tests）
+- 修复 `scripts/permission_manager.py` Bug:
+  - plan 模式下 `_record_result()` 未被调用，导致死循环防护失效
+  - 原因: plan 分支只调用了 `_log_decision()`，遗漏了 `_record_result()`
+- 更新 `scripts/README.md` + `README-en.md` — 反映 P0 架构实现状态
+- 删除过期文件 `CLEANUP_SUMMARY.md`
+
+**验证**:
+- ✅ test_p0_integration.py: 25 个集成测试全部通过
+- ✅ test_p0_2 + test_p0_3 + test_p0_4 + test_p0_integration: 225 个测试全部通过
+- ✅ 发现并修复 permission_manager.py plan 模式 cooldown Bug
+
+**Handoff Notes for Next Session**:
+> P0 集成测试完成，发现 1 个 Bug 并已修复（plan 模式死循环防护失效）。P0 四层模块全部验证通过，225 个测试。下一步：进入 P1 阶段。
+
+---
 
 ### [2026-04-10 17:30] Session — P0-4 权限管理器实现
 

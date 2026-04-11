@@ -384,6 +384,7 @@ class PermissionManager:
                     source="mode:plan",
                     reason=f"plan 模式禁止写操作: {tool}({command})",
                 )
+            self._record_result(decision)
             self._log_decision(decision)
             return decision
 
