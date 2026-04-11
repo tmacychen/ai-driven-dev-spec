@@ -2,8 +2,8 @@
 
 > **来源**: 基于 Claude Code 架构白皮书与 Hermes Agent 研究报告的核心知识提炼
 > **创建时间**: 2026-04-09
-> **最后更新**: 2026-04-09 (P0 第四轮讨论)
-> **状态**: P0 第四轮讨论（角色化记忆/反思协议/回归警报与元诊断/注意力热点与强制复读/记忆晋升仪式/记忆共振）
+> **最后更新**: 2026-04-11 (P0-5 TUI 重构设计，术语统一)
+> **状态**: P0-5 TUI 重构设计完成，术语统一完成
 
 ---
 
@@ -12,9 +12,10 @@
 | 文件 | 内容 | 行数 |
 |------|------|------|
 | [P0-1-model-layer.md](P0-1-model-layer.md) | 大模型调用层（MiniMax + Codebuddy, CLI 派发协议） | ~750 |
-| [P0-2-context-compaction.md](P0-2-context-compaction.md) | 上下文压缩策略（两层压缩, 摘要决策, 链式 Session） | ~470 |
+| [P0-2-context-compaction.md](P0-2-context-compaction.md) | 上下文压缩策略（两层压缩, 摘要决策, 链式 Workspace） | ~470 |
 | [P0-3-memory-system.md](P0-3-memory-system.md) | 记忆系统（两层记忆, 进化/排毒, 角色化, 反思协议, 回归警报, 注意力热点, 晋升仪式） | ~1580 |
 | [P0-4-permission.md](P0-4-permission.md) | 命令批准机制（三级权限, Allow/Ask/Deny） | ~80 |
+| [P0-5-tui-redesign.md](P0-5-tui-redesign.md) | TUI 重构设计（多 Workspace 架构, 分屏, Agent 间通信） | ~700 |
 | [P0-integration.md](P0-integration.md) | P0 整体架构集成（数据流全景, 完整文件目录） | ~130 |
 | [P1-P2-outline.md](P1-P2-outline.md) | P1/P2 改进项概要（技能披露, 向量检索, 记忆共振, 韧性增强, P2 远期） | ~130 |
 
@@ -28,8 +29,10 @@
 | 🔴 P0-2 | 上下文压缩策略（两层） | Claude Code | Agent Loop 核心 | 大 |
 | 🔴 P0-3 | 记忆系统（两层+无限记忆+角色化+免疫） | Hermes + Claude Code | 跨会话进化 | 大 |
 | 🔴 P0-4 | 命令批准机制 | Claude Code + Hermes | 安全体系 | 中 |
+| 🔴 P0-5 | TUI 重构（多 Workspace 架构） | ADDS 原创 | 交互体验 | 大 |
 | 🟡 P1 | 技能渐进式披露 | Hermes | Token 优化 | 中 |
 | 🟡 P1 | Agent Loop 韧性增强 | Claude Code | 稳定性 | 中 |
+| 🟡 P1 | 记忆共振（跨角色二次进化） | ADDS 原创 | 多 Agent 协同 | 中 |
 | 🟢 P2 | 执行后端隔离(Docker/SSH) | Hermes | 安全体系 | 大 |
 | 🟢 P2 | 多平台通信网关 | Hermes | 可达性 | 大 |
 | 🟢 P2 | Fork 子 Agent 路径 | Claude Code | 缓存优化 | 中 |
@@ -112,7 +115,7 @@ Day 5:
 | 技能自动生成 | — | — (ADDS 原创，从文档提取) |
 | 摘要策略决策 | — | — (ADDS 原创，TOOL_FILTER/LLM_ANALYZE) |
 | 两层压缩 | MicroCompact + API 摘要 | — |
-| 链式 Session | — | — (ADDS 原创) |
+| 链式 Workspace | — | — (ADDS 原创，原 Session) |
 | .mem 恢复机制 | — | — (ADDS 原创) |
 | 无限记忆 | CLAUDE.md 多级注入 | 双文件记忆 |
 | 链式 index.mem | — | — (ADDS 原创) |
@@ -143,7 +146,11 @@ Day 5:
 | 注意力热点 (code_heat) | — | — (ADDS 原创，第四轮新增，第6权重因子) |
 | 记忆晋升仪式 (--promote) | — | — (ADDS 原创，第四轮新增，临时记忆→长期直觉) |
 | 记忆共振 (staging.mem) | — | — (ADDS 原创，第四轮新增，P1 跨角色二次进化) |
+| **多 Workspace 架构** | — | — **(ADDS 原创，P0-5 新增)** |
+| **Agent 间通信 (/ref, /delegate)** | — | — **(ADDS 原创，P0-5 新增)** |
+| **分屏多任务视图** | — | — **(ADDS 原创，P0-5 新增)** |
+| **Workspace 独立 Token 预算** | — | — **(ADDS 原创，P0-5 新增)** |
 
 ---
 
-*最后更新: 2026-04-09 (P0 第四轮讨论：角色化记忆/反思协议/回归警报与元诊断(ConsistencyGuard)/强制复读机制/注意力热点(code_heat)/记忆晋升仪式(--promote)/P1记忆共振)*
+*最后更新: 2026-04-11 (P0-5 TUI 重构设计：多 Workspace 架构/Agent 间通信/分屏多任务视图/术语统一 Session→Workspace)*

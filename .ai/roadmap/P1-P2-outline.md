@@ -4,6 +4,19 @@
 
 ---
 
+## 与 P0-5 TUI 重构的关系
+
+P0-5 引入了多 Agent Workspace 架构，对 P1/P2 有以下影响：
+
+| P1/P2 改进项 | 与 P0-5 的关系 | 需要调整 |
+|-------------|---------------|---------|
+| 记忆共振 | 直接依赖多 Agent 并行架构 | P0-5 已设计 Workspace 切换机制，P1 需实现 staging.mem |
+| 语义检索升级 | 多 Workspace 共享向量索引 | 需要设计跨 Workspace 检索权限 |
+| Fork 子 Agent | 与 Workspace 创建机制集成 | P0-5 已有 `/new` 命令，P2 需扩展 `/fork` |
+| 多平台通信网关 | 每个 Workspace 可连接不同平台 | 需要设计 Workspace 级别的连接管理 |
+
+---
+
 ### 8.1 技能渐进式披露
 
 - Level 0: 技能列表（名称+描述），注入上下文
@@ -30,48 +43,63 @@
 
 > **核心洞察**: 在多 Agent 并行系统中，不同角色的 Agent 可以通过共享的 `staging.mem` 看到彼此的审计意见，触发"协作习惯的养成"——这就是"记忆共振"。
 
-**设计思路**:
+**与 P0-5 Workspace 架构的集成**：
 
 ```
-记忆共振机制:
+P0-5 多 Workspace 架构:
+┌─────────────────────────────────────────────────────────────────┐
+│  AppState                                                        │
+│  ├── Workspace 1 (Dev Agent)                                     │
+│  ├── Workspace 2 (Architect Agent)                               │
+│  └── Workspace 3 (QA Agent)                                      │
+└─────────────────────────────────────────────────────────────────┘
 
-任务结束时，各 Agent 的反思结果先写入共享的 staging.mem:
-
-staging.mem
-├── Dev Agent 反思: "FFI 调用后需 Box::from_raw"
-├── Architect Agent 反思: "FFI 必须封装在 safety-wrapper"
-└── QA Agent 反思: "FFI 变更需 valgrind 检查"
+P1 记忆共振机制:
+┌─────────────────────────────────────────────────────────────────┐
+│  staging.mem (共享反思区)                                         │
+│  ├── Workspace 1 (Dev) 反思: "FFI 调用后需 Box::from_raw"         │
+│  ├── Workspace 2 (Architect) 反思: "FFI 必须封装在 safety-wrapper"│
+│  └── Workspace 3 (QA) 反思: "FFI 变更需 valgrind 检查"            │
+└─────────────────────────────────────────────────────────────────┘
          │
          ▼ 二次进化
-Dev 看到 Architect 的边界定义:
+Workspace 1 (Dev) 看到 Architect 的边界定义:
   → "如果 Architect 说了要封装，我作为 Dev 就不该在业务逻辑里直接调 FFI"
   → 形成协作习惯，写入 Dev 的记忆
 
-Architect 看到 QA 的测试策略:
+Workspace 2 (Architect) 看到 QA 的测试策略:
   → "如果 QA 说必须 valgrind 检查，我在架构评审时应该提前要求"
   → 形成协作意识，写入 Architect 的记忆
 ```
 
-**实现路径**:
+**实现路径**：
 
-- P0 阶段: 单 Agent 运行，不启用记忆共振
-- P1 阶段: 多 Agent 并行设计，引入 `staging.mem` 共享反思
-- 实现: session 结束时，各 Agent 反思结果写入共享 staging.mem，记忆升级时允许跨角色"参考"（不是复制）其他角色的反思结论
-- 安全: 共享是"参考"而非"复制"——每个 Agent 只写入自己角色的记忆，但可以从其他角色的反思中提取协作性的行为准则
+- P0 阶段: 单 Workspace 运行，不启用记忆共振
+- P1 阶段: 多 Workspace 并行设计，引入 `staging.mem` 共享反思
+- 实现: Workspace 关闭时，各 Agent 反思结果写入共享 staging.mem，记忆升级时允许跨角色"参考"（不是复制）其他角色的反思结论
+- 安全: 共享是"参考"而非"复制"——每个 Workspace 只写入自己角色的记忆，但可以从其他角色的反思中提取协作性的行为准则
 
-**与角色化记忆的关系**:
+**与角色化记忆的关系**：
 
 ```
 角色化记忆 (index-{role}.mem) + 记忆共振 (staging.mem):
 
-P0: 单 Agent → role 字段过滤注入 → 无共振
-P1: 多 Agent → 物理 index-{role}.mem + staging.mem 共享 → 有共振
+P0: 单 Workspace → role 字段过滤注入 → 无共振
+P1: 多 Workspace → 物理 index-{role}.mem + staging.mem 共享 → 有共振
 
 共振不等于复制:
   ❌ 不会把 Architect 的架构知识复制到 Dev 的记忆中
   ✅ 会把"协作习惯"写入 Dev 的记忆（如"遵守封装规则"）
   ✅ 协作习惯是角色间的"接口契约"，而非角色内的"知识复用"
 ```
+
+**P0-5 集成点**：
+
+| 集成点 | P0-5 设计 | P1 扩展 |
+|--------|----------|---------|
+| Workspace 关闭 | 保存 .mem 文件 | 额外写入 staging.mem |
+| Workspace 创建 | 注入角色化记忆 | 额外读取 staging.mem |
+| Agent 间通信 | `/ref`, `/delegate` 命令 | 新增 `/resonance` 查看共振状态 |
 
 ### 8.5 Agent Loop 韧性增强
 

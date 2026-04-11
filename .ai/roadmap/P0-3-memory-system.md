@@ -13,6 +13,9 @@
 5. **记忆不可变**: 历史 .mem 文件的内容不可修改，仅索引可修订
 6. **记忆优先级**: System Prompt > index.mem 固定记忆，冲突按 Recency Bias 规则自动/手动解决
 7. **链式索引**: index.mem 自身也实现链式存储，按优先级排序
+8. **多 Agent 支持**: 角色化记忆与 Workspace 架构集成（P0-5 协同设计）
+
+> **术语说明**：本文档中的 "Session" 在 P0-5 TUI 重构后统一为 "Workspace"。两者语义等价，新代码建议使用 "Workspace"。
 
 ### 记忆层次与优先级体系
 

@@ -1,17 +1,111 @@
 # Project Progress Logs
 
 ## Current Focus
-P0 全流程集成测试通过，P0 完整交付
+P0-5 TUI 重构设计完成，术语统一完成，待实现
 
 ## Overall Status
 - ✅ Completed: 7
 - 🔄 In Progress: 0
-- ⏳ Pending: 0
+- ⏳ Pending: 1 (P0-5 TUI 重构实现)
 - ⚠️ Blocked: 0
 - 🔴 Regression: 0
 
 ## Next Step
-进入 P1 阶段（技能渐进式披露 + Agent Loop 韧性增强）
+实现 P0-5 TUI 重构（多 Workspace 架构）
+
+---
+
+## 待办列表
+
+### P0 实现状态总览
+
+| 模块 | 设计文档 | 实现状态 | 测试状态 |
+|------|---------|---------|---------|
+| P0-1 模型调用层 | ✅ 完成 | ✅ 完成 | ✅ 通过 |
+| P0-2 上下文压缩 | ✅ 完成 | ✅ 完成 | ✅ 通过 |
+| P0-3 记忆系统 | ✅ 完成 | ✅ 完成 | ✅ 通过 |
+| P0-4 权限系统 | ✅ 完成 | ✅ 完成 | ✅ 通过 |
+| P0-5 TUI 重构 | ✅ 完成 | ⏳ 待实现 | - |
+| P0 集成测试 | - | ✅ 完成 | ✅ 225 tests |
+
+### P0-5 TUI 重构待办事项
+
+#### 阶段一：基础框架（预估 1 周）
+
+| 任务 | 文件 | 状态 |
+|------|------|------|
+| 创建 ADDSApp 主应用类 | `scripts/tui/app.py` | ⏳ |
+| 实现 AppState/WorkspaceState 状态管理 | `scripts/tui/state.py` | ⏳ |
+| 实现基础布局（Header + TabbedContent + Footer） | `scripts/tui/widgets/header.py` | ⏳ |
+| 集成现有皮肤系统 | `scripts/tui/skin_adapter.py` | ⏳ |
+| 迁移 Agent Loop 到异步架构 | `scripts/tui/app.py` | ⏳ |
+
+#### 阶段二：Agent 工作区（预估 1 周）
+
+| 任务 | 文件 | 状态 |
+|------|------|------|
+| 实现 WorkspaceTab 组件 | `scripts/tui/widgets/workspace_tab.py` | ⏳ |
+| 实现 Agent 创建流程（角色选择器） | `scripts/tui/widgets/workspace_tab.py` | ⏳ |
+| 实现 Agent 状态管理（独立 Token 预算） | `scripts/tui/workspace_manager.py` | ⏳ |
+| 实现标签页切换逻辑 | `scripts/tui/widgets/workspace_tab.py` | ⏳ |
+| 实现 Agent 持久化（.mem 文件） | `scripts/tui/workspace_manager.py` | ⏳ |
+
+#### 阶段三：分屏与输入（预估 1 周）
+
+| 任务 | 文件 | 状态 |
+|------|------|------|
+| 实现 SplitView 分屏组件 | `scripts/tui/widgets/split_view.py` | ⏳ |
+| 实现 TaskPanel 主任务面板 | `scripts/tui/widgets/task_panel.py` | ⏳ |
+| 实现 ReferencePanel 参考资料面板 | `scripts/tui/widgets/reference_panel.py` | ⏳ |
+| 实现 InputArea 多行输入 | `scripts/tui/widgets/input_area.py` | ⏳ |
+| 集成 Markdown 渲染 | `scripts/tui/widgets/task_panel.py` | ⏳ |
+
+#### 阶段四：权限与优化（预估 1 周）
+
+| 任务 | 文件 | 状态 |
+|------|------|------|
+| 实现权限侧边栏 | `scripts/tui/widgets/permission_sidebar.py` | ⏳ |
+| 实现流式渲染优化 | `scripts/tui/widgets/task_panel.py` | ⏳ |
+| 实现快捷键系统 | `scripts/tui/app.py` | ⏳ |
+| 性能测试与优化 | `scripts/tui/test_tui.py` | ⏳ |
+
+### P1 待办事项（P0 完成后）
+
+| 任务 | 说明 | 状态 |
+|------|------|------|
+| 技能渐进式披露 | Level 0-2 技能加载机制 | ⏳ |
+| Agent Loop 韧性增强 | 7 种终止条件 + 5 种继续条件 | ⏳ |
+| 记忆共振 | staging.mem 跨角色二次进化 | ⏳ |
+| 语义检索升级 | VectorMemoryRetriever (LanceDB) | ⏳ |
+
+### P2 待办事项（P1 完成后）
+
+| 任务 | 说明 | 状态 |
+|------|------|------|
+| 执行后端隔离 | Docker/SSH/远程沙箱 | ⏳ |
+| 多平台通信网关 | 多平台集成 | ⏳ |
+| Fork 子 Agent 路径 | `/fork` 命令 | ⏳ |
+| 定时调度系统 | 自动化任务 | ⏳ |
+
+---
+
+## 设计变更记录
+
+### 2026-04-11 P0-5 TUI 重构设计 + 术语统一
+
+**变更内容**：
+1. 新增 P0-5 TUI 重构设计文档（~700 行）
+2. 术语统一：Session → Workspace
+3. 文件命名规则调整：`{role}-{sequence}_{timestamp}.{ext}`
+4. 新增多 Agent 并行架构设计
+5. 新增 Agent 间通信机制（`/ref`, `/delegate`）
+6. 更新 P0-2、P0-3、P0-integration、P1-P2-outline 文档
+
+**影响范围**：
+- P0-2：文件命名规则、术语
+- P0-3：多 Agent 支持、记忆注入时机
+- P0-integration：数据流全景图、文件目录
+- P1-P2：记忆共振与 Workspace 架构集成
 
 ---
 
