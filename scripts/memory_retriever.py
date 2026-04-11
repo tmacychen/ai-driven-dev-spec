@@ -148,8 +148,41 @@ class RegexMemoryRetriever(MemoryRetriever):
                         ))
 
             except FileNotFoundError:
-                # rg 未安装，回退到 Python 搜索
-                results.extend(await self._python_search(keyword, mem_files))
+                # rg 未安装，尝试 grep 回退
+                try:
+                    grep_cmd = ["grep", "-n", "-i", keyword]
+                    grep_cmd.extend(str(f) for f in mem_files)
+                    proc = subprocess.run(
+                        grep_cmd, capture_output=True, text=True,
+                        cwd=str(self.sessions_dir.parent.parent),
+                    )
+                    if proc.returncode == 0:
+                        for line in proc.stdout.strip().split("\n"):
+                            if not line:
+                                continue
+                            # grep 输出格式: filename:linenum:content
+                            match = re.match(r'(.+?):(\d+):(.*)', line)
+                            if match:
+                                filepath, linenum, content = match.groups()
+                                results.append(SearchResult(
+                                    source=Path(filepath).name,
+                                    file=Path(filepath).name,
+                                    content=content.strip(),
+                                    relevance=0.5,
+                                    line_number=int(linenum),
+                                ))
+                    else:
+                        results.extend(await self._python_search(keyword, mem_files))
+                except FileNotFoundError:
+                    # grep 也没有，回退到纯 Python 搜索
+                    if not hasattr(self, '_warned_grep_fallback'):
+                        logger.warning(
+                            "[ADDS] 未检测到 ripgrep (rg) 或 grep，"
+                            "记忆检索将使用 Python 回退搜索（较慢）。"
+                            "建议安装 ripgrep: brew install ripgrep"
+                        )
+                        self._warned_grep_fallback = True
+                    results.extend(await self._python_search(keyword, mem_files))
             except Exception as e:
                 logger.debug(f"Search error for '{keyword}': {e}")
 

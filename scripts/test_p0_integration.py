@@ -592,11 +592,7 @@ class TestScenario6_CrossLayerConsistency(P0IntegrationTestBase):
         self.assertIn("20260411-100000", content)
 
     def test_memory_retriever_async_search(self):
-        """P0-3: RegexMemoryRetriever 异步搜索（如果 rg 不可用则跳过）"""
-        import shutil
-        if not shutil.which("rg"):
-            self.skipTest("ripgrep (rg) not available")
-
+        """P0-3: RegexMemoryRetriever 异步搜索（rg/grep 均不可用时自动回退 Python）"""
         from memory_retriever import RegexMemoryRetriever
 
         # 创建 .mem 文件
