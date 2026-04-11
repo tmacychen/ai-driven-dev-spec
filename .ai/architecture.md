@@ -156,7 +156,7 @@ project/
 │   │
 │   ├── permission_manager.py       # 【P0-4】权限管理器
 │   │
-│   └── test_integration.py         # 集成测试
+│   └── test_p0_integration.py      # 【P0】集成测试（25个端到端场景）
 │
 ├── .ai/                            # 项目状态
 │   ├── CORE_GUIDELINES.md          # 核心规范

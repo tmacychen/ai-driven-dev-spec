@@ -255,7 +255,8 @@ ai-driven-dev-spec/
 │   │
 │   ├── test_p0_2.py               # P0-2 单元测试 (57 tests)
 │   ├── test_p0_3.py               # P0-3 单元测试 (74 tests)
-│   └── test_p0_4.py               # P0-4 单元测试 (69 tests)
+│   ├── test_p0_4.py               # P0-4 单元测试 (69 tests)
+│   └── test_p0_integration.py     # P0 集成测试 (25 tests)
 │
 ├── .ai/                            # 项目状态
 │   ├── CORE_GUIDELINES.md          # 核心规范
@@ -286,7 +287,7 @@ ai-driven-dev-spec/
 ## 测试结果
 
 ```
-P0 单元测试: 200 个测试 | 通过率: 100%
+P0 单元测试: 225 个测试 | 通过率: 100%
 
 ✅ test_p0_2 (57 tests) - 上下文压缩层
    TokenBudget / SessionManager / SummaryDecisionEngine / ContextCompactor
@@ -298,12 +299,16 @@ P0 单元测试: 200 个测试 | 通过率: 100%
 ✅ test_p0_4 (69 tests) - 权限管理器
    PermissionLevel / PermissionMode / RuleMatch / CooldownState
    SessionOverrides / PermissionDecision / ParseToolCommand
+
+✅ test_p0_integration (25 tests) - P0 四层协同集成测试
+   场景1: 四层初始化 / 场景2: 压缩触发 / 场景3: 记忆注入
+   场景4: 权限拦截 / 场景5: 完整生命周期 / 场景6: 跨层一致性
 ```
 
 运行测试：
 ```bash
 cd scripts
-python3 -m unittest test_p0_2 test_p0_3 test_p0_4 -v
+python3 -m unittest test_p0_2 test_p0_3 test_p0_4 test_p0_integration -v
 ```
 
 ---
@@ -352,7 +357,7 @@ python3 scripts/adds.py perm rules       # 权限规则
 python3 scripts/adds.py perm mode auto   # 切换模式
 
 # 测试验证
-cd scripts && python3 -m unittest test_p0_2 test_p0_3 test_p0_4 -v
+cd scripts && python3 -m unittest test_p0_2 test_p0_3 test_p0_4 test_p0_integration -v
 ```
 
 ---
@@ -378,9 +383,9 @@ cd scripts && python3 -m unittest test_p0_2 test_p0_3 test_p0_4 -v
 
 ---
 
-**项目状态**：🚧 P0 开发完成，待集成测试  
-**P0 进度**：4/4 模块已完成  
-**测试通过率**：100% (200/200)  
+**项目状态**：✅ P0 开发完成，四层协同验证通过
+**P0 进度**：4/4 模块已完成 + 集成测试通过
+**测试通过率**：100% (225/225)  
 
 ---
 

@@ -609,7 +609,7 @@ To update ADDS modules:
 
 ### 14.5 Evaluation Reports
 
-Use `scripts/compress_context.py` to generate progress summaries, or manually review `progress.md` for session-by-session details.
+Use `scripts/adds.py session` commands to manage sessions, or manually review `progress.md` for session-by-session details.
 
 Reports should include:
 - Overall performance score

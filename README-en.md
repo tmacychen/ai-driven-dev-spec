@@ -287,7 +287,7 @@ ai-driven-dev-spec/
 ## Test Results
 
 ```
-P0 Unit Tests: 200 tests | Pass Rate: 100%
+P0 Unit Tests: 225 tests | Pass Rate: 100%
 
 ✅ test_p0_2 (57 tests) - Context Compression Layer
    TokenBudget / SessionManager / SummaryDecisionEngine / ContextCompactor
@@ -299,12 +299,16 @@ P0 Unit Tests: 200 tests | Pass Rate: 100%
 ✅ test_p0_4 (69 tests) - Permission Manager
    PermissionLevel / PermissionMode / RuleMatch / CooldownState
    SessionOverrides / PermissionDecision / ParseToolCommand
+
+✅ test_p0_integration (25 tests) - P0 Cross-Layer Integration Tests
+   Scenario1: 4-Layer Init / Scenario2: Compression Trigger / Scenario3: Memory Injection
+   Scenario4: Permission Interception / Scenario5: Full Lifecycle / Scenario6: Cross-Layer Consistency
 ```
 
 Run tests:
 ```bash
 cd scripts
-python3 -m unittest test_p0_2 test_p0_3 test_p0_4 -v
+python3 -m unittest test_p0_2 test_p0_3 test_p0_4 test_p0_integration -v
 ```
 
 ---
@@ -379,9 +383,9 @@ This project design references [Claude Code's architecture approach](https://git
 
 ---
 
-**Project Status**: 🚧 P0 development complete, integration testing pending  
-**P0 Progress**: 4/4 modules completed  
-**Test Pass Rate**: 100% (200/200)  
+**Project Status**: ✅ P0 development complete, 4-layer integration verified
+**P0 Progress**: 4/4 modules completed + integration tests passed
+**Test Pass Rate**: 100% (225/225)
 
 ---
 
