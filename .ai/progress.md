@@ -1,17 +1,17 @@
 # Project Progress Logs
 
 ## Current Focus
-P0-5 TUI 重构设计完成，术语统一完成，待实现
+P0-5 TUI 重构 — 阶段一基础框架已完成
 
 ## Overall Status
-- ✅ Completed: 7
+- ✅ Completed: 8
 - 🔄 In Progress: 0
-- ⏳ Pending: 1 (P0-5 TUI 重构实现)
+- ⏳ Pending: 1 (P0-5 阶段二~四)
 - ⚠️ Blocked: 0
 - 🔴 Regression: 0
 
 ## Next Step
-实现 P0-5 TUI 重构（多 Workspace 架构）
+P0-5 阶段二：Agent 工作区完善（WorkspaceTab 交互、持久化集成）
 
 ---
 
@@ -34,39 +34,39 @@ P0-5 TUI 重构设计完成，术语统一完成，待实现
 
 | 任务 | 文件 | 状态 |
 |------|------|------|
-| 创建 ADDSApp 主应用类 | `scripts/tui/app.py` | ⏳ |
-| 实现 AppState/WorkspaceState 状态管理 | `scripts/tui/state.py` | ⏳ |
-| 实现基础布局（Header + TabbedContent + Footer） | `scripts/tui/widgets/header.py` | ⏳ |
-| 集成现有皮肤系统 | `scripts/tui/skin_adapter.py` | ⏳ |
-| 迁移 Agent Loop 到异步架构 | `scripts/tui/app.py` | ⏳ |
+| 创建 ADDSApp 主应用类 | `scripts/tui/app.py` | ✅ |
+| 实现 AppState/WorkspaceState 状态管理 | `scripts/tui/state.py` | ✅ |
+| 实现基础布局（Header + TabbedContent + Footer） | `scripts/tui/widgets/header.py` | ✅ |
+| 集成现有皮肤系统 | `scripts/tui/skin_adapter.py` | ✅ |
+| 迁移 Agent Loop 到异步架构 | `scripts/tui/app.py` | ✅ |
 
 #### 阶段二：Agent 工作区（预估 1 周）
 
 | 任务 | 文件 | 状态 |
 |------|------|------|
-| 实现 WorkspaceTab 组件 | `scripts/tui/widgets/workspace_tab.py` | ⏳ |
-| 实现 Agent 创建流程（角色选择器） | `scripts/tui/widgets/workspace_tab.py` | ⏳ |
-| 实现 Agent 状态管理（独立 Token 预算） | `scripts/tui/workspace_manager.py` | ⏳ |
-| 实现标签页切换逻辑 | `scripts/tui/widgets/workspace_tab.py` | ⏳ |
+| 实现 WorkspaceTab 组件 | `scripts/tui/widgets/workspace_tab.py` | ✅ |
+| 实现 Agent 创建流程（角色选择器） | `scripts/tui/widgets/workspace_tab.py` | ✅ |
+| 实现 Agent 状态管理（独立 Token 预算） | `scripts/tui/workspace_manager.py` | ✅ |
+| 实现标签页切换逻辑 | `scripts/tui/widgets/workspace_tab.py` | ✅ |
 | 实现 Agent 持久化（.mem 文件） | `scripts/tui/workspace_manager.py` | ⏳ |
 
 #### 阶段三：分屏与输入（预估 1 周）
 
 | 任务 | 文件 | 状态 |
 |------|------|------|
-| 实现 SplitView 分屏组件 | `scripts/tui/widgets/split_view.py` | ⏳ |
-| 实现 TaskPanel 主任务面板 | `scripts/tui/widgets/task_panel.py` | ⏳ |
-| 实现 ReferencePanel 参考资料面板 | `scripts/tui/widgets/reference_panel.py` | ⏳ |
-| 实现 InputArea 多行输入 | `scripts/tui/widgets/input_area.py` | ⏳ |
+| 实现 SplitView 分屏组件 | `scripts/tui/widgets/split_view.py` | ✅ |
+| 实现 TaskPanel 主任务面板 | `scripts/tui/widgets/task_panel.py` | ✅ |
+| 实现 ReferencePanel 参考资料面板 | `scripts/tui/widgets/reference_panel.py` | ✅ |
+| 实现 InputArea 多行输入 | `scripts/tui/widgets/input_area.py` | ✅ |
 | 集成 Markdown 渲染 | `scripts/tui/widgets/task_panel.py` | ⏳ |
 
 #### 阶段四：权限与优化（预估 1 周）
 
 | 任务 | 文件 | 状态 |
 |------|------|------|
-| 实现权限侧边栏 | `scripts/tui/widgets/permission_sidebar.py` | ⏳ |
+| 实现权限侧边栏 | `scripts/tui/widgets/permission_sidebar.py` | ✅ |
 | 实现流式渲染优化 | `scripts/tui/widgets/task_panel.py` | ⏳ |
-| 实现快捷键系统 | `scripts/tui/app.py` | ⏳ |
+| 实现快捷键系统 | `scripts/tui/app.py` | ✅ |
 | 性能测试与优化 | `scripts/tui/test_tui.py` | ⏳ |
 
 ### P1 待办事项（P0 完成后）

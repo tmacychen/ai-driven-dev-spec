@@ -6,3 +6,5 @@ rich>=13.0.0
 pyyaml>=6.0
 pyfiglet>=1.0.0
 prompt_toolkit>=3.0.0
+# P0-5: TUI
+textual>=0.47.0
