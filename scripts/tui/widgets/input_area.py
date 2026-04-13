@@ -25,18 +25,18 @@ class InputArea(Widget):
         height: auto;
         max-height: 8;
         border-top: solid $primary 50%;
-        background: $background;
+        background: $surface;
     }
     InputArea TextArea {
         height: auto;
         max-height: 6;
         border: none;
-        background: $background;
+        background: $surface;
         padding: 0 1;
     }
     InputArea #input-hint {
         height: 1;
-        color: $dim;
+        color: $foreground 50%;
         padding: 0 1;
         content-align: left middle;
     }

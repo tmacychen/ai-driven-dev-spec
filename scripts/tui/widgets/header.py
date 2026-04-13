@@ -19,7 +19,7 @@ class ADDSHeader(Widget):
     ADDSHeader {
         height: 1;
         background: $primary 20%;
-        color: $text;
+        color: $foreground;
         dock: top;
     }
     ADDSHeader Static {

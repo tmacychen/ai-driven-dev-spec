@@ -23,14 +23,14 @@ class ReferencePanel(Widget):
     ReferencePanel #ref-title {
         height: 1;
         background: $primary 20%;
-        color: $text;
+        color: $foreground;
         padding: 0 1;
         content-align: left middle;
     }
     ReferencePanel RichLog {
         width: 1fr;
         height: 1fr;
-        background: $background;
+        background: $surface;
         padding: 0 1;
     }
     """

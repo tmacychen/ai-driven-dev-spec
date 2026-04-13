@@ -76,10 +76,6 @@ class ADDSApp(App):
 
     def compose(self) -> ComposeResult:
         yield ADDSHeader(id="header")
-        with self.app_state.permission_mode and True:
-            pass
-        from textual.widgets import Static
-        # 主区域：标签页 + 权限侧边栏
         from textual.containers import Horizontal
         with Horizontal(id="main-area"):
             yield TabbedContent(id="tabs")
@@ -97,20 +93,17 @@ class ADDSApp(App):
     def _create_workspace_tab(self, agent_role: str, task_context: str = "") -> None:
         """创建新的 Agent 工作区标签页"""
         ws = self.wm.create_workspace(agent_role, task_context)
-        tabs = self.query_one("#tabs", TabbedContent)
-
         icon = role_icon(agent_role)
         label = f"{icon} {ws.label}"
-
-        tab_pane = TabPane(label, id=f"tab-{ws.workspace_id}")
         workspace_widget = WorkspaceTab(workspace=ws, id=f"ws-{ws.workspace_id}")
-        tab_pane.compose_add_child(workspace_widget)
-
-        tabs.add_pane(tab_pane)
-        # 切换到新标签
-        self.call_after_refresh(lambda: tabs.active and None or
-                                setattr(tabs, 'active', f"tab-{ws.workspace_id}"))
+        tab_pane = TabPane(label, workspace_widget, id=f"tab-{ws.workspace_id}")
+        tabs = self.query_one("#tabs", TabbedContent)
+        self.run_worker(self._add_tab(tabs, tab_pane, ws.workspace_id), exclusive=False)
         self._update_header()
+
+    async def _add_tab(self, tabs: TabbedContent, pane: TabPane, workspace_id: str) -> None:
+        await tabs.add_pane(pane)
+        tabs.active = f"tab-{workspace_id}"
 
     def action_new_agent(self) -> None:
         """Ctrl+N — 新建 Agent（循环选择角色）"""

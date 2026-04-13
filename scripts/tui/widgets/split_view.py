@@ -31,8 +31,9 @@ class SplitView(Widget):
     }
     SplitView.split ReferencePanel {
         width: 2fr;
+        display: block;
     }
-    SplitView:not(.split) ReferencePanel {
+    ReferencePanel {
         display: none;
     }
     """

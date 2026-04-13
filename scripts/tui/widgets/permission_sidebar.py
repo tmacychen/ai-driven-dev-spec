@@ -34,7 +34,7 @@ class PermissionSidebar(Widget):
         width: 28;
         height: 1fr;
         border-left: solid $error 40%;
-        background: $background;
+        background: $surface;
         display: none;
     }
     PermissionSidebar.visible {
@@ -43,13 +43,13 @@ class PermissionSidebar(Widget):
     PermissionSidebar #perm-title {
         height: 1;
         background: $error 30%;
-        color: $text;
+        color: $foreground;
         padding: 0 1;
         content-align: left middle;
     }
     PermissionSidebar .perm-item {
         height: auto;
-        border-bottom: solid $dim 20%;
+        border-bottom: solid $panel 80%;
         padding: 0 1;
         margin: 0;
     }
@@ -58,7 +58,7 @@ class PermissionSidebar(Widget):
         text-style: bold;
     }
     PermissionSidebar .perm-source {
-        color: $dim;
+        color: $foreground 60%;
     }
     PermissionSidebar .perm-buttons {
         height: 1;

@@ -54,7 +54,7 @@ class TaskPanel(Widget):
     TaskPanel RichLog {
         width: 1fr;
         height: 1fr;
-        background: $background;
+        background: $surface;
         padding: 0 1;
         scrollbar-gutter: stable;
     }
