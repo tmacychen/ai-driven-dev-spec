@@ -271,31 +271,30 @@ class ADDSApp(App):
         if not ws:
             return
 
-        # 显示用户消息
-        user_msg = ws.add_message("user", text)
-        panel.append_message(user_msg)
+        # 先在 UI 显示用户消息（send_message 内部也会 add_message，
+        # 所以这里手动构造一个临时 Message 对象用于显示）
+        from tui.state import Message
+        from datetime import datetime
+        user_display = Message(
+            id=f"{workspace_id}-ui-{len(ws.messages)}",
+            role="user",
+            content=text,
+        )
+        panel.append_message(user_display)
 
-        # 开始流式
+        # 开始流式头部
         panel.start_stream()
 
-        # 在同一 async 上下文中直接调用，不需要 call_from_thread
-        chunks: list[str] = []
+        def on_chunk(chunk: str) -> None:
+            panel.append_stream_chunk(chunk)
 
-        async def _collect_and_render() -> None:
-            async def on_chunk_async(chunk: str) -> None:
-                panel.append_stream_chunk(chunk)
-
-            nonlocal chunks
-            await self.wm.send_message(
-                workspace_id, text,
-                on_chunk=lambda c: chunks.append(c),
-                on_done=None,
-            )
+        def on_done(full: str) -> None:
+            panel.end_stream(full)
 
         await self.wm.send_message(
             workspace_id, text,
-            on_chunk=lambda c: panel.append_stream_chunk(c),
-            on_done=lambda full: panel.end_stream(full),
+            on_chunk=on_chunk,
+            on_done=on_done,
         )
         self._update_header()
 

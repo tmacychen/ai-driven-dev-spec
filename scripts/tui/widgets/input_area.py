@@ -44,16 +44,20 @@ class InputArea(Widget):
         padding: 0 1;
     }
     InputArea #btn-col {
-        width: 12;
+        width: 10;
         height: auto;
         layout: vertical;
-        padding: 0 1;
+        align: center middle;
+        padding: 0;
     }
     InputArea #send-btn {
-        width: 10;
+        width: 8;
         height: 3;
+        min-width: 8;
         background: $primary;
         color: $background;
+        border: none;
+        margin: 0;
     }
     InputArea #send-btn:focus {
         background: $accent;

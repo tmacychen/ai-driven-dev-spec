@@ -81,16 +81,16 @@ class WorkspaceManager:
         向指定工作区发送消息，流式调用模型
 
         on_chunk(chunk: str) — 每个流式片段回调
-        on_done(full: str)   — 完成回调
+        on_done(full: str)   — 完成回调（传入完整回复）
         """
         ws = self.state.workspaces.get(workspace_id)
         if not ws or not self._model:
             return None
 
-        # 添加用户消息
+        # 添加用户消息到状态
         ws.add_message("user", user_text)
 
-        # 构建消息列表（Anthropic 格式）
+        # 构建消息列表
         messages = [
             {"role": m.role, "content": m.content}
             for m in ws.messages
@@ -109,27 +109,38 @@ class WorkspaceManager:
                     stream=True,
                 ):
                     if resp.finish_reason == "error":
-                        ws.add_message("system", f"❌ 错误: {resp.content}")
+                        err_msg = f"❌ 错误: {resp.content}"
+                        ws.add_message("system", err_msg)
+                        if on_chunk:
+                            on_chunk(err_msg)
                         break
 
+                    # 流式片段
                     if resp.content and resp.finish_reason == "streaming":
                         full_response.append(resp.content)
                         if on_chunk:
                             on_chunk(resp.content)
 
+                    # 非流式一次性返回（CLI 适配器）
                     if resp.finish_reason == "stop" and resp.content:
                         full_response.append(resp.content)
+                        if on_chunk:
+                            on_chunk(resp.content)
 
         except Exception as e:
             logger.error(f"Model call failed: {e}")
-            ws.add_message("system", f"❌ 调用失败: {e}")
+            err_msg = f"❌ 调用失败: {e}"
+            ws.add_message("system", err_msg)
+            if on_chunk:
+                on_chunk(err_msg)
         finally:
             ws.streaming = False
 
         full_text = "".join(full_response)
         if full_text:
             ws.add_message("assistant", full_text)
-            if on_done:
-                on_done(full_text)
+
+        if on_done:
+            on_done(full_text)
 
         return full_text
