@@ -99,20 +99,21 @@ class TaskPanel(Widget):
         self._stream_buffer = []
         self.streaming = True
         log = self.query_one("#message-log", RichLog)
-        log.write("🤖 ASSISTANT\n", markup=True)
+        from rich.text import Text
+        log.write(Text("🤖 ASSISTANT", style="bold"))
 
     def append_stream_chunk(self, chunk: str) -> None:
-        """追加流式片段（节流由调用方控制）"""
+        """追加流式片段"""
         self._stream_buffer.append(chunk)
         log = self.query_one("#message-log", RichLog)
-        log.write(chunk, markup=False)
+        log.write(chunk)
 
     def end_stream(self, full_content: str) -> None:
         """结束流式输出"""
         self.streaming = False
         self._stream_buffer = []
         log = self.query_one("#message-log", RichLog)
-        log.write("\n", markup=False)
+        log.write("─" * 40)
 
     def clear_messages(self) -> None:
         self.query_one("#message-log", RichLog).clear()
@@ -123,18 +124,24 @@ class TaskPanel(Widget):
         icon, style = _ROLE_PREFIX.get(msg.role, ("•", ""))
         role_label = msg.role.upper()
 
+        # Textual 8.x RichLog.write() 不接受 markup 参数
+        # 用 Text 对象传递样式
+        from rich.text import Text
+
+        header = Text()
         if style:
-            log.write(f"[{style}]{icon} {role_label}[/{style}]", markup=True)
+            header.append(f"{icon} {role_label}", style=style)
         else:
-            log.write(f"{icon} {role_label}", markup=True)
+            header.append(f"{icon} {role_label}")
+        log.write(header)
 
         content = msg.content
         if msg.collapsed and len(content) > 300:
             content = content[:300] + "…"
-
-        log.write(content, markup=False)
+        log.write(content)
 
         if msg.thinking:
-            log.write(f"[dim]💭 {msg.thinking[:100]}…[/dim]", markup=True)
+            thinking_text = Text(f"💭 {msg.thinking[:100]}…", style="dim")
+            log.write(thinking_text)
 
-        log.write("─" * 40, markup=False)
+        log.write("─" * 40)

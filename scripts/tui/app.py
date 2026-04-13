@@ -278,15 +278,26 @@ class ADDSApp(App):
         # 开始流式
         panel.start_stream()
 
-        def on_chunk(chunk: str) -> None:
-            self.call_from_thread(panel.append_stream_chunk, chunk)
+        # 在同一 async 上下文中直接调用，不需要 call_from_thread
+        chunks: list[str] = []
 
-        def on_done(full: str) -> None:
-            self.call_from_thread(panel.end_stream, full)
-            self.call_from_thread(self._update_header)
+        async def _collect_and_render() -> None:
+            async def on_chunk_async(chunk: str) -> None:
+                panel.append_stream_chunk(chunk)
 
-        await self.wm.send_message(workspace_id, text,
-                                   on_chunk=on_chunk, on_done=on_done)
+            nonlocal chunks
+            await self.wm.send_message(
+                workspace_id, text,
+                on_chunk=lambda c: chunks.append(c),
+                on_done=None,
+            )
+
+        await self.wm.send_message(
+            workspace_id, text,
+            on_chunk=lambda c: panel.append_stream_chunk(c),
+            on_done=lambda full: panel.end_stream(full),
+        )
+        self._update_header()
 
     # ── 辅助方法 ─────────────────────────────────────────────────
 

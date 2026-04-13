@@ -1,73 +1,99 @@
 """
 InputArea 组件 — 多行输入区域
 
-支持：多行编辑、历史记录（↑/↓）、命令补全（Tab）、Ctrl+Enter 发送
+交互方式（无系统快捷键冲突）：
+- 鼠标点击 [发送] 按钮
+- Tab 键切换焦点到 [发送] 按钮，Enter 激活
+- TextArea 内 Enter 换行，Shift+Enter 也换行
 """
 
 from __future__ import annotations
 
 from collections import deque
-from typing import Callable, Deque, List, Optional
+from typing import Deque
 
 from textual.app import ComposeResult
 from textual.binding import Binding
+from textual.containers import Horizontal, Vertical
 from textual.message import Message as TMessage
-from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import TextArea, Static
+from textual.widgets import Button, Static, TextArea
 
 
 class InputArea(Widget):
-    """底部多行输入区域"""
+    """底部输入区域：TextArea + 可点击发送按钮"""
 
     DEFAULT_CSS = """
     InputArea {
         height: auto;
-        max-height: 8;
+        max-height: 10;
         border-top: solid $primary 50%;
         background: $surface;
     }
+    InputArea #input-row {
+        height: auto;
+        layout: horizontal;
+    }
     InputArea TextArea {
         height: auto;
+        min-height: 3;
         max-height: 6;
+        width: 1fr;
         border: none;
         background: $surface;
         padding: 0 1;
     }
+    InputArea #btn-col {
+        width: 12;
+        height: auto;
+        layout: vertical;
+        padding: 0 1;
+    }
+    InputArea #send-btn {
+        width: 10;
+        height: 3;
+        background: $primary;
+        color: $background;
+    }
+    InputArea #send-btn:focus {
+        background: $accent;
+        border: tall $accent;
+    }
+    InputArea #send-btn:hover {
+        background: $accent;
+    }
     InputArea #input-hint {
         height: 1;
-        color: $foreground 50%;
+        color: $foreground 40%;
         padding: 0 1;
         content-align: left middle;
     }
     """
 
+    # 不绑定任何可能冲突的系统快捷键
+    # 发送完全依赖：鼠标点击 / Tab→Enter
     BINDINGS = [
-        Binding("ctrl+enter", "submit", "发送", show=True),
         Binding("escape", "clear_input", "清空", show=False),
-        Binding("up", "history_prev", "上一条", show=False),
-        Binding("down", "history_next", "下一条", show=False),
     ]
 
-    # 消息：用户提交输入
     class Submitted(TMessage):
         def __init__(self, text: str) -> None:
             super().__init__()
             self.text = text
 
-    _history: Deque[str]
-    _history_idx: int
-
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self._history = deque(maxlen=100)
+        self._history: Deque[str] = deque(maxlen=100)
         self._history_idx = -1
         self._saved_draft = ""
 
     def compose(self) -> ComposeResult:
-        yield TextArea(id="input-textarea", language="markdown")
+        with Horizontal(id="input-row"):
+            yield TextArea(id="input-textarea", language="markdown")
+            with Vertical(id="btn-col"):
+                yield Button("发送", id="send-btn", variant="primary")
         yield Static(
-            "[Ctrl+Enter] 发送  [Esc] 清空  [↑/↓] 历史  [Ctrl+N] 新建Agent",
+            "Tab → [发送] → Enter 发送  |  鼠标点击[发送]  |  Esc 清空",
             id="input-hint",
         )
 
@@ -86,32 +112,22 @@ class InputArea(Widget):
     def focus_input(self) -> None:
         self.query_one("#input-textarea", TextArea).focus()
 
-    # ── Actions ─────────────────────────────────────────────────
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "send-btn":
+            event.stop()
+            self._do_submit()
 
-    def action_submit(self) -> None:
+    def action_clear_input(self) -> None:
+        self.clear()
+        self.focus_input()
+
+    def _do_submit(self) -> None:
         text = self.get_text().strip()
         if not text:
+            self.focus_input()
             return
         self._history.appendleft(text)
         self._history_idx = -1
         self.clear()
+        self.focus_input()
         self.post_message(self.Submitted(text))
-
-    def action_clear_input(self) -> None:
-        self.clear()
-
-    def action_history_prev(self) -> None:
-        if not self._history:
-            return
-        if self._history_idx == -1:
-            self._saved_draft = self.get_text()
-        self._history_idx = min(self._history_idx + 1, len(self._history) - 1)
-        self.set_text(self._history[self._history_idx])
-
-    def action_history_next(self) -> None:
-        if self._history_idx <= 0:
-            self._history_idx = -1
-            self.set_text(self._saved_draft)
-            return
-        self._history_idx -= 1
-        self.set_text(self._history[self._history_idx])
