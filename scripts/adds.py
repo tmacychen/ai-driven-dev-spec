@@ -65,6 +65,7 @@ REQUIRED_PACKAGES = {
     "rich": "rich>=13.0.0",
     "yaml": "pyyaml>=6.0",
     "prompt_toolkit": "prompt_toolkit>=3.0.0",
+    "textual": "textual>=0.47.0",
 }
 
 
@@ -145,15 +146,22 @@ def install_deps():
 
 
 def _pip_install(python_path: str):
-    """执行 pip install"""
-    packages = list(REQUIRED_PACKAGES.values())
-    print(f"📥 安装依赖: {' '.join(packages)}\n")
-    result = subprocess.run(
-        [python_path, "-m", "pip", "install", "--upgrade"] + packages,
-    )
+    """执行 pip install，优先从 requirements.txt 读取"""
+    req_file = _PROJECT_ROOT / "requirements.txt"
+    if req_file.exists():
+        print(f"📥 从 requirements.txt 安装依赖...\n")
+        result = subprocess.run(
+            [python_path, "-m", "pip", "install", "--upgrade", "-r", str(req_file)],
+        )
+    else:
+        packages = list(REQUIRED_PACKAGES.values())
+        print(f"📥 安装依赖: {' '.join(packages)}\n")
+        result = subprocess.run(
+            [python_path, "-m", "pip", "install", "--upgrade"] + packages,
+        )
     if result.returncode != 0:
         print("\n❌ 安装失败，请尝试手动安装：")
-        print(f"   {python_path} -m pip install {' '.join(packages)}")
+        print(f"   {python_path} -m pip install -r requirements.txt")
         sys.exit(1)
 
 
