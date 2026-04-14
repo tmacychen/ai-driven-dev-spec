@@ -174,11 +174,19 @@ class ADDSApp(App):
             workspace_id = tab_id[4:]
             self.wm.switch_workspace(workspace_id)
             self._update_header()
+            # 恢复输入焦点
+            try:
+                ws_widget = self.query_one(f"#ws-{workspace_id}", WorkspaceTab)
+                ws_widget.input_area.focus_input()
+            except NoMatches:
+                pass
 
     # ── 命令处理 ─────────────────────────────────────────────────
 
     def _handle_command(self, workspace_id: str, text: str) -> None:
         parts = text.split(maxsplit=2)
+        if not parts:
+            return
         cmd = parts[0].lower()
 
         if cmd in ("/quit", "/exit", "/q"):
@@ -271,18 +279,15 @@ class ADDSApp(App):
         if not ws:
             return
 
-        # 先在 UI 显示用户消息（send_message 内部也会 add_message，
-        # 所以这里手动构造一个临时 Message 对象用于显示）
+        # send_message 内部会调用 ws.add_message("user", text)
+        # 这里只在 UI 层显示，不重复加到状态
         from tui.state import Message
-        from datetime import datetime
         user_display = Message(
             id=f"{workspace_id}-ui-{len(ws.messages)}",
             role="user",
             content=text,
         )
         panel.append_message(user_display)
-
-        # 开始流式头部
         panel.start_stream()
 
         def on_chunk(chunk: str) -> None:

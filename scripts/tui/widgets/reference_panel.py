@@ -53,10 +53,10 @@ class ReferencePanel(Widget):
             self.set_title(title)
         log = self.query_one("#ref-log", RichLog)
         log.clear()
-        log.write(content, markup=False)
+        log.write(content)
 
     def append_content(self, content: str) -> None:
-        self.query_one("#ref-log", RichLog).write(content, markup=False)
+        self.query_one("#ref-log", RichLog).write(content)
 
     def clear(self) -> None:
         self.query_one("#ref-log", RichLog).clear()

@@ -84,7 +84,11 @@ class WorkspaceManager:
         on_done(full: str)   — 完成回调（传入完整回复）
         """
         ws = self.state.workspaces.get(workspace_id)
-        if not ws or not self._model:
+        if not ws:
+            return None
+        if not self._model:
+            # 模型未初始化，向 UI 反馈
+            err = ws.add_message("system", "❌ 模型未初始化，请重启并选择模型")
             return None
 
         # 添加用户消息到状态
@@ -121,8 +125,8 @@ class WorkspaceManager:
                         if on_chunk:
                             on_chunk(resp.content)
 
-                    # 非流式一次性返回（CLI 适配器）
-                    if resp.finish_reason == "stop" and resp.content:
+                    # 非流式一次性返回（CLI 适配器，如 mmx）
+                    elif resp.finish_reason == "stop" and resp.content:
                         full_response.append(resp.content)
                         if on_chunk:
                             on_chunk(resp.content)
@@ -139,6 +143,8 @@ class WorkspaceManager:
         full_text = "".join(full_response)
         if full_text:
             ws.add_message("assistant", full_text)
+            # 更新 token 使用量（粗估）
+            ws.token_used += len(user_text) // 4 + len(full_text) // 4
 
         if on_done:
             on_done(full_text)
