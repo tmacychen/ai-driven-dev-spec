@@ -76,9 +76,7 @@ class InputArea(Widget):
 
     # 不绑定任何可能冲突的系统快捷键
     # 发送完全依赖：鼠标点击 / Tab→Enter
-    BINDINGS = [
-        Binding("escape", "clear_input", "清空", show=False),
-    ]
+    BINDINGS = []
 
     class Submitted(TMessage):
         def __init__(self, text: str) -> None:
@@ -97,7 +95,7 @@ class InputArea(Widget):
             with Vertical(id="btn-col"):
                 yield Button("发送", id="send-btn", variant="primary")
         yield Static(
-            "Tab → [发送] → Enter 发送  |  鼠标点击[发送]  |  Esc 清空",
+            "Tab → [发送] → Enter 发送  |  鼠标点击[发送]",
             id="input-hint",
         )
 

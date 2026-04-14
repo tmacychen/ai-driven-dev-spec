@@ -14,7 +14,7 @@ from typing import Optional
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.css.query import NoMatches
-from textual.widgets import Footer, TabbedContent, TabPane
+from textual.widgets import TabbedContent, TabPane
 
 from tui.state import AppState, WorkspaceState
 from tui.skin_adapter import role_color, role_icon
@@ -56,8 +56,9 @@ class ADDSApp(App):
         Binding("ctrl+n", "new_agent", "新建Agent", show=True),
         Binding("ctrl+w", "close_agent", "关闭Agent", show=True),
         Binding("ctrl+tab", "next_tab", "下一个", show=False),
-        Binding("f4", "toggle_perm", "权限面板", show=True),
-        Binding("f1", "show_help", "帮助", show=True),
+        Binding("ctrl+p", "toggle_perm", "权限面板", show=True),
+        Binding("ctrl+h", "show_help", "帮助", show=True),
+        Binding("alt", "focus_menubar", "菜单", show=False),
     ]
 
     def __init__(self, model=None, project_root: str = ".",
@@ -75,18 +76,36 @@ class ADDSApp(App):
             self.wm.set_model(model)
 
     def compose(self) -> ComposeResult:
+        from tui.widgets.menubar import MenuBar
+        from tui.widgets.shortcut_bar import ShortcutBar
         yield ADDSHeader(id="header")
+        yield MenuBar(id="menubar")
         from textual.containers import Horizontal
         with Horizontal(id="main-area"):
             yield TabbedContent(id="tabs")
             yield PermissionSidebar(id="perm-sidebar")
-        yield Footer()
+        yield ShortcutBar()
 
     def on_mount(self) -> None:
         """启动时创建默认 PM Agent"""
         self._update_header()
         # 创建第一个工作区
         self._create_workspace_tab("pm")
+        # 应用持久化皮肤
+        from tui.widgets.menubar import load_skin_setting
+        saved_skin = load_skin_setting()
+        if saved_skin and saved_skin != "default":
+            self.call_after_refresh(self.action_switch_skin, saved_skin)
+
+    def on_menu_bar_open_dropdown(self, event: "MenuBar.OpenDropdown") -> None:
+        """处理菜单栏展开下拉菜单请求"""
+        from tui.widgets.menubar import DropdownOverlay
+        # 如果已有 overlay，先关闭
+        try:
+            self.pop_screen()
+        except Exception:
+            pass
+        self.push_screen(DropdownOverlay(menu_id=event.menu_id))
 
     # ── Agent 管理 ───────────────────────────────────────────────
 
@@ -131,22 +150,112 @@ class ADDSApp(App):
         tabs.action_next_tab()
 
     def action_toggle_perm(self) -> None:
-        """F4 — 切换权限侧边栏"""
+        """Ctrl+P — 切换权限侧边栏"""
         self.query_one("#perm-sidebar", PermissionSidebar).toggle()
 
+    def action_focus_menubar(self) -> None:
+        """Alt — 激活菜单栏"""
+        try:
+            from tui.widgets.menubar import MenuBar
+            menubar = self.query_one(MenuBar)
+            menubar.focus()
+            menubar.action_activate_menu()
+        except Exception:
+            pass
+
+    def action_switch_skin(self, skin_name: str) -> None:
+        """切换皮肤并持久化"""
+        from tui.widgets.menubar import save_skin_setting, SKIN_NAMES
+        # 验证皮肤名称有效
+        valid_skins = [s[1] for s in SKIN_NAMES]
+        if skin_name not in valid_skins:
+            self.notify(f"皮肤不存在: {skin_name}", severity="error")
+            return
+        try:
+            # 通过 skins 模块加载皮肤（YAML 文件在 scripts/skins/ 目录）
+            from pathlib import Path
+            from skins import load_skin, build_css_vars
+            skins_dir = str(Path(__file__).parent.parent / "skins")
+            skin = load_skin(f"adds_{skin_name}", config_dir=skins_dir)
+            # 刷新 CSS
+            self.refresh_css()
+            # 持久化
+            try:
+                save_skin_setting(skin_name)
+            except Exception as e:
+                self.notify(f"皮肤设置保存失败: {e}", severity="warning")
+            self.notify(f"已切换皮肤: {skin_name}")
+        except Exception as e:
+            self.notify(f"皮肤切换失败: {e}", severity="error")
+
     def action_show_help(self) -> None:
-        """F1 — 显示帮助"""
+        """Ctrl+H — 显示帮助（可复制对话框）"""
+        from tui.widgets.menubar import InfoScreen
         help_text = (
-            "快捷键：\n"
-            "  Ctrl+N  新建 Agent\n"
-            "  Ctrl+W  关闭 Agent\n"
-            "  Ctrl+Tab 切换 Agent\n"
-            "  Ctrl+S  切换分屏\n"
-            "  F4      权限面板\n"
-            "  Ctrl+Q  退出\n\n"
-            "命令：/new <role>  /close  /list  /ref <id>  /delegate <id> <task>"
+            "快捷键\n"
+            "──────────────────\n"
+            "  Ctrl+N    新建 Agent\n"
+            "  Ctrl+W    关闭 Agent\n"
+            "  Ctrl+Tab  切换 Agent\n"
+            "  Ctrl+S    切换分屏\n"
+            "  Ctrl+P    权限面板\n"
+            "  Ctrl+Q    退出\n"
+            "\n"
+            "命令\n"
+            "──────────────────\n"
+            "  /new <role>           新建指定角色 Agent\n"
+            "  /close                关闭当前 Agent\n"
+            "  /list                 列出所有 Agent\n"
+            "  /ref <id>             引用其他 Agent 输出\n"
+            "  /delegate <id> <task> 委派任务\n"
+            "  /clear                清空当前对话\n"
+            "  /help                 显示帮助"
         )
-        self.notify(help_text, title="帮助", timeout=8)
+        self.push_screen(InfoScreen(title="帮助", content=help_text))
+
+    def action_list_roles(self) -> None:
+        """显示可用角色列表"""
+        active = self.app_state.get_active()
+        if not active:
+            self.notify("当前无活跃 Agent", severity="warning")
+            return
+        lines = ["可用角色："]
+        for role, desc in BUILTIN_ROLES.items():
+            lines.append(f"  {role}: {desc}")
+        self._append_system_msg(active.workspace_id, "\n".join(lines))
+
+    def action_agent_status(self) -> None:
+        """弹出 Agent 状态对话框"""
+        active = self.app_state.get_active()
+        if not active:
+            self.notify("当前无活跃 Agent", severity="warning")
+            return
+        from tui.widgets.menubar import AgentStatusScreen
+        self.push_screen(AgentStatusScreen(workspace=active))
+
+    def action_about(self) -> None:
+        """显示关于信息（可复制对话框）"""
+        from tui.widgets.menubar import InfoScreen
+        about_text = (
+            "ADDS — AI-Driven Development System\n"
+            "版本: P0\n"
+            "基于 Textual 框架构建\n"
+            "\n"
+            "多 Agent 工作区 · 上下文压缩 · 记忆系统 · 权限管理"
+        )
+        self.push_screen(InfoScreen(title="关于 ADDS", content=about_text))
+
+    def action_toggle_split(self) -> None:
+        """切换当前活跃工作区的分屏"""
+        active = self.app_state.get_active()
+        if not active:
+            self.notify("当前无活跃 Agent", severity="warning")
+            return
+        try:
+            ws_widget = self.query_one(f"#ws-{active.workspace_id}", WorkspaceTab)
+            ws_widget.action_toggle_split()
+        except Exception as e:
+            self.notify(f"分屏切换失败: {e}", severity="error")
 
     # ── 消息处理 ─────────────────────────────────────────────────
 
