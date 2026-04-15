@@ -8,20 +8,17 @@ from typing import Optional
 
 from .minimax import MINIMAX_PROVIDER
 from .codebuddy import CODEBUDDY_PROVIDER
+from .nvidia import NVIDIA_PROVIDER
 
 
 class ProviderRegistry:
-    """Provider 注册表 — 可扩展
-
-    管理所有可用的模型提供商配置。
-    支持运行时注册新 Provider。
-    """
+    """Provider 注册表 — 可扩展"""
 
     def __init__(self):
         self._providers: dict[str, dict] = {}
-        # 注册内置 Provider
         self.register("minimax", MINIMAX_PROVIDER)
         self.register("codebuddy", CODEBUDDY_PROVIDER)
+        self.register("nvidia", NVIDIA_PROVIDER)
 
     def register(self, provider_id: str, config: dict) -> None:
         """注册 Provider
