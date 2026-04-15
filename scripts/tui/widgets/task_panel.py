@@ -78,7 +78,9 @@ class TaskPanel(Widget):
 
     def watch_streaming(self, value: bool) -> None:
         indicator = self.query_one("#streaming-indicator", Static)
-        indicator.update("⠋ 生成中…" if value else "")
+        if value:
+            indicator.update("⠋ 生成中…")
+        # 结束时由 end_stream 负责清空，这里不重复清空
 
     # ── 公共 API ─────────────────────────────────────────────────
 
@@ -98,22 +100,30 @@ class TaskPanel(Widget):
         """开始流式输出"""
         self._stream_buffer = []
         self.streaming = True
+        # 写入 ASSISTANT 标题行
         log = self.query_one("#message-log", RichLog)
         from rich.text import Text
         log.write(Text("🤖 ASSISTANT", style="bold"))
 
     def append_stream_chunk(self, chunk: str) -> None:
-        """追加流式片段"""
+        """追加流式片段 — 缓冲，不逐 chunk 写入 RichLog（避免每 chunk 换行）"""
         self._stream_buffer.append(chunk)
-        log = self.query_one("#message-log", RichLog)
-        log.write(chunk)
+        # 实时更新 streaming indicator 显示已收到的字数
+        indicator = self.query_one("#streaming-indicator", Static)
+        total = sum(len(c) for c in self._stream_buffer)
+        indicator.update(f"⠋ 生成中… ({total} 字)")
 
     def end_stream(self, full_content: str) -> None:
-        """结束流式输出"""
+        """结束流式输出 — 一次性将完整内容写入 RichLog"""
         self.streaming = False
         self._stream_buffer = []
         log = self.query_one("#message-log", RichLog)
+        # 一次性写入完整内容（RichLog.write 会自动换行，内容本身是完整段落）
+        if full_content:
+            log.write(full_content)
         log.write("─" * 40)
+        indicator = self.query_one("#streaming-indicator", Static)
+        indicator.update("")
 
     def clear_messages(self) -> None:
         self.query_one("#message-log", RichLog).clear()

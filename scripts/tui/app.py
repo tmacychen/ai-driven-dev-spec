@@ -56,7 +56,7 @@ class ADDSApp(App):
         Binding("ctrl+n", "new_agent", "新建Agent", show=True),
         Binding("ctrl+w", "close_agent", "关闭Agent", show=True),
         Binding("ctrl+tab", "next_tab", "下一个", show=False),
-        Binding("ctrl+p", "toggle_perm", "权限面板", show=True),
+        Binding("ctrl+p", "command_palette", "命令面板", show=True),
         Binding("ctrl+h", "show_help", "帮助", show=True),
         Binding("alt", "focus_menubar", "菜单", show=False),
     ]
@@ -153,6 +153,11 @@ class ADDSApp(App):
         """Ctrl+P — 切换权限侧边栏"""
         self.query_one("#perm-sidebar", PermissionSidebar).toggle()
 
+    def action_command_palette(self) -> None:
+        """Ctrl+P — 打开命令面板"""
+        from tui.widgets.command_palette import CommandPalette
+        self.push_screen(CommandPalette())
+
     def action_focus_menubar(self) -> None:
         """Alt — 激活菜单栏"""
         try:
@@ -198,7 +203,7 @@ class ADDSApp(App):
             "  Ctrl+W    关闭 Agent\n"
             "  Ctrl+Tab  切换 Agent\n"
             "  Ctrl+S    切换分屏\n"
-            "  Ctrl+P    权限面板\n"
+            "  Ctrl+P    命令面板（搜索所有操作）\n"
             "  Ctrl+Q    退出\n"
             "\n"
             "命令\n"
