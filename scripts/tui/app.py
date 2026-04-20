@@ -407,6 +407,14 @@ class ADDSApp(App):
         def on_chunk(chunk: str) -> None:
             panel.append_stream_chunk(chunk)
 
+        def on_thinking(text: str, has_content: bool) -> None:
+            """LLM 思考过程回调 — 实时显示思考进度"""
+            panel.append_thinking_chunk(text, is_first=not has_content)
+
+        def on_tool_call(tool_name: str, args: dict) -> None:
+            """工具调用回调 — 在 UI 显示调用的工具"""
+            panel.show_tool_call(tool_name, args)
+
         def on_done(full: str) -> None:
             panel.end_stream(full)
 
@@ -414,6 +422,8 @@ class ADDSApp(App):
             workspace_id, text,
             on_chunk=on_chunk,
             on_done=on_done,
+            on_thinking=on_thinking,
+            on_tool_call=on_tool_call,
         )
         self._update_header()
 
@@ -430,6 +440,8 @@ class ADDSApp(App):
                 def append_message(self, *a, **k): pass
                 def start_stream(self): pass
                 def append_stream_chunk(self, *a): pass
+                def append_thinking_chunk(self, *a, **k): pass
+                def show_tool_call(self, *a, **k): pass
                 def end_stream(self, *a): pass
                 def clear_messages(self): pass
             return _Noop()

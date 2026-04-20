@@ -71,6 +71,8 @@ class TaskPanel(Widget):
         super().__init__(**kwargs)
         self.workspace_id = workspace_id
         self._stream_buffer: List[str] = []
+        self._thinking_buffer: List[str] = []
+        self._tool_call_shown: bool = False
 
     def compose(self) -> ComposeResult:
         yield RichLog(id="message-log", highlight=True, markup=True, wrap=True)
@@ -99,11 +101,56 @@ class TaskPanel(Widget):
     def start_stream(self) -> None:
         """开始流式输出"""
         self._stream_buffer = []
+        self._thinking_buffer = []
+        self._tool_call_shown = False
         self.streaming = True
         # 写入 ASSISTANT 标题行
         log = self.query_one("#message-log", RichLog)
         from rich.text import Text
         log.write(Text("🤖 ASSISTANT", style="bold"))
+
+    def append_thinking_chunk(self, chunk: str, is_first: bool = False) -> None:
+        """
+        追加 LLM 思考过程片段（实时显示，不占主要聊天区域）
+
+        is_first=True 时写入标题行，之后追加内容
+        """
+        from rich.text import Text
+        log = self.query_one("#message-log", RichLog)
+        self._thinking_buffer.append(chunk)
+        total = sum(len(c) for c in self._thinking_buffer)
+
+        if is_first:
+            # 首次 thinking：写入紧凑的标题行（在 ASSISTANT 行之后）
+            thinking_header = Text("  🧠 思考中… ", style="dim bold #B8860B")
+            log.write(thinking_header)
+            # 更新 streaming 指示器
+            indicator = self.query_one("#streaming-indicator", Static)
+            indicator.update(f"🧠 思考 ({total} 字)")
+
+        # 实时更新指示器
+        indicator = self.query_one("#streaming-indicator", Static)
+        indicator.update(f"🧠 思考 ({total} 字)")
+
+    def show_tool_call(self, tool_name: str, args: dict) -> None:
+        """
+        在 UI 显示 LLM 触发的工具调用
+        """
+        if self._tool_call_shown:
+            return
+        self._tool_call_shown = True
+        from rich.text import Text
+        log = self.query_one("#message-log", RichLog)
+        # 显示关键参数（截断过长内容）
+        display_args = {
+            k: (str(v)[:80] + "…" if len(str(v)) > 80 else str(v))
+            for k, v in (args.items() if isinstance(args, dict) else {})
+        }
+        tool_label = Text(f"  🔧 工具: {tool_name}", style="dim #6B7280")
+        log.write(tool_label)
+        # 更新指示器
+        indicator = self.query_one("#streaming-indicator", Static)
+        indicator.update(f"🔧 {tool_name}")
 
     def append_stream_chunk(self, chunk: str) -> None:
         """追加流式片段 — 缓冲，不逐 chunk 写入 RichLog（避免每 chunk 换行）"""
@@ -118,6 +165,15 @@ class TaskPanel(Widget):
         self.streaming = False
         self._stream_buffer = []
         log = self.query_one("#message-log", RichLog)
+
+        # 思考摘要（如果有积累的 thinking 内容）
+        if self._thinking_buffer:
+            full_thinking = "".join(self._thinking_buffer)
+            from rich.text import Text
+            first_line = full_thinking.split("\n")[0][:100]
+            log.write(Text(f"  💭 {first_line}{'…' if len(full_thinking) > 100 else ''}", style="dim #B8860B"))
+            self._thinking_buffer = []
+
         # 一次性写入完整内容（RichLog.write 会自动换行，内容本身是完整段落）
         if full_content:
             log.write(full_content)

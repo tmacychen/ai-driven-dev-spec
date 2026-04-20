@@ -76,12 +76,15 @@ class WorkspaceManager:
         return BUILTIN_ROLES.get(agent_role, f"你是一个 {agent_role} 角色的 AI 助手")
 
     async def send_message(self, workspace_id: str, user_text: str,
-                           on_chunk=None, on_done=None) -> Optional[str]:
+                           on_chunk=None, on_done=None,
+                           on_thinking=None, on_tool_call=None) -> Optional[str]:
         """
         向指定工作区发送消息，流式调用模型
 
-        on_chunk(chunk: str) — 每个流式片段回调
-        on_done(full: str)   — 完成回调（传入完整回复）
+        on_chunk(chunk: str)     — 每个流式文本片段回调
+        on_done(full: str)       — 完成回调（传入完整回复）
+        on_thinking(text: str)  — 思考过程回调（首次调用时 has_content=False）
+        on_tool_call(tool_name: str, args: dict) — 工具调用回调
         """
         ws = self.state.workspaces.get(workspace_id)
         if not ws:
@@ -103,6 +106,8 @@ class WorkspaceManager:
 
         system_prompt = self.get_system_prompt(ws.agent_role)
         full_response: list[str] = []
+        thinking_text: list[str] = []
+        _has_shown_thinking = False  # 追踪是否已发送 thinking 指示
 
         ws.streaming = True
         try:
@@ -112,6 +117,32 @@ class WorkspaceManager:
                     system_prompt=system_prompt,
                     stream=True,
                 ):
+                    # ── 完整 debug 日志 ──────────────────────────────
+                    _fields = {
+                        k: v for k, v in {
+                            "content": resp.content,
+                            "thinking": resp.thinking,
+                            "tool_calls": resp.tool_calls,
+                            "finish_reason": resp.finish_reason,
+                            "progress_hints": resp.progress_hints,
+                            "usage": resp.usage,
+                        }.items() if v
+                    }
+                    logger.debug(
+                        "LLM Resp | finish_reason=%r | keys=%s | content_len=%d | thinking_len=%d | tool_calls=%s",
+                        resp.finish_reason,
+                        list(_fields.keys()),
+                        len(resp.content or ""),
+                        len(resp.thinking or ""),
+                        [tc.get("name") if isinstance(tc, dict) else getattr(tc, "name", None)
+                         for tc in (resp.tool_calls or [])],
+                    )
+                    # ── 进度提示日志 ──────────────────────────────
+                    if resp.progress_hints:
+                        for hint in resp.progress_hints:
+                            logger.debug("  progress | phase=%r progress=%s detail=%r",
+                                         hint.get("phase"), hint.get("progress"), hint.get("detail"))
+
                     if resp.finish_reason == "error":
                         err_msg = f"❌ 错误: {resp.content}"
                         ws.add_message("system", err_msg)
@@ -119,13 +150,37 @@ class WorkspaceManager:
                             on_chunk(err_msg)
                         break
 
-                    # 流式片段
+                    # ── 思考过程（thinking 块）───透传给 UI ───────
+                    if resp.thinking and resp.finish_reason == "thinking":
+                        thinking_text.append(resp.thinking)
+                        # 首次 thinking：通知 UI 显示指示器
+                        if not _has_shown_thinking:
+                            _has_shown_thinking = True
+                            if on_thinking:
+                                on_thinking(resp.thinking, has_content=False)
+                            logger.debug("LLM >> thinking start (first chunk, len=%d)", len(resp.thinking))
+                        else:
+                            if on_thinking:
+                                on_thinking(resp.thinking, has_content=True)
+                            logger.debug("LLM >> thinking continue (len=%d)", len(resp.thinking))
+
+                    # ── 工具调用 ────────────────────────────────
+                    if resp.tool_calls:
+                        for tc in resp.tool_calls:
+                            tool_name = tc.get("name") if isinstance(tc, dict) else getattr(tc, "name", None)
+                            tool_args = tc.get("arguments") if isinstance(tc, dict) else getattr(tc, "arguments", {})
+                            logger.debug("LLM >> tool_call | tool=%s args_keys=%s",
+                                         tool_name, list(tool_args.keys()) if tool_args else [])
+                            if on_tool_call:
+                                on_tool_call(tool_name, tool_args)
+
+                    # ── 流式文本片段 ─────────────────────────────
                     if resp.content and resp.finish_reason == "streaming":
                         full_response.append(resp.content)
                         if on_chunk:
                             on_chunk(resp.content)
 
-                    # 非流式一次性返回（CLI 适配器，如 mmx）
+                    # ── 非流式 stop（CLI 适配器如 mmx）────────────
                     elif resp.finish_reason == "stop" and resp.content:
                         full_response.append(resp.content)
                         if on_chunk:
@@ -145,6 +200,12 @@ class WorkspaceManager:
             ws.add_message("assistant", full_text)
             # 更新 token 使用量（粗估）
             ws.token_used += len(user_text) // 4 + len(full_text) // 4
+
+        # ── 最终思考摘要日志 ─────────────────────────────────
+        if thinking_text:
+            full_thinking = "".join(thinking_text)
+            logger.debug("LLM >> thinking done | total_len=%d | preview=%r",
+                         len(full_thinking), full_thinking[:200])
 
         if on_done:
             on_done(full_text)
