@@ -1,21 +1,55 @@
 # Project Progress Logs
 
 ## Current Focus
-🎉 全部功能已完成 (P0 + P1 = 11/11)
+🎉 P2 开发中 — 功能 12 (定时调度系统) 已完成，继续 P2 剩余功能
 
 ## Overall Status
-- ✅ Completed: 11
+- ✅ Completed: 12
 - 🔄 In Progress: 0
-- ⏳ Pending: 0
+- ⏳ Pending: 3 (P2)
 - ⚠️ Blocked: 0
 - 🔴 Regression: 0
 
 ## Next Step
-所有 P0+P1 功能已实现。可进入 P2 阶段或进行整体验收测试。
+P2 剩余 3 个功能：执行后端隔离 (P2-2)、多平台通信网关 (P2-3)、Fork 子 Agent (P2-4)
 
 ---
 
 ## Session History
+
+### [2026-04-20 14:30] Session — P2 功能 12: 定时调度系统
+
+**Agent**: Developer (P2 调度系统)
+
+**Tasks Completed**:
+- 新增 `scripts/scheduler.py` — 定时调度系统（~750 行）
+  - CronExpression: 5 字段 cron 解析器 + 快捷方式（@daily/@hourly 等）+ 月份/星期别名
+  - CronField: 单字段解析（*/步长/范围/列表）
+  - ScheduledTask: 任务数据模型（ID/名称/类型/Cron/重试配置/执行历史/标签）
+  - TaskScheduler: 调度引擎（添加/删除/暂停/恢复/执行/守护进程/持久化）
+  - AgentExecutor: 任务执行器（command/agent/python 三种类型）
+  - NotificationManager: 通知管理（log/file/command 三渠道 + notify_on 过滤）
+  - RetryConfig: 重试配置（指数退避 + 最大退避时间）
+  - ExecutionRecord: 执行记录（状态/退出码/输出/错误/重试次数）
+  - CLI schedule 子命令：add/list/remove/run/pause/resume/history/daemon/stats
+- 修改 `scripts/adds.py` — 集成 schedule 子命令
+- 修改 `scripts/agent_loop.py` — 集成 /schedule 命令（列表+统计）
+- 新增 `scripts/test_p2_scheduler.py` — 14 个测试场景类，64 个测试全部通过
+
+**验证**:
+- ✅ test_p2_scheduler.py: 64/64 通过
+- ✅ scheduler.py 内置测试通过
+- ✅ CLI adds schedule add/list/remove/run 正常
+- ✅ CronExpression 解析（5字段+快捷方式+别名+步长+范围）
+- ✅ 执行历史记录与持久化
+- ✅ 失败重试（指数退避 + 可配置重试次数）
+- ✅ 通知机制（log + file + command + handler）
+- ✅ AgentLoop /schedule 命令集成
+
+**Handoff Notes for Next Session**:
+> P2 功能 12（定时调度系统）已完成。P2 剩余 3 个功能：执行后端隔离 (P2-2)、多平台通信网关 (P2-3)、Fork 子 Agent (P2-4)。
+
+---
 
 ### [2026-04-20 13:38] Session — P1 功能 10: 技能渐进式披露
 

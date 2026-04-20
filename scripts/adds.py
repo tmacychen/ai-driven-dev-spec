@@ -556,6 +556,10 @@ Examples:
     from skill_manager import add_skill_subparser
     add_skill_subparser(subparsers)
 
+    # schedule command (P2-1)
+    from scheduler import add_schedule_subparser
+    add_schedule_subparser(subparsers)
+
     # perm command (P0-4)
     perm_parser = subparsers.add_parser("perm", help="权限管理（P0-4）")
     perm_sub = perm_parser.add_subparsers(dest="perm_command")
@@ -615,6 +619,9 @@ Examples:
     elif args.command == "skill":
         from skill_manager import handle_skill_command
         handle_skill_command(args, project_root=str(cli.project_root))
+    elif args.command == "schedule":
+        from scheduler import handle_schedule_command
+        handle_schedule_command(args, project_root=str(cli.project_root))
 
 
 if __name__ == "__main__":

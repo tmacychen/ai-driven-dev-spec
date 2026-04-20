@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added ⭐
 
+- **P2 功能 12: 定时调度系统** — 基于 cron 表达式的定时任务调度
+  - `scheduler.py`: CronExpression 解析器（5字段 + @daily/@hourly 等快捷方式）
+  - TaskScheduler 调度引擎（添加/删除/暂停/恢复/守护进程）
+  - AgentExecutor 任务执行器（command/agent/python 三种类型）
+  - NotificationManager 通知管理（log/file/command + notify_on 过滤）
+  - RetryConfig 失败重试（指数退避 + 可配置次数）
+  - `adds schedule` CLI 子命令（add/list/remove/run/pause/resume/history/daemon/stats）
+  - AgentLoop `/schedule` 命令集成
+  - 配置持久化（scheduler.json）
+  - 测试: 64/64 通过
+
 - **P1 功能 10: 技能渐进式披露** — Level 0/1/2 三级技能加载
   - `skill_manager.py`: SkillManager 管理器（注册/加载/匹配/统计/持久化）
   - Level 0: 技能列表索引（~50 token/skill），始终注入 System Prompt

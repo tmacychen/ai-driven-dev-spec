@@ -130,7 +130,7 @@ class AgentLoop:
             # 命令补全
             command_completer = WordCompleter(
                 ["/help", "/h", "/?", "/keys", "/quit", "/exit", "/q",
-                 "/clear", "/history", "/model", "/perm", "/skill"],
+                 "/clear", "/history", "/model", "/perm", "/skill", "/schedule"],
                 ignore_case=True,
             )
 
@@ -225,6 +225,7 @@ class AgentLoop:
                         ("/model", "显示当前模型信息"),
                         ("/perm", "显示权限状态和统计"),
                         ("/skill [name]", "查看技能详情（Level 1）"),
+                        ("/schedule", "查看定时任务列表和统计"),
                     ]:
                         t.add_row(name, desc)
                     self.console.print(Panel(t, title=f"[bold {accent}]{help_header}[/]", border_style=dim, padding=(0, 1)))
@@ -238,6 +239,7 @@ class AgentLoop:
                     self._print(f"  /model      显示模型信息")
                     self._print(f"  /perm       显示权限状态")
                     self._print(f"  /skill      查看技能列表/详情")
+                    self._print(f"  /schedule   查看定时任务列表/统计")
                 self._print()
                 continue
             elif cmd == "/keys":
@@ -360,6 +362,32 @@ class AgentLoop:
                             self._print(f"    [{text}]{meta.name}[/]: {meta.description}")
                     else:
                         self._print(f"  📭 暂无技能。使用 adds skill register 添加。")
+                self._print()
+                continue
+            elif cmd == "/schedule":
+                # P2-1: 定时调度
+                from scheduler import TaskScheduler
+                sched = TaskScheduler(project_root=self.project_root)
+                parts = user_input.split()
+                if len(parts) >= 2 and parts[1] == "stats":
+                    stats = sched.get_stats()
+                    self._print(f"  [{label}]总任务:[/] [{text}]{stats['total_tasks']}[/]")
+                    self._print(f"  [{label}]活跃:[/] [{text}]{stats['active_tasks']}[/]")
+                    self._print(f"  [{label}]暂停:[/] [{text}]{stats['paused_tasks']}[/]")
+                    self._print(f"  [{label}]总执行:[/] [{text}]{stats['total_executions']}[/]")
+                    daemon_status = "运行中" if stats['daemon_running'] else "未启动"
+                    self._print(f"  [{label}]守护进程:[/] [{text}]{daemon_status}[/]")
+                else:
+                    # 列出任务
+                    tasks = sched.list_tasks()
+                    if tasks:
+                        self._print(f"\n  [{label}]定时任务（{len(tasks)} 个）:[/]")
+                        for t in tasks:
+                            icon = "🟢" if t.status == "active" else "⏸️"
+                            self._print(f"    {icon} [{text}]{t.task_id}[/] {t.name} — {t.cron_expr}")
+                        self._print(f"\n  [{dim}]子命令: /schedule stats[/]")
+                    else:
+                        self._print(f"  📭 暂无定时任务。使用 adds schedule add 添加。")
                 self._print()
                 continue
 

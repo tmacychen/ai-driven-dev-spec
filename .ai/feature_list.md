@@ -6,7 +6,7 @@
 - 项目名称: ai-driven-dev-spec (ADDS)
 - 技术栈: Python 3.9+, Rich, prompt_toolkit
 - 创建时间: 2026-02-26
-- 最后更新: 2026-04-20
+- 最后更新: 2026-04-20 (P2 规划)
 
 ---
 
@@ -142,7 +142,76 @@
 
 ---
 
+## P2: 高级特性
+
+### 功能 12: 定时调度系统 (P2-1)
+- **描述**: 基于 cron 表达式的定时任务调度，支持 Agent Loop 自动执行、结果通知、失败重试
+- **状态**: completed
+- **核心文件**: scheduler.py
+- **依赖**: P0+P1 完成
+- **验收标准**:
+  - [x] CronExpression 解析器（支持 5 字段 cron 语法 + 快捷方式）
+  - [x] ScheduledTask 数据模型（任务定义 + 调度配置 + 执行历史）
+  - [x] TaskScheduler 调度引擎（添加/删除/暂停/恢复任务）
+  - [x] AgentExecutor 任务执行器（command/agent/python 三种类型）
+  - [x] 执行结果记录（成功/失败/超时 + 输出摘要）
+  - [x] 失败重试策略（可配置重试次数 + 指数退避）
+  - [x] 通知机制（log/file/command 三种渠道 + notify_on 过滤）
+  - [x] CLI schedule 子命令（add/list/remove/run/pause/resume/history/daemon/stats）
+  - [x] AgentLoop /schedule 命令集成
+  - [x] 配置持久化（scheduler.json）
+  - [x] 守护进程模式（adds schedule daemon --interval）
+
+### 功能 13: 执行后端隔离 (P2-2)
+- **描述**: Docker/SSH/远程沙箱执行后端，隔离 Agent 执行环境
+- **状态**: pending
+- **核心文件**: executor_backend.py, backends/
+- **依赖**: P0+P1 完成
+- **验收标准**:
+  - [ ] ExecutionBackend 抽象基类（统一接口）
+  - [ ] LocalBackend 本地执行（默认后端）
+  - [ ] DockerBackend Docker 容器执行（隔离环境）
+  - [ ] SSHBackend 远程 SSH 执行
+  - [ ] BackendFactory 后端选择工厂
+  - [ ] 执行上下文序列化（命令/环境变量/文件传输）
+  - [ ] 执行结果反序列化（stdout/stderr/exit_code）
+  - [ ] 安全沙箱策略（资源限制 + 网络隔离）
+  - [ ] CLI executor 子命令
+  - [ ] 权限层集成（后端选择需权限检查）
+
+### 功能 14: 多平台通信网关 (P2-3)
+- **描述**: 统一消息网关，支持 Webhook/API/IM 等多平台通信
+- **状态**: pending
+- **核心文件**: gateway.py, channels/
+- **依赖**: P0+P1 完成, 功能 12 (调度系统)
+- **验收标准**:
+  - [ ] MessageGateway 网关核心（消息路由 + 协议转换）
+  - [ ] Channel 抽象基类（统一消息接口）
+  - [ ] WebhookChannel HTTP Webhook 接收
+  - [ ] CLIChannel CLI 命令行交互
+  - [ ] 通知渠道（执行结果/调度通知/权限审批）
+  - [ ] 消息格式标准化（MessageEnvelope）
+  - [ ] 异步消息处理队列
+  - [ ] CLI gateway 子命令
+
+### 功能 15: Fork 子 Agent 路径 (P2-4)
+- **描述**: 子 Agent 派生与管理，支持并行执行和结果汇聚
+- **状态**: pending
+- **核心文件**: agent_fork.py
+- **依赖**: P0+P1 完成, 功能 13 (执行后端)
+- **验收标准**:
+  - [ ] AgentFork 子 Agent 派生器
+  - [ ] ForkContext 上下文传递（系统提示词 + 记忆 + 权限）
+  - [ ] 子 Agent 生命周期管理（创建/运行/等待/取消）
+  - [ ] 结果汇聚（多子 Agent 结果合并）
+  - [ ] 资源隔离（每个子 Agent 独立 session + 预算）
+  - [ ] 最大并发数限制
+  - [ ] CLI fork 子命令
+  - [ ] AgentLoop /fork 命令集成
+
+---
+
 ## 统计信息
-- 总功能数: 11
-- 已完成: 11
-- 待实现: 0
+- 总功能数: 15
+- 已完成: 12
+- 待实现: 3 (P2)
