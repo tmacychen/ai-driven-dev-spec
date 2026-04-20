@@ -164,20 +164,20 @@
 
 ### 功能 13: 执行后端隔离 (P2-2)
 - **描述**: Docker/SSH/远程沙箱执行后端，隔离 Agent 执行环境
-- **状态**: pending
-- **核心文件**: executor_backend.py, backends/
+- **状态**: completed
+- **核心文件**: executor_backend.py
 - **依赖**: P0+P1 完成
 - **验收标准**:
-  - [ ] ExecutionBackend 抽象基类（统一接口）
-  - [ ] LocalBackend 本地执行（默认后端）
-  - [ ] DockerBackend Docker 容器执行（隔离环境）
-  - [ ] SSHBackend 远程 SSH 执行
-  - [ ] BackendFactory 后端选择工厂
-  - [ ] 执行上下文序列化（命令/环境变量/文件传输）
-  - [ ] 执行结果反序列化（stdout/stderr/exit_code）
-  - [ ] 安全沙箱策略（资源限制 + 网络隔离）
-  - [ ] CLI executor 子命令
-  - [ ] 权限层集成（后端选择需权限检查）
+  - [x] ExecutionBackend 抽象基类（统一接口）
+  - [x] LocalBackend 本地执行（默认后端）
+  - [x] DockerBackend Docker 容器执行（隔离环境）
+  - [x] SSHBackend 远程 SSH 执行
+  - [x] BackendFactory 后端选择工厂
+  - [x] 执行上下文序列化（命令/环境变量/文件传输）
+  - [x] 执行结果反序列化（stdout/stderr/exit_code）
+  - [x] 安全沙箱策略（危险命令/高风险命令/资源限制）
+  - [x] CLI executor 子命令（list/run/health/check）
+  - [x] 权限层集成（SandboxPolicy 安全检查）
 
 ### 功能 14: 多平台通信网关 (P2-3)
 - **描述**: 统一消息网关，支持 Webhook/API/IM 等多平台通信
@@ -213,5 +213,5 @@
 
 ## 统计信息
 - 总功能数: 15
-- 已完成: 12
-- 待实现: 3 (P2)
+- 已完成: 13
+- 待实现: 2 (P2)
