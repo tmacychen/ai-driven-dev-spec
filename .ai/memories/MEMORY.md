@@ -34,8 +34,19 @@
 
 ## 已知限制
 
-- ~~无上下文压缩机制（长会话可能爆 token）~~ → P0-2 已解决
-- ~~无跨会话记忆（正在改进中）~~ → P0-3 已解决
 - 无工具执行沙箱（直接本地执行）→ P2 将解决
 - 记忆进化评估当前为 P0 基于规则版本，P1 将接入 LLM 评估
 - 记忆检索当前为 P0 基于 rg 关键词，P1 将接入向量语义检索
+
+## Bug 修复记录
+
+- memory_mgr 未初始化: AgentLoop 构造函数缺少 MemoryManager 实例，导致记忆进化失败 → 2026-04-20 修复
+- plan 模式 cooldown 死循环: _record_result() 未在 plan 分支调用 → 2026-04-11 修复
+
+## P1 经验
+
+- Agent Loop 韧性增强: 7 种终止条件 + 5 种继续条件，参考 Claude Code 架构白皮书 §4.2
+- PTL 恢复: 检测 413/context_length → Layer1 压缩 → Layer2 归档，最多重试 2 次
+- max_output_tokens 恢复: 检测 length 截断 → 续写提示，最多 3 次重试
+- 错误分类: 环境(ConnectionError/TimeoutError) → 可重试; 系统(MemoryError) → 不重试; 模型(413/429/500) → 分类处理
+- 指数退避: base * 2^(retry-1) + jitter，上限 max_backoff

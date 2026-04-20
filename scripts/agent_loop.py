@@ -4,11 +4,13 @@ ADDS Agent Loop — Rich 美化版
 
 核心能力：创建 agent → 注入系统提示词 → 调用大模型 → 交互对话
 集成 P0-2 上下文压缩：Token 预算管理 + 两层压缩引擎 + Session 管理
+集成 P1 韧性增强：7 种终止条件 + 5 种继续条件 + PTL 恢复 + max_output_tokens 重试
 使用 Rich 库实现彩色终端输出、思考过程面板、响应面板等。
 """
 
 import asyncio
 import logging
+import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -21,6 +23,11 @@ from context_compactor import ContextCompactor
 from summary_decision_engine import SummaryStrategy
 from memory_manager import MemoryManager
 from permission_manager import PermissionManager, confirm_action_with_session
+from loop_state import (
+    LoopStateMachine, LoopState, ResilienceConfig,
+    TerminationReason, ContinueReason, ErrorCategory,
+    TERMINATION_DESCRIPTIONS, CONTINUE_DESCRIPTIONS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,10 +80,20 @@ class AgentLoop:
         self.session_mgr = SessionManager(sessions_dir=sessions_dir)
         self.compactor = ContextCompactor(self.budget, self.session_mgr)
 
+        # P0-3: 记忆管理器
+        self.memory_mgr = MemoryManager(
+            sessions_dir=sessions_dir,
+            project_root=project_root,
+        )
+
         # P0-4: 权限管理器
         self.permission = PermissionManager(
             project_root=project_root, mode=permission_mode
         )
+
+        # P1: 韧性状态机
+        self.resilience = LoopStateMachine(config=ResilienceConfig())
+        self._loop_state: Optional[LoopState] = None
 
         # 如果没有传入 console/skin，使用简单模式
         if self.console is None:
@@ -300,22 +317,83 @@ class AgentLoop:
             # 追加用户消息
             self.session.messages.append({"role": "user", "content": user_input})
 
-            # 调用模型
+            # P1: 韧性增强 — 支持重试/续写/PTL恢复的模型调用
             self.session.turn_count += 1
+            self.resilience.reset_session_stats()
+            final_assistant_content = await self._call_model_with_resilience()
+
+            if final_assistant_content:
+                self.session.messages.append(
+                    {"role": "assistant", "content": final_assistant_content}
+                )
+
+            self._print()  # 空行分隔
+
+            # P0-2: 检查 token 预算并发出警告
+            warning = self.compactor.get_warning()
+            if warning:
+                warn_color = self.skin.color("ui_error", "#ef5350") if self.skin else "#ef5350"
+                self._print(f"[bold {warn_color}]{warning}[/]\n")
+
+            # P1: 检查是否需要 Layer2 压缩（PTL 恢复后）
+            if self.budget.is_hard_limit():
+                warn_color = self.skin.color("ui_error", "#ef5350") if self.skin else "#ef5350"
+                self._print(f"[bold {warn_color}]⚠️  Token 硬限制已达到，正在压缩上下文...[/]")
+                self._try_compact_for_ptl()
+
+        # P0-2: Session 结束 → 归档
+        self._archive_session()
+
+        return self.session.turn_count
+
+    async def _call_model_with_resilience(self) -> str:
+        """P1: 韧性增强的模型调用
+
+        支持：
+        - max_output_tokens 续写恢复
+        - PTL (prompt-too-long) 压缩恢复
+        - 环境错误重试 + 指数退避
+        - 用户中止检测
+
+        Returns:
+            最终的助手回复内容
+        """
+        max_retries = self.resilience.config.max_output_tokens_retries
+        full_response_parts: List[str] = []
+        is_continuation = False  # 是否是续写（max_output_tokens 恢复）
+
+        while True:
             full_response = []
             thinking_text = ""
             is_streaming = False
             has_thinking = False
+            finish_reason = "stop"
+            error_occurred = None
 
             try:
+                # 构建消息：如果是续写，添加续写提示
+                messages = self.session.messages
+                if is_continuation and full_response_parts:
+                    # 续写模式：在上一次回复后追加续写提示
+                    messages = list(self.session.messages)
+                    # 移除最后一条不完整的 assistant 消息（如果有）
+                    # 续写提示：让模型从断点继续
+                    continuation_prompt = (
+                        "（接上文，请继续完成被截断的回复）"
+                    )
+                    messages = messages + [
+                        {"role": "user", "content": continuation_prompt}
+                    ]
+
                 async for resp in self.model.chat(
-                    self.session.messages,
+                    messages,
                     system_prompt=self.session.system_prompt or None,
                     stream=True,
                 ):
                     if resp.finish_reason == "error":
                         error_color = self.skin.color("ui_error", "#ef5350") if self.skin else "#ef5350"
                         self._print(f"[bold {error_color}]❌ {resp.content}[/]")
+                        finish_reason = "error"
                         break
 
                     # 收集思考过程（流式）
@@ -337,51 +415,168 @@ class AgentLoop:
                         if resp.content:
                             full_response.append(resp.content)
 
-                # 响应渲染
-                assistant_content = "".join(full_response)
-                if assistant_content:
-                    self.session.messages.append({"role": "assistant", "content": assistant_content})
+                    # P1: 检测 length 截断
+                    if resp.finish_reason == "length":
+                        finish_reason = "length"
+                        if resp.content:
+                            full_response.append(resp.content)
 
-                    if is_streaming:
-                        # 流式：先换行结束，再用面板重新包裹
-                        print()  # 结束流式打印
-                        # 流式内容已打印到终端，不需要面板再打印一次
-                    elif self.console:
-                        # 非流式：用面板渲染
-                        border = self.skin.color("response_border") if self.skin else "#FFD700"
-                        response_label = self.skin.branding("response_label", " ⚡ ADDS ") if self.skin else " ⚡ ADDS "
-                        from rich.panel import Panel
-                        panel = Panel(
-                            assistant_content,
-                            title=f"[{border}]{response_label}[/]",
-                            border_style=border,
-                            padding=(0, 1),
-                        )
-                        self.console.print(panel)
-
-                # 思考过程显示（放在响应后，缩短展示）
-                if has_thinking and thinking_text and self.console:
-                    dim_c = self.skin.color("banner_dim") if self.skin else "#B8860B"
-                    # 只显示第一行或前 100 字符
-                    first_line = thinking_text.split("\n")[0][:100]
-                    self._print(f"[dim {dim_c}]💭 {first_line}{'...' if len(thinking_text) > 100 else ''}[/]")
+            except KeyboardInterrupt:
+                # 用户中止 → 记录终止
+                self._loop_state = self.resilience.evaluate_response(
+                    finish_reason="stop", is_user_abort=True
+                )
+                warn_color = self.skin.color("ui_error", "#ef5350") if self.skin else "#ef5350"
+                self._print(f"\n[{warn_color}]⚠️  流式输出已中止[/]")
+                break
 
             except Exception as e:
+                error_occurred = e
                 error_color = self.skin.color("ui_error", "#ef5350") if self.skin else "#ef5350"
                 self._print(f"[bold {error_color}]❌ 调用失败: {e}[/]")
 
-            self._print()  # 空行分隔
+            # P1: 评估终止/继续条件
+            is_hard_limit = self.budget.is_hard_limit()
+            self._loop_state = self.resilience.evaluate_response(
+                finish_reason=finish_reason,
+                error=error_occurred,
+                is_hard_limit=is_hard_limit,
+            )
 
-            # P0-2: 检查 token 预算并发出警告
-            warning = self.compactor.get_warning()
-            if warning:
-                warn_color = self.skin.color("ui_error", "#ef5350") if self.skin else "#ef5350"
-                self._print(f"[bold {warn_color}]{warning}[/]\n")
+            # 处理终止
+            if self._loop_state.should_terminate:
+                desc = TERMINATION_DESCRIPTIONS.get(
+                    self._loop_state.termination_reason, "未知原因"
+                )
+                dim_c = self.skin.color("banner_dim") if self.skin else "#B8860B"
+                self._print(f"[dim {dim_c}]{desc}[/]")
+                # 如果有部分响应，仍然返回
+                if full_response:
+                    full_response_parts.append("".join(full_response))
+                break
 
-        # P0-2: Session 结束 → 归档
-        self._archive_session()
+            # 处理继续
+            if self._loop_state.should_continue:
+                reason = self._loop_state.continue_reason
+                desc = CONTINUE_DESCRIPTIONS.get(reason, "继续...")
+                accent = self.skin.color("ui_accent") if self.skin else "#FFBF00"
+                self._print(f"\n[bold {accent}]🔄 {desc}[/]")
 
-        return self.session.turn_count
+                if reason == ContinueReason.MAX_OUTPUT_TOKENS:
+                    # max_output_tokens 恢复：保存当前内容，续写
+                    if full_response:
+                        full_response_parts.append("".join(full_response))
+                    is_continuation = True
+                    # 冷却等待
+                    time.sleep(self.resilience.config.max_output_tokens_cooldown)
+                    continue
+
+                elif reason == ContinueReason.PROMPT_TOO_LONG:
+                    # PTL 恢复：压缩上下文后重试
+                    if self._try_compact_for_ptl():
+                        # 压缩成功 → 重试
+                        time.sleep(self.resilience.get_backoff_time(
+                            self._loop_state.ptl_retry_count
+                        ))
+                        continue
+                    else:
+                        # 压缩失败 → 终止
+                        dim_c = self.skin.color("banner_dim") if self.skin else "#B8860B"
+                        self._print(
+                            f"[dim {dim_c}]⛔ 压缩失败，无法恢复[/]"
+                        )
+                        break
+
+                elif reason == ContinueReason.ERROR_RETRY:
+                    # 错误重试：退避等待
+                    if full_response:
+                        full_response_parts.append("".join(full_response))
+                    backoff = self.resilience.get_backoff_time(
+                        self._loop_state.error_retry_count
+                    )
+                    dim_c = self.skin.color("banner_dim") if self.skin else "#B8860B"
+                    self._print(
+                        f"[dim {dim_c}]⏳ 等待 {backoff:.1f}s 后重试...[/]"
+                    )
+                    time.sleep(backoff)
+                    continue
+
+                elif reason == ContinueReason.HOOK_RETRY:
+                    continue
+
+            # 正常完成（无终止也无继续）
+            if full_response:
+                full_response_parts.append("".join(full_response))
+
+            # 渲染非流式响应
+            assistant_content = "".join(full_response)
+            if assistant_content and not is_streaming and self.console:
+                border = self.skin.color("response_border") if self.skin else "#FFD700"
+                response_label = self.skin.branding("response_label", " ⚡ ADDS ") if self.skin else " ⚡ ADDS "
+                from rich.panel import Panel
+                panel = Panel(
+                    assistant_content,
+                    title=f"[{border}]{response_label}[/]",
+                    border_style=border,
+                    padding=(0, 1),
+                )
+                self.console.print(panel)
+
+            # 流式输出换行结束
+            if is_streaming:
+                print()
+
+            # 思考过程显示
+            if has_thinking and thinking_text and self.console:
+                dim_c = self.skin.color("banner_dim") if self.skin else "#B8860B"
+                first_line = thinking_text.split("\n")[0][:100]
+                self._print(f"[dim {dim_c}]💭 {first_line}{'...' if len(thinking_text) > 100 else ''}[/]")
+
+            break
+
+        # 合并所有部分（包括续写内容）
+        return "".join(full_response_parts)
+
+    def _try_compact_for_ptl(self) -> bool:
+        """P1: PTL 恢复 — 压缩上下文以降低 Token 使用量
+
+        策略：
+        1. 先尝试 Layer1 压缩（工具输出替换为摘要）
+        2. 如果仍然超限，执行 Layer2 归档
+        3. 归档后开始新 session
+
+        Returns:
+            True 如果压缩成功，False 如果失败
+        """
+        try:
+            target = self.resilience.config.ptl_compression_target
+
+            # Layer1: 压缩工具输出
+            if self.budget.utilization > target:
+                compressed_msgs, results = self.compactor.layer1_compress_batch(
+                    self.session.messages
+                )
+                if results:
+                    self.session.messages = compressed_msgs
+
+            # Layer2: 如果仍然超限，归档
+            if self.budget.utilization > target:
+                result = self.compactor.layer2_archive(model_interface=self.model)
+                if result:
+                    # 清空当前对话历史，保留系统提示词
+                    self.session.messages.clear()
+                    self.session.turn_count = 0
+                    # 重置预算
+                    self.budget._history = 0
+                    self.budget._tool_results = 0
+                    logger.info(f"PTL recovery: Layer2 archive completed, new session")
+                    return True
+
+            return self.budget.utilization <= target
+
+        except Exception as e:
+            logger.error(f"PTL compaction failed: {e}")
+            return False
 
     def _init_session_budget(self, ctx_window: int) -> None:
         """P0-2: 初始化 session 和 token 预算"""
@@ -418,17 +613,23 @@ class AgentLoop:
                     mem_path = Path(result.mem_path)
                     if mem_path.exists():
                         mem_content = mem_path.read_text(encoding="utf-8")
-                        evaluations = asyncio.get_event_loop().run_until_complete(
-                            self.memory_mgr.evaluate_and_upgrade(
-                                mem_content, role=self.agent_role
-                            )
+                        # P0: 基于规则评估（同步），P1 将接入 LLM
+                        evaluations = self.memory_mgr._rule_based_evaluate(
+                            mem_content, role=self.agent_role
                         )
+                        # 执行升级（同步写入固定记忆）
                         for ev in evaluations:
-                            if ev.should_upgrade:
-                                logger.info(
-                                    f"Memory upgraded: [{ev.category}] {ev.content[:40]} "
-                                    f"(confidence={ev.confidence:.2f})"
-                                )
+                            if ev.should_upgrade and ev.confidence >= 0.6:
+                                try:
+                                    # 同步版升级：直接写入 index.mem
+                                    upgraded = self.memory_mgr._upgrade_memory_sync(ev)
+                                    if upgraded:
+                                        logger.info(
+                                            f"Memory upgraded: [{ev.category}] {ev.content[:40]} "
+                                            f"(confidence={ev.confidence:.2f})"
+                                        )
+                                except Exception as ue:
+                                    logger.debug(f"Upgrade skipped: {ue}")
 
                         # 添加记忆索引
                         self.memory_mgr.add_index_entry(

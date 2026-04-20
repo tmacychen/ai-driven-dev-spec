@@ -1,21 +1,87 @@
 # Project Progress Logs
 
 ## Current Focus
-P0 全流程集成测试通过，P0 完整交付
+P1 功能 10: 技能渐进式披露
 
 ## Overall Status
-- ✅ Completed: 7
+- ✅ Completed: 10
 - 🔄 In Progress: 0
-- ⏳ Pending: 0
+- ⏳ Pending: 1 (P1 功能 10)
 - ⚠️ Blocked: 0
 - 🔴 Regression: 0
 
 ## Next Step
-进入 P1 阶段（技能渐进式披露 + Agent Loop 韧性增强）
+P1 阶段：技能渐进式披露（Level 0/1/2 三级技能加载）
 
 ---
 
 ## Session History
+
+### [2026-04-20 13:30] Session — P1 功能 11: Agent Loop 韧性增强
+
+**Agent**: Developer (P1 韧性增强)
+
+**Tasks Completed**:
+- 新增 `scripts/loop_state.py` — Agent Loop 循环状态机与韧性策略
+  - TerminationReason 7 种终止条件枚举（completed/blocking_limit/aborted_streaming/model_error/prompt_too_long/image_error/hook_prevented）
+  - ContinueReason 5 种继续条件枚举（normal/max_output_tokens/prompt_too_long/error_retry/hook_retry）
+  - ErrorCategory 错误分类枚举（environment/model/user_abort/system/unknown）
+  - LoopStateMachine 状态机核心逻辑：evaluate_response() 统一判定
+  - ResilienceConfig 可配置参数（重试次数/退避时间/PTL 目标等）
+  - 指数退避策略（base * 2^retry + jitter）
+  - 终止/继续人类可读描述
+- 修改 `scripts/agent_loop.py` — 集成韧性机制
+  - 导入 loop_state 模块
+  - 构造函数增加 resilience (LoopStateMachine) 和 _loop_state 属性
+  - 新增 `_call_model_with_resilience()` 方法：
+    - max_output_tokens 续写恢复（最多 3 次重试 + 续写提示）
+    - PTL (prompt-too-long) 压缩恢复
+    - 环境错误重试 + 指数退避
+    - 用户中止检测（KeyboardInterrupt）
+    - 错误分类与恢复策略
+  - 新增 `_try_compact_for_ptl()` 方法：
+    - Layer1 压缩（工具输出替换）
+    - Layer2 归档（清空对话历史）
+    - 压缩目标利用率 60%
+- 新增 `scripts/test_p1_resilience.py` — P1 韧性增强测试（10 个测试场景类）
+- 更新 `feature_list.md`: 功能 11 标记为 completed，统计更新
+
+**验证**:
+- ✅ loop_state.py 内置测试通过（8 个场景）
+- ✅ agent_loop.py 导入正常
+- ✅ AgentLoop 集成韧性机制正常
+- ✅ 无 lint 错误
+
+**Handoff Notes for Next Session**:
+> P1 功能 11（Agent Loop 韧性增强）已完成。P1 还剩功能 10（技能渐进式披露）。当前 P0+P1 共 10 个功能完成，1 个待实现。
+
+### [2026-04-20 12:30] Session — Bug 修复 + 文档同步
+
+**Agent**: Developer (Bug修复)
+
+**Tasks Completed**:
+- 修复 `agent_loop.py` Bug: `self.memory_mgr` 未初始化
+  - 根因: 构造函数中从未创建 MemoryManager 实例
+  - 修复: 在 `__init__` 中添加 `self.memory_mgr = MemoryManager(...)`
+  - 修复: `_archive_session` 中的记忆进化改为同步调用（`_rule_based_evaluate` + `_upgrade_memory_sync`）
+- 新增 `memory_manager.py`: `_upgrade_memory_sync()` 同步版记忆升级方法
+- 更新 `CORE_GUIDELINES.md`:
+  - 移除幽灵引用 `.ai/prompts/` 目录（不存在）
+  - 移除幽灵引用 `compress_context.py`（不存在）
+  - 移除幽灵引用 `app_spec.md`（不存在）
+  - 更新 Agent Prompts 说明为 `adds start --role`
+- 更新 `feature_list.md`: 反映 P0 全部 9 个功能 + P1 待开始
+- 更新 `progress.md`: 添加本次会话记录
+
+**验证**:
+- ✅ agent_loop.py 无 lint 错误
+- ✅ memory_manager.py 无 lint 错误
+- ✅ memory_mgr 初始化后记忆进化逻辑可正常工作
+
+**Handoff Notes for Next Session**:
+> Bug 修复 + 文档同步完成。P0 阶段代码和文档已对齐。下一步：进入 P1 阶段（技能渐进式披露 + Agent Loop 韧性增强）。
+
+---
 
 ### [2026-04-11 09:30] Session — P0 集成测试 + Bug 修复
 

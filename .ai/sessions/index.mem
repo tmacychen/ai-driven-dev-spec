@@ -35,6 +35,9 @@
 - [session] 链式 Session：.ses/.log/.mem 文件 + Prev/Next 指针 + 回溯机制
 - [memory] 记忆系统：两层记忆 + 进化/排毒 + 角色化 + 反思协议 + 回归警报 + 强制复读 + 晋升仪式
 - [permission] 权限管理：三级权限(Allow/Ask/Deny) + 四种模式(default/plan/auto/bypass) + 死循环防护
+- [cli] CLI 统一：adds 主工具 + init/start/status/validate/session/mem/perm 子命令
+- [tui] TUI 交互：Rich + prompt_toolkit + 皮肤引擎 + 命令补全
+- [resilience] 韧性增强：7种终止条件 + 5种继续条件 + PTL恢复 + max_output_tokens续写 + 错误分类重试
 
 ### 用户偏好
 - 中文沟通，简洁直接
@@ -47,6 +50,9 @@
 
 | 时间 | 文件 | 摘要 | 优先级 |
 |------|------|------|--------|
+| 04-20 13:30 | — | P1 功能11: Agent Loop 韧性增强（loop_state.py + agent_loop.py 集成） | 高 |
+| 04-20 12:30 | — | Bug修复: memory_mgr 未初始化 + 记忆进化改同步调用 + 文档同步 | 高 |
+| 04-20 — | — | CLI 统一重构：v2标记删除 + 过时文档清理 | 高 |
 | 04-11 09:30 | — | P0 集成测试完成（25个端到端测试）+ 修复 plan 模式 cooldown Bug | 高 |
 | 04-10 17:30 | — | P0-4 权限管理器实现完成（permission_manager + 四种模式 + 死循环防护 + 集成） | 高 |
 | 04-10 15:27 | — | P0-2 上下文压缩层实现完成（token_budget/session_manager/summary_decision_engine/context_compactor + 集成） | 高 |
