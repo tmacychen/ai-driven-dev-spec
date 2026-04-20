@@ -194,11 +194,26 @@ class ADDSCli:
         """
         # 配置日志
         log_level = logging.DEBUG if debug else logging.WARNING
-        logging.basicConfig(
-            level=log_level,
-            format="%(levelname)s [%(name)s] %(message)s",
-            stream=sys.stderr,
-        )
+        if debug:
+            # debug 模式：输出到日志文件
+            log_dir = self.ai_dir / "logs"
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_file = log_dir / "adds-debug.log"
+            logging.basicConfig(
+                level=log_level,
+                format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+                filename=str(log_file),
+                filemode="a",  # 追加模式
+            )
+            # 同时在 stderr 显示简要提示
+            print(f"🐛 Debug 模式已启用，日志写入: {log_file}", file=sys.stderr)
+        else:
+            logging.basicConfig(
+                level=log_level,
+                format="%(levelname)s [%(name)s] %(message)s",
+                stream=sys.stderr,
+            )
 
         # 延迟导入（依赖检查通过后才执行）
         from model import ModelFactory
@@ -538,7 +553,7 @@ Examples:
     start_parser.add_argument("--non-interactive", action="store_true",
                               help="非交互式模型选择（自动选第一个）")
     start_parser.add_argument("--debug", action="store_true",
-                              help="启用 debug 日志，显示 CLI 调用详情")
+                              help="启用 debug 日志，输出到 .ai/logs/adds-debug.log")
     start_parser.add_argument("--skin", type=str, default="",
                               help="皮肤名称（如 adds_cyberpunk）")
     start_parser.add_argument("--perm", type=str, default="default",
