@@ -421,5 +421,6 @@ class TestAgentLoopResilience:
 # ═══════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.WARNING)
+    from log_config import configure_standalone_logging
+    configure_standalone_logging(level=logging.WARNING)
     pytest.main([__file__, "-v", "--tb=short"])

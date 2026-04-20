@@ -1127,7 +1127,8 @@ def _cmd_stats(scheduler: TaskScheduler):
 # ═══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
+    from log_config import configure_standalone_logging
+    configure_standalone_logging()
 
     # 测试 CronExpression
     print("=== CronExpression 测试 ===")

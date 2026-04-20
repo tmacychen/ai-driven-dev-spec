@@ -900,7 +900,8 @@ def _cmd_gw_history(gateway: MessageGateway, args):
 # ═══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
+    from log_config import configure_standalone_logging
+    configure_standalone_logging()
 
     print("=== MessageEnvelope 测试 ===")
     msg = MessageEnvelope(

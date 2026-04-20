@@ -653,7 +653,8 @@ if __name__ == "__main__":
     import tempfile
     import shutil
 
-    logging.basicConfig(level=logging.DEBUG)
+    from log_config import configure_standalone_logging
+    configure_standalone_logging()
 
     # 使用临时目录测试
     tmp = tempfile.mkdtemp(prefix="adds_test_")

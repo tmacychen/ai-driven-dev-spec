@@ -404,7 +404,8 @@ CONTINUE_DESCRIPTIONS = {
 # ═══════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    from log_config import configure_standalone_logging
+    configure_standalone_logging()
 
     # 测试状态机
     sm = LoopStateMachine()

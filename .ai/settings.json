@@ -69,5 +69,8 @@
     "sessions_dir": ".ai/sessions/",
     "max_fixed_memory_chars": 2000,
     "evolution_min_occurrences": 2
+  },
+  "ui": {
+    "skin": "nordic"
   }
 }

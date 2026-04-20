@@ -184,7 +184,6 @@ class TaskPanel(Widget):
         indicator = self.query_one("#streaming-indicator", Static)
         display = self._STATUS_DISPLAY.get(status, status)
         indicator.update(display)
-        log.write(Text("🤖 ASSISTANT", style="bold"))
 
     def append_thinking_chunk(self, chunk: str, is_first: bool = False) -> None:
         """

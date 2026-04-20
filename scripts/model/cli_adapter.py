@@ -8,6 +8,7 @@ ADDS Model Layer — CLI 工具适配器
 import asyncio
 import json
 import logging
+import re
 import shutil
 from typing import AsyncIterator, Optional
 
@@ -277,11 +278,18 @@ class CLIAdapter(ModelInterface):
                 logger.warning("⚠️ codebuddy 返回非 JSON，作为纯文本处理")
                 response_text = raw
 
+            # 过滤底层模型的 tool_call 标签（CLI 模式不执行工具）
+            # 匹配 <minimax:tool_call>...</minimax:tool_call> 等标签
+            response_text = re.sub(
+                r'<\w+:tool_call>.*?</\w+:tool_call>',
+                '', response_text, flags=re.DOTALL
+            ).strip()
+
             logger.debug("✅ codebuddy 解析结果: text=%d chars, thinking=%d chars",
                          len(response_text), len(thinking_text))
             yield ModelResponse(
                 content=response_text,
-                model="codebuddy",
+                model="Codebuddy",
                 usage={"input_tokens": 0, "output_tokens": max(1, len(response_text) // 4)},
                 finish_reason="stop",
                 thinking=thinking_text or None,
@@ -313,6 +321,17 @@ class CLIAdapter(ModelInterface):
 
     def get_context_window(self) -> int:
         return self.context_window
+
+    def get_model_name(self) -> str:
+        """返回模型名称，CLI 模式下拼接 provider + model"""
+        if self.cli_type == "mmx" and self.model:
+            return self.model  # 如 "MiniMax-M2.7"
+        elif self.cli_type == "codebuddy":
+            return "Codebuddy"  # codebuddy 路由到不同模型，统一用 provider 名
+        elif self.model and self.model != "default":
+            return self.model
+        # 兜底：用 CLI 类型
+        return self.cli_type or self.command or "unknown"
 
     def supports_feature(self, name: str) -> bool:
         return self._features.get(name, False)

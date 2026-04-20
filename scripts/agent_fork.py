@@ -544,7 +544,8 @@ def _cmd_fork_stats(project_root: str):
 # ═══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
+    from log_config import configure_standalone_logging
+    configure_standalone_logging()
 
     print("=== ForkContext 测试 ===")
     ctx = ForkContext(

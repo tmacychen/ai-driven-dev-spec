@@ -319,7 +319,8 @@ def load_budget_config(project_root: str) -> Dict:
 # ═══════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    from log_config import configure_standalone_logging
+    configure_standalone_logging()
 
     # 基础测试
     budget = TokenBudget(context_window=128000)

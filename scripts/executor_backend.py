@@ -1045,7 +1045,8 @@ def _cmd_executor_check(args):
 # ═══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
+    from log_config import configure_standalone_logging
+    configure_standalone_logging()
 
     print("=== LocalBackend 测试 ===")
     local = LocalBackend()

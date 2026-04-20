@@ -174,6 +174,16 @@ class AgentCore:
             f"你必须如实回答你是 {model_name}，不要编造或声称自己是其他模型。"
         )
 
+        # 注入能力边界说明
+        if not self.model.supports_feature("tools"):
+            self.system_prompt += (
+                "\n\n## 能力边界\n"
+                "你当前没有工具执行能力（无法运行命令、读写文件等）。"
+                "请不要输出 ```bash 等代码块假装执行命令，"
+                "因为你输出的命令不会被执行。"
+                "如果需要执行操作，请直接告诉用户需要运行什么命令。"
+            )
+
         # 注入 Level 0 技能索引
         skill_section = self.skill_mgr.build_level0_section()
         if skill_section:
@@ -225,7 +235,7 @@ class AgentCore:
         self.session_mgr.append_message("user", user_text)
 
         # Token 预算检查
-        self.budget.track(f"turn_{self.turn_count}_user", estimate_tokens(user_text))
+        self.budget.track("history", estimate_tokens(user_text))
 
         # ── Agent Loop ──────────────────────────────
         full_response_parts: List[str] = []
@@ -334,9 +344,7 @@ class AgentCore:
                 "assistant", full_text,
                 strategy="llm_analyze", priority="high",
             )
-            self.budget.track(
-                f"turn_{self.turn_count}_assistant", estimate_tokens(full_text)
-            )
+            self.budget.track("history", estimate_tokens(full_text))
 
             # Token 预算警告
             warning = self.compactor.get_warning()

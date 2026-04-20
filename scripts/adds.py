@@ -11,7 +11,6 @@ ADDS - AI-Driven Development Specification CLI Tool
 import argparse
 import asyncio
 import importlib
-import logging
 import subprocess
 import sys
 from pathlib import Path
@@ -49,7 +48,9 @@ def _try_activate_venv() -> None:
         return  # .venv 不存在，稍后由依赖检测引导安装
 
     # 用 venv 的 Python 重新执行本脚本
-    os.execv(str(venv_python), [str(venv_python)] + sys.argv)
+    # os.execv 要求第一个参数是可执行文件路径，后面是完整 argv
+    script_path = str(_SCRIPT_DIR / "adds.py")
+    os.execv(str(venv_python), [str(venv_python), script_path] + sys.argv[1:])
 
 
 import os
@@ -60,37 +61,73 @@ _try_activate_venv()
 # 依赖检测与安装引导
 # ═══════════════════════════════════════════════════════════════
 
-REQUIRED_PACKAGES = {
-    "anthropic": "anthropic>=0.40.0",
+# 核心依赖：所有模式都必须
+CORE_PACKAGES = {
     "rich": "rich>=13.0.0",
     "yaml": "pyyaml>=6.0",
     "prompt_toolkit": "prompt_toolkit>=3.0.0",
-    "textual": "textual>=0.47.0",
+}
+
+# 可选依赖：仅特定模式需要
+OPTIONAL_PACKAGES = {
+    "anthropic": {
+        "spec": "anthropic>=0.40.0",
+        "modes": ["api"],       # 仅 API 模式需要
+        "hint": "API 模式需要（使用大模型 API 直连时安装）",
+    },
+    "textual": {
+        "spec": "textual>=0.47.0",
+        "modes": ["tui"],       # 仅 TUI 模式需要
+        "hint": "TUI 模式需要（使用 --tui 时安装）",
+    },
 }
 
 
-def check_dependencies() -> bool:
-    """检测依赖是否已安装，返回 True 表示全部就绪"""
-    missing = {}
-    for pkg, spec in REQUIRED_PACKAGES.items():
+def check_dependencies(require_mode: str = "cli") -> bool:
+    """检测依赖是否已安装，返回 True 表示全部就绪
+
+    参数：
+        require_mode: 当前需要的模式 ("cli", "api", "tui")
+                      决定哪些可选依赖被视为必需
+    """
+    # 1. 检查核心依赖
+    missing_core = {}
+    for pkg, spec in CORE_PACKAGES.items():
         try:
             importlib.import_module(pkg)
         except ImportError:
-            missing[pkg] = spec
+            missing_core[pkg] = spec
 
-    if not missing:
+    # 2. 检查模式相关的可选依赖
+    missing_optional = {}
+    for pkg, info in OPTIONAL_PACKAGES.items():
+        if require_mode in info["modes"] or require_mode == "all":
+            try:
+                importlib.import_module(pkg)
+            except ImportError:
+                missing_optional[pkg] = info
+
+    if not missing_core and not missing_optional:
         return True
 
-    print("❌ 缺少以下 Python 依赖：\n")
-    for pkg, spec in missing.items():
-        print(f"   • {spec}")
+    # 打印缺失信息
+    if missing_core:
+        print("❌ 缺少核心依赖：\n")
+        for pkg, spec in missing_core.items():
+            print(f"   • {spec}")
+
+    if missing_optional:
+        print("❌ 缺少可选依赖（当前模式需要）：\n")
+        for pkg, info in missing_optional.items():
+            print(f"   • {info['spec']}  ← {info['hint']}")
 
     print("\n📦 请选择安装方式：\n")
     print("   方式一：项目虚拟环境（推荐）")
     print("   ─────────────────────────────")
     print("   python3 -m venv .venv")
     print("   source .venv/bin/activate        # Fish: source .venv/bin/activate.fish")
-    print(f"   pip install {' '.join(missing.values())}")
+    all_specs = list(missing_core.values()) + [info["spec"] for info in missing_optional.values()]
+    print(f"   pip install {' '.join(all_specs)}")
     print()
     print("   方式二：一键安装（自动创建 venv + 安装依赖）")
     print("   ─────────────────────────────")
@@ -98,7 +135,7 @@ def check_dependencies() -> bool:
     print()
     print("   方式三：全局安装")
     print("   ─────────────────────────────")
-    print(f"   pip3 install {' '.join(missing.values())}")
+    print(f"   pip3 install {' '.join(all_specs)}")
     print()
 
     return False
@@ -154,10 +191,11 @@ def _pip_install(python_path: str):
             [python_path, "-m", "pip", "install", "--upgrade", "-r", str(req_file)],
         )
     else:
-        packages = list(REQUIRED_PACKAGES.values())
-        print(f"📥 安装依赖: {' '.join(packages)}\n")
+        # 核心依赖 + 所有可选依赖
+        all_specs = list(CORE_PACKAGES.values()) + [info["spec"] for info in OPTIONAL_PACKAGES.values()]
+        print(f"📥 安装依赖: {' '.join(all_specs)}\n")
         result = subprocess.run(
-            [python_path, "-m", "pip", "install", "--upgrade"] + packages,
+            [python_path, "-m", "pip", "install", "--upgrade"] + all_specs,
         )
     if result.returncode != 0:
         print("\n❌ 安装失败，请尝试手动安装：")
@@ -192,30 +230,9 @@ class ADDSCli:
         2. 解析角色提示词（--role 或默认 PM）
         3. 进入交互对话（classic 模式）或 TUI 模式（--tui）
         """
-        # 配置日志
-        # 默认：日志完全静默，stdout/stderr 只输出正常交互信息
-        # Debug：日志只写文件，不影响交互界面
-        root_logger = logging.getLogger()
-        root_logger.handlers.clear()  # 清除所有已有 handler
-
-        if debug:
-            log_dir = self.ai_dir / "logs"
-            log_dir.mkdir(parents=True, exist_ok=True)
-            log_file = log_dir / "adds-debug.log"
-            file_handler = logging.FileHandler(
-                str(log_file), mode="a", encoding="utf-8",
-            )
-            file_handler.setLevel(logging.DEBUG)
-            file_handler.setFormatter(logging.Formatter(
-                "%(asctime)s %(levelname)s [%(name)s] %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-            ))
-            root_logger.addHandler(file_handler)
-            root_logger.setLevel(logging.DEBUG)
-        else:
-            # 默认模式：日志不输出到 stdout/stderr
-            root_logger.addHandler(logging.NullHandler())
-            root_logger.setLevel(logging.CRITICAL + 1)
+        # 配置日志（统一由 log_config 模块管理）
+        from log_config import configure_logging
+        configure_logging(debug=debug, ai_dir=self.ai_dir)
 
         # 延迟导入（依赖检查通过后才执行）
         from model import ModelFactory
@@ -555,7 +572,7 @@ Examples:
     start_parser.add_argument("--non-interactive", action="store_true",
                               help="非交互式模型选择（自动选第一个）")
     start_parser.add_argument("--debug", action="store_true",
-                              help="启用 debug 日志，输出到 .ai/logs/adds-debug.log")
+                              help="启用 debug 日志，输出到 .ai/logs/adds-YYYYMMDD_HHMMSS.log")
     start_parser.add_argument("--skin", type=str, default="",
                               help="皮肤名称（如 adds_cyberpunk）")
     start_parser.add_argument("--perm", type=str, default="default",
@@ -651,8 +668,14 @@ Examples:
         cli.list_skins(preview=args.preview)
         return
 
-    # 其他命令需要检查依赖
-    if not check_dependencies():
+    # 其他命令需要检查依赖（根据模式决定可选依赖）
+    if args.command == "start":
+        use_tui = getattr(args, 'tui', False)
+        dep_mode = "tui" if use_tui else "cli"
+    else:
+        dep_mode = "cli"
+
+    if not check_dependencies(require_mode=dep_mode):
         sys.exit(1)
 
     cli = ADDSCli()
