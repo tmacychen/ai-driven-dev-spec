@@ -17,6 +17,32 @@ P1 阶段：技能渐进式披露（Level 0/1/2 三级技能加载）
 
 ## Session History
 
+### [2026-04-20 13:32] Bug Fix — index.mem 自动索引更新机制
+
+**Agent**: Developer (Bug Fix)
+
+**Issue**:
+- `index.mem` 的"记忆索引"表是手动更新的，不是自动的
+- `MemoryManager._upgrade_memory_sync()` 没有生成索引条目
+- CLI `adds mem add` 命令未连接（缺少 handler）
+
+**Fix**:
+- `MemoryManager._upgrade_memory_sync()` 添加记忆时自动调用 `add_index_entry()`
+- 新增 `MemoryManager.add_item()` 方法支持 CLI 手动添加
+- `adds.py` 添加 `mem_command()` handler 连接 CLI
+- 新增 `adds mem add` 子命令：
+  ```bash
+  adds mem add "记忆内容" --category experience --role common
+  adds mem add "内容" --summary "索引摘要" --tag skill --tag python
+  ```
+
+**Files Changed**:
+- `scripts/memory_manager.py` — `_upgrade_memory_sync()` + `add_item()`
+- `scripts/memory_cli.py` — `add` subcommand + `_cmd_add()`
+- `scripts/adds.py` — `mem_command()` handler
+
+---
+
 ### [2026-04-20 13:30] Session — P1 功能 11: Agent Loop 韧性增强
 
 **Agent**: Developer (P1 韧性增强)
