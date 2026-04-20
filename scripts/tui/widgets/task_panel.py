@@ -169,6 +169,23 @@ class TaskPanel(Widget):
         from rich.text import Text
         log.write(Text("🤖 ASSISTANT", style="bold"))
 
+    # ── 状态映射：Agent Loop 各阶段对应的 UI 提示 ──
+    _STATUS_DISPLAY = {
+        "thinking":  "🧠 思考中…",
+        "streaming": "⠋ 生成中…",
+        "tool_call": "🔧 调用工具…",
+        "executing": "⚙️ 执行中…",
+        "waiting":   "⏳ 等待模型…",
+        "idle":      "",
+    }
+
+    def update_status(self, status: str) -> None:
+        """更新 Agent Loop 状态指示器"""
+        indicator = self.query_one("#streaming-indicator", Static)
+        display = self._STATUS_DISPLAY.get(status, status)
+        indicator.update(display)
+        log.write(Text("🤖 ASSISTANT", style="bold"))
+
     def append_thinking_chunk(self, chunk: str, is_first: bool = False) -> None:
         """
         追加 LLM 思考过程片段（实时显示，不占主要聊天区域）
