@@ -1,0 +1,11 @@
+{
+  "trigger": "当需要编写测试、生成测试用例时",
+  "command": "codebuddy -p \"{query}\" --output-format json",
+  "input_desc": "",
+  "output_desc": "",
+  "system_prompt": null,
+  "examples": [
+    "codebuddy -p \"为 user_auth.py 生成单元测试\" --output-format json"
+  ],
+  "notes": ""
+}
