@@ -426,6 +426,61 @@ class MemoryManager:
         )
 
         self.write_index_mem(current)
+        self.add_index_entry(
+            time=datetime.now().strftime("%m-%d %H:%M"),
+            file="auto",
+            summary=f"晋升: {evaluation.content[:45]}..." if len(evaluation.content) > 45 else f"晋升: {evaluation.content}",
+            priority="高",
+        )
+
+        if overflow:
+            logger.info(f"Overflow: {len(overflow)} items demoted")
+            self._write_prev_index(overflow)
+
+        return True
+
+    def _upgrade_memory_sync(self, evaluation: MemoryUpgradeEvaluation) -> bool:
+        """同步版记忆升级（P0: 不需要 await，直接写入）
+
+        与 async 版 _upgrade_memory 逻辑相同，但不需要事件循环。
+        """
+        _, existing_items = self.read_index_mem()
+        existing_contents = [item.content for item in existing_items]
+
+        # 冲突扫描
+        conflicts = self.detox.check_new_memory_conflicts(
+            evaluation.content, existing_contents
+        )
+
+        if conflicts:
+            logger.warning(
+                f"Conflict detected for upgrade: {conflicts[0]['conflict_type']}"
+            )
+            return False
+
+        # 写入
+        new_item = MemoryItem(
+            id=f"exp-{len(existing_items)+1:03d}",
+            content=evaluation.content,
+            category=evaluation.category,
+            role=evaluation.role,
+            status="active",
+        )
+        existing_items.append(new_item)
+
+        # 容量检查 + 优先级排序
+        code_heat_map = self.sorter.build_code_heat_map()
+        current, overflow = self.sorter.sort_for_index(
+            existing_items, self.max_fixed_memory_chars, code_heat_map
+        )
+
+        self.write_index_mem(current)
+        self.add_index_entry(
+            time=datetime.now().strftime("%m-%d %H:%M"),
+            file="auto",
+            summary=f"晋升: {evaluation.content[:45]}..." if len(evaluation.content) > 45 else f"晋升: {evaluation.content}",
+            priority="高",
+        )
 
         if overflow:
             logger.info(f"Overflow: {len(overflow)} items demoted")
@@ -567,6 +622,65 @@ class MemoryManager:
                 return True
 
         return False
+
+    def add_item(self, content: str, category: str = "experience",
+                 role: str = "common", module: str = "",
+                 tags: Optional[List[str]] = None,
+                 summary: Optional[str] = None) -> bool:
+        """添加新记忆条目（CLI 手动添加）
+
+        Args:
+            content: 记忆内容
+            category: 类别 (environment|experience|skill|preference)
+            role: 角色
+            module: 模块
+            tags: 标签
+            summary: 索引摘要（默认取 content 前50字）
+
+        Returns:
+            是否添加成功
+        """
+        _, items = self.read_index_mem()
+
+        # 生成新 ID
+        max_id = 0
+        for item in items:
+            import re
+            match = re.search(r'exp-(\d+)', item.id)
+            if match:
+                max_id = max(max_id, int(match.group(1)))
+        new_id = f"exp-{max_id + 1:03d}"
+
+        new_item = MemoryItem(
+            id=new_id,
+            content=content,
+            category=category,
+            role=role,
+            module=module,
+            tags=tags or [],
+            status="active",
+        )
+        items.append(new_item)
+
+        # 容量检查 + 优先级排序
+        code_heat_map = self.sorter.build_code_heat_map()
+        current, overflow = self.sorter.sort_for_index(
+            items, self.max_fixed_memory_chars, code_heat_map
+        )
+
+        self.write_index_mem(current)
+        self.add_index_entry(
+            time=datetime.now().strftime("%m-%d %H:%M"),
+            file="manual",
+            summary=summary or (content[:45] + "..." if len(content) > 45 else content),
+            priority="中",
+        )
+
+        if overflow:
+            logger.info(f"Overflow: {len(overflow)} items demoted")
+            self._write_prev_index(overflow)
+
+        return True
 
     def delete_item(self, item_id: str) -> bool:
         """删除记忆条目（从 index.mem 移除）"""

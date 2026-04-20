@@ -470,6 +470,11 @@ class ADDSCli:
                 print("⚠️  bypass 模式已启用！所有操作将自动放行，请谨慎使用！")
             print(f"✅ 权限模式已切换为: {new_mode}")
 
+    def mem_command(self, args):
+        """P0-3: 记忆管理子命令"""
+        from memory_cli import handle_mem_command
+        handle_mem_command(args, project_root=str(self.project_root))
+
 
 def main():
     """CLI 入口"""
@@ -601,6 +606,8 @@ Examples:
         cli.session_command(args)
     elif args.command == "perm":
         cli.perm_command(args)
+    elif args.command == "mem":
+        cli.mem_command(args)
 
 
 if __name__ == "__main__":

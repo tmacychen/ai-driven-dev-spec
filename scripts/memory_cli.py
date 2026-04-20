@@ -72,6 +72,21 @@ def add_mem_subparser(subparsers) -> None:
     search_parser.add_argument("--top-k", type=int, default=5,
                                 help="返回结果数")
 
+    # add
+    add_parser = mem_sub.add_parser("add", help="手动添加记忆到 index.mem")
+    add_parser.add_argument("content", type=str, help="记忆内容")
+    add_parser.add_argument("--category", type=str, default="experience",
+                            choices=["environment", "experience", "skill", "preference"],
+                            help="记忆类别")
+    add_parser.add_argument("--role", type=str, default="common",
+                            help="角色")
+    add_parser.add_argument("--module", type=str, default="",
+                            help="模块")
+    add_parser.add_argument("--tag", type=str, action="append", dest="tags",
+                            help="标签（可多次）")
+    add_parser.add_argument("--summary", type=str, default="",
+                            help="索引摘要（默认取内容前50字）")
+
 
 def handle_mem_command(args, project_root: str = ".") -> None:
     """处理 mem 子命令"""
@@ -95,6 +110,10 @@ def handle_mem_command(args, project_root: str = ".") -> None:
         _cmd_checkpoint(mgr, args.tag, promote=args.promote)
     elif args.mem_command == "search":
         _cmd_search(mgr, args.query, top_k=args.top_k)
+    elif args.mem_command == "add":
+        _cmd_add(mgr, args.content, category=args.category,
+                 role=args.role, module=args.module,
+                 tags=args.tags, summary=args.summary)
     else:
         print("未知 mem 子命令。使用 adds mem --help 查看帮助。")
 
@@ -370,3 +389,29 @@ def _cmd_search(mgr, query: str, top_k: int = 5) -> None:
         print(f"     {result.content[:100]}")
         print(f"     相关度: {result.relevance:.2f}")
         print()
+
+
+def _cmd_add(mgr, content: str, category: str = "experience",
+             role: str = "common", module: str = "",
+             tags: Optional[List[str]] = None,
+             summary: str = "") -> None:
+    """adds mem add — 手动添加记忆到 index.mem"""
+    success = mgr.add_item(
+        content=content,
+        category=category,
+        role=role,
+        module=module,
+        tags=tags,
+        summary=summary or None,
+    )
+
+    if success:
+        print(f"✅ 记忆已添加: {content[:50]}{'...' if len(content) > 50 else ''}")
+        print(f"   类别: {category} | 角色: {role}")
+        if module:
+            print(f"   模块: {module}")
+        if tags:
+            print(f"   标签: {', '.join(tags)}")
+        print(f"   索引已更新（adds mem status 查看）")
+    else:
+        print("❌ 添加失败")
