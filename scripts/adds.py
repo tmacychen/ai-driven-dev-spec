@@ -193,27 +193,22 @@ class ADDSCli:
         3. 进入交互对话（classic 模式）或 TUI 模式（--tui）
         """
         # 配置日志
-        log_level = logging.DEBUG if debug else logging.WARNING
+        # 默认：日志完全静默，stdout/stderr 只输出正常交互信息
+        # Debug：日志写文件，不影响交互界面
         if debug:
-            # debug 模式：输出到日志文件
             log_dir = self.ai_dir / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             log_file = log_dir / "adds-debug.log"
             logging.basicConfig(
-                level=log_level,
+                level=logging.DEBUG,
                 format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
                 datefmt="%Y-%m-%d %H:%M:%S",
                 filename=str(log_file),
-                filemode="a",  # 追加模式
+                filemode="a",
             )
-            # 同时在 stderr 显示简要提示
-            print(f"🐛 Debug 模式已启用，日志写入: {log_file}", file=sys.stderr)
         else:
-            logging.basicConfig(
-                level=log_level,
-                format="%(levelname)s [%(name)s] %(message)s",
-                stream=sys.stderr,
-            )
+            # 默认模式：日志不输出到 stdout/stderr
+            logging.basicConfig(level=logging.CRITICAL + 1, handlers=[logging.NullHandler()])
 
         # 延迟导入（依赖检查通过后才执行）
         from model import ModelFactory
