@@ -26,6 +26,66 @@ _ROLE_PREFIX = {
     "tool":      ("🔧", "dim"),
 }
 
+import re
+
+
+def _sanitize_display(content: str) -> str:
+    """
+    清理 LLM 输出中的内部结构标签，使 UI 显示友好
+
+    处理规则：
+    1. <agent><agent_type>...</agent_type><description>...</description><path>...</path></agent>
+       → 折叠为 [Agent: type] 描述摘要
+    2. <read /><glob /> 等工具调用标签 → 折叠为 [工具名] 一行
+    3. <thinking> 块 → 已由 thinking 回调处理，这里不重复显示
+    4. 保留纯文本内容不变
+    """
+    import textwrap
+    result = content
+
+    # ── 1. 折叠 <agent> 块 ──────────────────────────────────────
+    def _collapse_agent(m):
+        inner = m.group(0)
+        # 提取类型和描述
+        type_match = re.search(r'<agent_type>([^<]+)</agent_type>', inner)
+        desc_match = re.search(r'<description>([^<]+)</description>', inner)
+        atype = type_match.group(1).strip() if type_match else "Agent"
+        desc = desc_match.group(1).strip() if desc_match else ""
+        if desc:
+            desc = textwrap.shorten(desc, width=80, placeholder="…")
+            return f"[bold #6B7280]▸ {atype}[/] {desc}"
+        return f"[bold #6B7280]▸ {atype}[/]"
+    result = re.sub(r'<agent>\s*<agent_type>.*?</agent>', _collapse_agent,
+                    result, flags=re.DOTALL)
+
+    # ── 2. 折叠单行工具标签 <read /> <glob /> 等 ─────────────────
+    def _collapse_tool_tag(m):
+        tag_name = m.group(1)
+        attrs_str = m.group(2) or ""
+        # 提取关键属性值（file_path, pattern 等）
+        key_attrs = []
+        for attr in ["file_path", "pattern", "query", "url", "command"]:
+            am = re.search(rf'{attr}=([\'"])([^\\1]*?)\1', attrs_str)
+            if am:
+                val = textwrap.shorten(am.group(2), width=50, placeholder="…")
+                key_attrs.append(f"{attr}={val}")
+                break
+        detail = ", ".join(key_attrs[:2]) if key_attrs else ""
+        if detail:
+            return f"[dim #6B7280]▸ 🔧 {tag_name}[/] ({detail})"
+        return f"[dim #6B7280]▸ 🔧 {tag_name}[/]"
+    result = re.sub(
+        r'<(\w+?)(?:\s+([^/>]*?))?/?>', _collapse_tool_tag, result
+    )
+
+    # ── 3. 清理残留闭合标签 ────────────────────────────────────
+    result = re.sub(r'</(?:agent|agent_type|description|path|thinking)>', '', result)
+
+    # ── 4. 清理多余空行（但保留段落间距）─────────────────────────
+    result = re.sub(r'\n{3,}', '\n\n', result)
+
+    return result.strip()
+
 
 def _format_message(msg: Message) -> str:
     """将 Message 格式化为 Rich markup 字符串"""
@@ -174,9 +234,10 @@ class TaskPanel(Widget):
             log.write(Text(f"  💭 {first_line}{'…' if len(full_thinking) > 100 else ''}", style="dim #B8860B"))
             self._thinking_buffer = []
 
-        # 一次性写入完整内容（RichLog.write 会自动换行，内容本身是完整段落）
+        # 一次性写入完整内容（清理内部标签后显示）
         if full_content:
-            log.write(full_content)
+            display_text = _sanitize_display(full_content)
+            log.write(display_text)
         log.write("─" * 40)
         indicator = self.query_one("#streaming-indicator", Static)
         indicator.update("")
@@ -204,7 +265,9 @@ class TaskPanel(Widget):
         content = msg.content
         if msg.collapsed and len(content) > 300:
             content = content[:300] + "…"
-        log.write(content)
+        # 清理内部结构标签，使显示友好
+        display_content = _sanitize_display(content)
+        log.write(display_content)
 
         if msg.thinking:
             thinking_text = Text(f"💭 {msg.thinking[:100]}…", style="dim")
