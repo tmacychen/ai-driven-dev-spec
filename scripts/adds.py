@@ -568,6 +568,10 @@ Examples:
     from gateway import add_gateway_subparser
     add_gateway_subparser(subparsers)
 
+    # fork command (P2-4)
+    from agent_fork import add_fork_subparser
+    add_fork_subparser(subparsers)
+
     # perm command (P0-4)
     perm_parser = subparsers.add_parser("perm", help="权限管理（P0-4）")
     perm_sub = perm_parser.add_subparsers(dest="perm_command")
@@ -636,6 +640,9 @@ Examples:
     elif args.command == "gateway":
         from gateway import handle_gateway_command
         handle_gateway_command(args, project_root=str(cli.project_root))
+    elif args.command == "fork":
+        from agent_fork import handle_fork_command
+        handle_fork_command(args, project_root=str(cli.project_root))
 
 
 if __name__ == "__main__":
