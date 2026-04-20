@@ -1,6 +1,6 @@
 # ADDS 记忆索引
 # Page: 1
-# 更新时间: 2026-04-10 16:30
+# 更新时间: 2026-04-20 14:08
 # 此文件始终注入上下文，是 Agent 的"长期记忆索引"
 # Prev: null
 # Next: null
@@ -8,14 +8,12 @@
 
 ---
 
-## 固定记忆（精华，始终可用）
-
 ### 项目环境
-- 项目: ai-driven-dev-spec (ADDS) — AI 驱动的开发规范平台
-- 语言: Python 3.9+
-- 核心脚本: scripts/ 目录下
-- 状态文件: .ai/ 目录下
-- 配置: .ai/settings.json
+- 项目: ai-driven-dev-spec (ADDS) — AI 驱动的开发规范平台 | id: auto-001
+- 语言: Python 3.9+ | id: auto-002
+- 核心脚本: scripts/ 目录下 | id: auto-003
+- 状态文件: .ai/ 目录下 | id: auto-004
+- 配置: .ai/settings.json | id: auto-005
 
 ### 核心经验
 - 功能列表(.ai/feature_list.md)是唯一真相源 | id: exp-001
@@ -25,24 +23,25 @@
 - 错误信号（exit code != 0, Exception）永不压缩 | id: exp-005
 - .mem 文件 APPEND-ONLY，不可修改历史记录 | id: exp-006
 - System Prompt 优先级高于固定记忆 | id: exp-007
+- 测试记忆内容 | id: exp-008
 
 ### 已掌握技能
-- [agent-loop] Agent Loop 五阶段：上下文预处理 → 路由决策 → 执行代理 → 状态更新 → 终止判定
-- [compliance] 合规追踪：主动检测违规
-- [safety] 安全约束：失败关闭，默认最安全行为
-- [token-budget] Token 预算管理：Layer1 >50% → Layer2 >80% → Warn >85% → Hard >95%
-- [compaction] 两层压缩：Layer1 实时过滤 + Layer2 LLM 归档
-- [session] 链式 Session：.ses/.log/.mem 文件 + Prev/Next 指针 + 回溯机制
-- [memory] 记忆系统：两层记忆 + 进化/排毒 + 角色化 + 反思协议 + 回归警报 + 强制复读 + 晋升仪式
-- [permission] 权限管理：三级权限(Allow/Ask/Deny) + 四种模式(default/plan/auto/bypass) + 死循环防护
-- [cli] CLI 统一：adds 主工具 + init/start/status/validate/session/mem/perm 子命令
-- [tui] TUI 交互：Rich + prompt_toolkit + 皮肤引擎 + 命令补全
-- [resilience] 韧性增强：7种终止条件 + 5种继续条件 + PTL恢复 + max_output_tokens续写 + 错误分类重试
+- [agent-loop] Agent Loop 五阶段：上下文预处理 → 路由决策 → 执行代理 → 状态更新 → 终止判定 | id: auto-013
+- [compliance] 合规追踪：主动检测违规 | id: auto-014
+- [safety] 安全约束：失败关闭，默认最安全行为 | id: auto-015
+- [token-budget] Token 预算管理：Layer1 >50% → Layer2 >80% → Warn >85% → Hard >95% | id: auto-016
+- [compaction] 两层压缩：Layer1 实时过滤 + Layer2 LLM 归档 | id: auto-017
+- [session] 链式 Session：.ses/.log/.mem 文件 + Prev/Next 指针 + 回溯机制 | id: auto-018
+- [memory] 记忆系统：两层记忆 + 进化/排毒 + 角色化 + 反思协议 + 回归警报 + 强制复读 + 晋升仪式 | id: auto-019
+- [permission] 权限管理：三级权限(Allow/Ask/Deny) + 四种模式(default/plan/auto/bypass) + 死循环防护 | id: auto-020
+- [cli] CLI 统一：adds 主工具 + init/start/status/validate/session/mem/perm 子命令 | id: auto-021
+- [tui] TUI 交互：Rich + prompt_toolkit + 皮肤引擎 + 命令补全 | id: auto-022
+- [resilience] 韧性增强：7种终止条件 + 5种继续条件 + PTL恢复 + max_output_tokens续写 + 错误分类重试 | id: auto-023
 
 ### 用户偏好
-- 中文沟通，简洁直接
-- 安全性 > 正确性 > 可读性 > 性能
-- 先理解再动手
+- 中文沟通，简洁直接 | id: auto-024
+- 安全性 > 正确性 > 可读性 > 性能 | id: auto-025
+- 先理解再动手 | id: auto-026
 
 ---
 
@@ -50,17 +49,5 @@
 
 | 时间 | 文件 | 摘要 | 优先级 |
 |------|------|------|--------|
-| 04-20 13:30 | — | P1 功能11: Agent Loop 韧性增强（loop_state.py + agent_loop.py 集成） | 高 |
-| 04-20 12:30 | — | Bug修复: memory_mgr 未初始化 + 记忆进化改同步调用 + 文档同步 | 高 |
-| 04-20 — | — | CLI 统一重构：v2标记删除 + 过时文档清理 | 高 |
-| 04-11 09:30 | — | P0 集成测试完成（25个端到端测试）+ 修复 plan 模式 cooldown Bug | 高 |
-| 04-10 17:30 | — | P0-4 权限管理器实现完成（permission_manager + 四种模式 + 死循环防护 + 集成） | 高 |
-| 04-10 15:27 | — | P0-2 上下文压缩层实现完成（token_budget/session_manager/summary_decision_engine/context_compactor + 集成） | 高 |
-| 04-10 09:33 | — | P0 架构设计完成，四层架构 + 文档调整 | 高 |
-| 04-09 18:07 | — | 改进路线图创建，记忆系统基础文件创建 | 高 |
-
----
-
-## 冲突记录
-
-（暂无冲突记录）
+| 04-20 13:35 | manual | 测试索引摘要 | 中 |
+| 04-20 13:38 | auto | P1 功能10: 技能渐进式披露（skill_manager.py + Level 0/1/2 + CLI + AgentLoop集成） | 高 |

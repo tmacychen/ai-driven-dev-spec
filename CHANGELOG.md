@@ -5,6 +5,32 @@ All notable changes to the AI-Driven Development Specification (ADDS) project wi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added ⭐
+
+- **P1 功能 10: 技能渐进式披露** — Level 0/1/2 三级技能加载
+  - `skill_manager.py`: SkillManager 管理器（注册/加载/匹配/统计/持久化）
+  - Level 0: 技能列表索引（~50 token/skill），始终注入 System Prompt
+  - Level 1: 技能详情（~200-500 token/skill），按需加载
+  - Level 2: 技能参考文件（~500-2000 token/skill），执行时加载
+  - 关键词匹配与推荐 (`match_skills`/`suggest_skills`)
+  - 从 SkillGenerator 导入技能
+  - `adds skill` CLI 子命令（list/view/load/match/register/import/delete/stats）
+  - AgentLoop `/skill` 命令集成
+  - System Prompt Level 0/Level 1 自动注入
+
+- **P1 功能 11: Agent Loop 韧性增强** — 循环状态机与恢复策略
+  - `loop_state.py`: LoopStateMachine 7种终止+5种继续+5类错误分类
+  - `_call_model_with_resilience()`: max_output_tokens续写+PTL恢复+错误重试
+  - 指数退避策略 + 用户中止检测
+
+- **Bug Fix: index.mem 自动索引更新机制**
+  - `MemoryManager._upgrade_memory_sync()` 自动写入索引条目
+  - 新增 `MemoryManager.add_item()` 方法
+  - 新增 `adds mem add` 子命令
+  - `adds.py` 添加 `mem_command()` handler
+
 ## [3.0.0] - 2026-03-10
 
 ### Added ⭐

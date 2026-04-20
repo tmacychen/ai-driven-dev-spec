@@ -108,8 +108,19 @@
 
 ### 功能 10: 技能渐进式披露
 - **描述**: Level 0/1/2 三级技能加载，优化 Token 使用
-- **状态**: pending
+- **状态**: completed
+- **核心文件**: skill_manager.py
 - **依赖**: P0 完成
+- **验收标准**:
+  - [x] Level 0: 技能列表索引（名称+描述+类别），~50 token/skill，始终注入
+  - [x] Level 1: 技能详情（触发条件+操作步骤），~200-500 token/skill，按需加载
+  - [x] Level 2: 技能参考文件，~500-2000 token/skill，执行时加载
+  - [x] 关键词匹配与推荐（match_skills/suggest_skills）
+  - [x] 从 SkillGenerator 导入技能
+  - [x] System Prompt Level 0 自动注入
+  - [x] AgentLoop /skill 命令集成
+  - [x] CLI skill 子命令（list/view/load/match/register/import/delete/stats）
+  - [x] 使用统计与持久化
 
 ### 功能 11: Agent Loop 韧性增强
 - **描述**: 7 种终止条件 + 5 种继续条件 + PTL 恢复 + max_output_tokens 重试 + 错误分类与恢复策略
@@ -133,5 +144,5 @@
 
 ## 统计信息
 - 总功能数: 11
-- 已完成: 10
-- 待实现: 1
+- 已完成: 11
+- 待实现: 0

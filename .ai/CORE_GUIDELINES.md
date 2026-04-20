@@ -106,6 +106,17 @@ Key mechanisms: Evolution (upgrade), Detox (invalidation), Role-aware injection,
 | `prompt_too_long` | 413/context_length + compression recovery exhausted |
 
 | Continue | Recovery Strategy |
+
+### P1: Skill Progressive Disclosure
+
+| Level | Content | Token Cost | Loading |
+|-------|---------|-----------|---------|
+| Level 0 | Skill name + description + category | ~50/skill | Always injected (System Prompt) |
+| Level 1 | Trigger + command + examples | ~200-500/skill | On-demand (`skill_view(name)`) |
+| Level 2 | Reference files | ~500-2000/skill | Execute-time (`skill_load(name, path)`) |
+
+CLI: `adds skill list/view/load/match/register/import/delete/stats`
+AgentLoop: `/skill [name]`
 |----------|-------------------|
 | `max_output_tokens` | Truncation detected → continuation prompt (max 3) |
 | `prompt_too_long` | Context overflow → Layer1 compact → Layer2 archive (max 2) |

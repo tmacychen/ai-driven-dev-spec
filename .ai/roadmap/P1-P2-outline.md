@@ -4,12 +4,17 @@
 
 ---
 
-### 8.1 技能渐进式披露
+### 8.1 技能渐进式披露 ✅
 
-- Level 0: 技能列表（名称+描述），注入上下文
-- Level 1: 技能详情（触发条件+操作步骤），按需加载
-- Level 2: 技能参考文件，执行时加载
-- 与 MiniMax Skills 生态集成
+- Level 0: 技能列表（名称+描述+类别），~50 token/skill，始终注入 System Prompt
+- Level 1: 技能详情（触发条件+操作步骤），~200-500 token/skill，按需 `skill_view(name)` 加载
+- Level 2: 技能参考文件，~500-2000 token/skill，执行时 `skill_load(name, path)` 加载
+- 关键词匹配与推荐 (`match_skills`/`suggest_skills`)
+- 从 SkillGenerator 导入技能 (`import_from_skill_generator`)
+- CLI: `adds skill list/view/load/match/register/import/delete/stats`
+- AgentLoop: `/skill [name]` 命令
+- 持久化: `registry.json` + `detail.json` + Markdown 兼容 + `usage_stats.json`
+- 实现文件: `scripts/skill_manager.py`
 
 ### 8.2 语义检索升级（VectorMemoryRetriever）
 

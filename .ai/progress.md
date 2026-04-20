@@ -1,21 +1,52 @@
 # Project Progress Logs
 
 ## Current Focus
-P1 功能 10: 技能渐进式披露
+🎉 全部功能已完成 (P0 + P1 = 11/11)
 
 ## Overall Status
-- ✅ Completed: 10
+- ✅ Completed: 11
 - 🔄 In Progress: 0
-- ⏳ Pending: 1 (P1 功能 10)
+- ⏳ Pending: 0
 - ⚠️ Blocked: 0
 - 🔴 Regression: 0
 
 ## Next Step
-P1 阶段：技能渐进式披露（Level 0/1/2 三级技能加载）
+所有 P0+P1 功能已实现。可进入 P2 阶段或进行整体验收测试。
 
 ---
 
 ## Session History
+
+### [2026-04-20 13:38] Session — P1 功能 10: 技能渐进式披露
+
+**Agent**: Developer (P1 技能管理)
+
+**Tasks Completed**:
+- 新增 `scripts/skill_manager.py` — 技能渐进式披露管理器（961 行）
+  - SkillMeta / SkillDetail / SkillFile 三层数据结构
+  - Level 0: `build_level0_section()` 索引注入（~50 token/skill）
+  - Level 1: `skill_view(name)` 按需加载详情（~200-500 token/skill）
+  - Level 2: `skill_load(name, path)` 执行时加载参考文件（~500-2000 token/skill）
+  - `match_skills(query)` 关键词匹配 + `suggest_skills(query)` 推荐
+  - `import_from_skill_generator(provider)` 从 SkillGenerator 导入
+  - 注册表持久化（registry.json）+ 详情持久化（detail.json）+ Markdown 兼容
+  - 使用统计（usage_stats.json）
+- 修改 `scripts/agent_loop.py` — 集成技能管理
+  - 构造函数添加 SkillManager + Level 0 自动注入 system prompt
+  - `/skill [name]` 命令：列出技能 / 查看详情
+  - 命令补全添加 /skill
+- 修改 `scripts/system_prompt_builder.py` — 支持 skill_level0/level1 上下文
+- 修改 `scripts/adds.py` — 添加 skill 子命令
+  - list / view / load / match / register / import / delete / stats
+- 新增 `scripts/test_p1_skill.py` — 10 个测试场景类，30 个测试全部通过
+
+**验证**:
+- ✅ test_p1_skill.py: 30/30 通过
+- ✅ adds skill list / view / match / register CLI 正常
+- ✅ Level 0 索引注入 System Prompt 正常
+- ✅ 无 lint/编译错误
+
+---
 
 ### [2026-04-20 13:32] Bug Fix — index.mem 自动索引更新机制
 
