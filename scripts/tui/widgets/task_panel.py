@@ -1,0 +1,157 @@
+"""
+TaskPanel 组件 — Agent 主工作区
+
+显示对话历史，支持 Markdown 渲染、流式更新、消息折叠
+"""
+
+from __future__ import annotations
+
+from typing import List, Optional
+
+from textual.app import ComposeResult
+from textual.reactive import reactive
+from textual.scroll_view import ScrollView
+from textual.widget import Widget
+from textual.widgets import Markdown, Static, RichLog
+
+from tui.state import Message, WorkspaceState
+from tui.skin_adapter import role_icon
+
+
+# 角色显示配置
+_ROLE_PREFIX = {
+    "user":      ("👤", "bold"),
+    "assistant": ("🤖", ""),
+    "system":    ("⚙️ ", "dim"),
+    "tool":      ("🔧", "dim"),
+}
+
+
+def _format_message(msg: Message) -> str:
+    """将 Message 格式化为 Rich markup 字符串"""
+    icon, style = _ROLE_PREFIX.get(msg.role, ("•", ""))
+    role_label = msg.role.upper()
+    content = msg.content
+
+    # 折叠长消息
+    if msg.collapsed and len(content) > 200:
+        content = content[:200] + "…[dim] (点击展开)[/dim]"
+
+    prefix = f"[{style}]{icon} {role_label}[/]" if style else f"{icon} {role_label}"
+    return f"{prefix}\n{content}\n"
+
+
+class TaskPanel(Widget):
+    """任务面板 — 对话历史 + 流式响应"""
+
+    DEFAULT_CSS = """
+    TaskPanel {
+        width: 1fr;
+        height: 1fr;
+        border: none;
+        overflow-y: auto;
+    }
+    TaskPanel RichLog {
+        width: 1fr;
+        height: 1fr;
+        background: $surface;
+        padding: 0 1;
+        scrollbar-gutter: stable;
+    }
+    TaskPanel #streaming-indicator {
+        height: 1;
+        color: $accent;
+        padding: 0 1;
+    }
+    """
+
+    streaming: reactive[bool] = reactive(False)
+
+    def __init__(self, workspace_id: str = "", **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.workspace_id = workspace_id
+        self._stream_buffer: List[str] = []
+
+    def compose(self) -> ComposeResult:
+        yield RichLog(id="message-log", highlight=True, markup=True, wrap=True)
+        yield Static("", id="streaming-indicator")
+
+    def watch_streaming(self, value: bool) -> None:
+        indicator = self.query_one("#streaming-indicator", Static)
+        if value:
+            indicator.update("⠋ 生成中…")
+        # 结束时由 end_stream 负责清空，这里不重复清空
+
+    # ── 公共 API ─────────────────────────────────────────────────
+
+    def render_messages(self, messages: List[Message]) -> None:
+        """全量渲染消息列表"""
+        log = self.query_one("#message-log", RichLog)
+        log.clear()
+        for msg in messages:
+            self._write_message(log, msg)
+
+    def append_message(self, msg: Message) -> None:
+        """追加单条消息"""
+        log = self.query_one("#message-log", RichLog)
+        self._write_message(log, msg)
+
+    def start_stream(self) -> None:
+        """开始流式输出"""
+        self._stream_buffer = []
+        self.streaming = True
+        # 写入 ASSISTANT 标题行
+        log = self.query_one("#message-log", RichLog)
+        from rich.text import Text
+        log.write(Text("🤖 ASSISTANT", style="bold"))
+
+    def append_stream_chunk(self, chunk: str) -> None:
+        """追加流式片段 — 缓冲，不逐 chunk 写入 RichLog（避免每 chunk 换行）"""
+        self._stream_buffer.append(chunk)
+        # 实时更新 streaming indicator 显示已收到的字数
+        indicator = self.query_one("#streaming-indicator", Static)
+        total = sum(len(c) for c in self._stream_buffer)
+        indicator.update(f"⠋ 生成中… ({total} 字)")
+
+    def end_stream(self, full_content: str) -> None:
+        """结束流式输出 — 一次性将完整内容写入 RichLog"""
+        self.streaming = False
+        self._stream_buffer = []
+        log = self.query_one("#message-log", RichLog)
+        # 一次性写入完整内容（RichLog.write 会自动换行，内容本身是完整段落）
+        if full_content:
+            log.write(full_content)
+        log.write("─" * 40)
+        indicator = self.query_one("#streaming-indicator", Static)
+        indicator.update("")
+
+    def clear_messages(self) -> None:
+        self.query_one("#message-log", RichLog).clear()
+
+    # ── 内部 ─────────────────────────────────────────────────────
+
+    def _write_message(self, log: RichLog, msg: Message) -> None:
+        icon, style = _ROLE_PREFIX.get(msg.role, ("•", ""))
+        role_label = msg.role.upper()
+
+        # Textual 8.x RichLog.write() 不接受 markup 参数
+        # 用 Text 对象传递样式
+        from rich.text import Text
+
+        header = Text()
+        if style:
+            header.append(f"{icon} {role_label}", style=style)
+        else:
+            header.append(f"{icon} {role_label}")
+        log.write(header)
+
+        content = msg.content
+        if msg.collapsed and len(content) > 300:
+            content = content[:300] + "…"
+        log.write(content)
+
+        if msg.thinking:
+            thinking_text = Text(f"💭 {msg.thinking[:100]}…", style="dim")
+            log.write(thinking_text)
+
+        log.write("─" * 40)

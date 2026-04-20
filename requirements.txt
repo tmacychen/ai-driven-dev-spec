@@ -1,8 +1,11 @@
 # ADDS Dependencies
 # P0-1: Model Layer
 anthropic>=0.40.0
+openai>=1.0.0          # Required for NVIDIA NIM and OpenAI-compatible APIs
 # P0-2: CLI Skin Engine
 rich>=13.0.0
 pyyaml>=6.0
 pyfiglet>=1.0.0
 prompt_toolkit>=3.0.0
+# P0-5: TUI
+textual>=0.47.0

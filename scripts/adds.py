@@ -65,6 +65,7 @@ REQUIRED_PACKAGES = {
     "rich": "rich>=13.0.0",
     "yaml": "pyyaml>=6.0",
     "prompt_toolkit": "prompt_toolkit>=3.0.0",
+    "textual": "textual>=0.47.0",
 }
 
 
@@ -145,15 +146,22 @@ def install_deps():
 
 
 def _pip_install(python_path: str):
-    """执行 pip install"""
-    packages = list(REQUIRED_PACKAGES.values())
-    print(f"📥 安装依赖: {' '.join(packages)}\n")
-    result = subprocess.run(
-        [python_path, "-m", "pip", "install", "--upgrade"] + packages,
-    )
+    """执行 pip install，优先从 requirements.txt 读取"""
+    req_file = _PROJECT_ROOT / "requirements.txt"
+    if req_file.exists():
+        print(f"📥 从 requirements.txt 安装依赖...\n")
+        result = subprocess.run(
+            [python_path, "-m", "pip", "install", "--upgrade", "-r", str(req_file)],
+        )
+    else:
+        packages = list(REQUIRED_PACKAGES.values())
+        print(f"📥 安装依赖: {' '.join(packages)}\n")
+        result = subprocess.run(
+            [python_path, "-m", "pip", "install", "--upgrade"] + packages,
+        )
     if result.returncode != 0:
         print("\n❌ 安装失败，请尝试手动安装：")
-        print(f"   {python_path} -m pip install {' '.join(packages)}")
+        print(f"   {python_path} -m pip install -r requirements.txt")
         sys.exit(1)
 
 
@@ -175,14 +183,14 @@ class ADDSCli:
         self.ai_dir = self.project_root / ".ai"
 
     def start(self, role: str = "", non_interactive: bool = False, debug: bool = False,
-              skin_name: str = "", perm_mode: str = "default"):
+              skin_name: str = "", perm_mode: str = "default", tui: bool = False):
         """
         启动 ADDS Agent 对话
 
         流程：
         1. 选择大模型
         2. 解析角色提示词（--role 或默认 PM）
-        3. 进入交互对话
+        3. 进入交互对话（classic 模式）或 TUI 模式（--tui）
         """
         # 配置日志
         log_level = logging.DEBUG if debug else logging.WARNING
@@ -193,12 +201,34 @@ class ADDSCli:
         )
 
         # 延迟导入（依赖检查通过后才执行）
-        from agent_loop import AgentLoop
         from model import ModelFactory
         from skins import SkinConfig, load_skin, render_banner, create_console
 
         # 加载皮肤
         skin = load_skin(skin_name) if skin_name else SkinConfig({})
+
+        # 选择模型
+        factory = ModelFactory(project_root=self.project_root)
+        model = factory.select_model(interactive=not non_interactive)
+
+        # ── TUI 模式 ──────────────────────────────────────────────
+        if tui:
+            try:
+                from tui.app import ADDSApp
+            except ImportError:
+                print("❌ TUI 模式需要 textual，请运行: pip install textual>=0.47.0")
+                sys.exit(1)
+            app = ADDSApp(
+                model=model,
+                project_root=str(self.project_root),
+                skin=skin,
+                perm_mode=perm_mode,
+            )
+            app.run()
+            return
+
+        # ── Classic 模式 ──────────────────────────────────────────
+        from agent_loop import AgentLoop
         console = create_console()
 
         # 解析角色提示词
@@ -211,10 +241,6 @@ class ADDSCli:
         else:
             system_prompt = BUILTIN_ROLES["pm"]
             role_label = "pm (默认)"
-
-        # 选择模型
-        factory = ModelFactory(project_root=self.project_root)
-        model = factory.select_model(interactive=not non_interactive)
 
         model_name = model.get_model_name()
         ctx_window = model.get_context_window()
@@ -486,6 +512,7 @@ def main():
         epilog="""
 Examples:
   adds start                        启动 PM Agent 对话（默认）
+  adds start --tui                  启动 TUI 模式（多 Agent 工作区）
   adds start --role developer       启动开发者 Agent
   adds start --role "你是Rust专家"   自定义角色提示词
   adds start --non-interactive      非交互式选择模型
@@ -517,6 +544,8 @@ Examples:
     start_parser.add_argument("--perm", type=str, default="default",
                               choices=["default", "plan", "auto", "bypass"],
                               help="权限模式: default(推荐)/plan(只读)/auto(AI决策)/bypass(危险)")
+    start_parser.add_argument("--tui", action="store_true",
+                              help="启动 TUI 模式（多 Agent 工作区）")
 
     # list-roles command
     subparsers.add_parser("list-roles", help="列出内置角色")
@@ -613,9 +642,10 @@ Examples:
 
     if args.command == "start":
         perm_mode = getattr(args, 'perm', 'default') or 'default'
+        use_tui = getattr(args, 'tui', False)
         cli.start(role=args.role, non_interactive=args.non_interactive,
                   debug=args.debug, skin_name=args.skin,
-                  perm_mode=perm_mode)
+                  perm_mode=perm_mode, tui=use_tui)
     elif args.command == "list-roles":
         cli.list_roles()
     elif args.command == "init":

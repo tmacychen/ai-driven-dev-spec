@@ -2,8 +2,8 @@
 
 > **来源**: 基于 Claude Code 架构白皮书与 Hermes Agent 研究报告的核心知识提炼
 > **创建时间**: 2026-04-09
-> **最后更新**: 2026-04-09 (P0 第四轮讨论)
-> **状态**: P0 + P1 + P2 全部完成 (15/15) — 2026-04-20
+> **最后更新**: 2026-04-20 (P0+P1+P2 全部完成 + P0-5 TUI 合并)
+> **状态**: P0 + P1 + P2 全部完成 (15/15)，P0-5 TUI 开发中
 
 ---
 
@@ -15,6 +15,7 @@
 | [P0-2-context-compaction.md](P0-2-context-compaction.md) | 上下文压缩策略（两层压缩, 摘要决策, 链式 Session） | ~470 |
 | [P0-3-memory-system.md](P0-3-memory-system.md) | 记忆系统（两层记忆, 进化/排毒, 角色化, 反思协议, 回归警报, 注意力热点, 晋升仪式） | ~1580 |
 | [P0-4-permission.md](P0-4-permission.md) | 命令批准机制（三级权限, Allow/Ask/Deny） | ~80 |
+| [P0-5-tui-redesign.md](P0-5-tui-redesign.md) | TUI 重构设计（多 Workspace 架构, 分屏, Agent 间通信） | ~700 |
 | [P0-integration.md](P0-integration.md) | P0 整体架构集成（数据流全景, 完整文件目录） | ~130 |
 | [P1-P2-outline.md](P1-P2-outline.md) | P1/P2 改进项概要（技能披露, 向量检索, 记忆共振, 韧性增强, P2 远期） | ~130 |
 
@@ -28,6 +29,7 @@
 | 🔴 P0-2 | 上下文压缩策略（两层） | Claude Code | Agent Loop 核心 | 大 | ✅ 完成 |
 | 🔴 P0-3 | 记忆系统（两层+无限记忆+角色化+免疫） | Hermes + Claude Code | 跨会话进化 | 大 | ✅ 完成 |
 | 🔴 P0-4 | 命令批准机制 | Claude Code + Hermes | 安全体系 | 中 | ✅ 完成 |
+| 🔴 P0-5 | TUI 重构（多 Workspace 架构） | ADDS 原创 | 交互体验 | 大 | 🔄 开发中 |
 | 🟡 P1 | 技能渐进式披露 | Hermes | Token 优化 | 中 | ✅ 完成 |
 | 🟡 P1 | Agent Loop 韧性增强 | Claude Code | 稳定性 | 中 | ✅ 完成 |
 | 🟢 P2 | 执行后端隔离(Docker/SSH) | Hermes | 安全体系 | 大 | ✅ 完成 |
@@ -143,7 +145,11 @@ Day 5:
 | 注意力热点 (code_heat) | — | — (ADDS 原创，第四轮新增，第6权重因子) |
 | 记忆晋升仪式 (--promote) | — | — (ADDS 原创，第四轮新增，临时记忆→长期直觉) |
 | 记忆共振 (staging.mem) | — | — (ADDS 原创，第四轮新增，P1 跨角色二次进化) |
+| 多 Workspace 架构 | — | — (ADDS 原创，P0-5 新增) |
+| Agent 间通信 (/ref, /delegate) | — | — (ADDS 原创，P0-5 新增) |
+| 分屏多任务视图 | — | — (ADDS 原创，P0-5 新增) |
+| Workspace 独立 Token 预算 | — | — (ADDS 原创，P0-5 新增) |
 
 ---
 
-*最后更新: 2026-04-20 (P0 + P1 + P2 全部完成：15/15 功能)*
+*最后更新: 2026-04-20 (P0+P1+P2 全部完成 15/15 + P0-5 TUI 合并)*

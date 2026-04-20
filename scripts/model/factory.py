@@ -13,6 +13,7 @@ from typing import Optional
 
 from .base import ModelInterface
 from .api_adapter import APIAdapter
+from .openai_adapter import OpenAIAdapter
 from .cli_adapter import CLIAdapter
 from .sdk_adapter import SDKAdapter
 from .providers.registry import ProviderRegistry, get_registry
@@ -103,13 +104,22 @@ class ModelFactory:
 
         if mode == "api":
             api_config = provider["api"]
-            return APIAdapter({
-                "base_url": api_config["base_url"],
-                "api_key_env": api_config.get("api_key_env", ""),
-                "model": model_name,
-                "context_window": api_config.get("context_window", 128000),
-                "thinking_budget": api_config.get("thinking_budget", 10000),
-            })
+            adapter_type = api_config.get("adapter", "anthropic")
+            if adapter_type == "openai":
+                return OpenAIAdapter({
+                    "base_url": api_config["base_url"],
+                    "api_key_env": api_config.get("api_key_env", ""),
+                    "model": model_name,
+                    "context_window": api_config.get("context_window", 128000),
+                })
+            else:
+                return APIAdapter({
+                    "base_url": api_config["base_url"],
+                    "api_key_env": api_config.get("api_key_env", ""),
+                    "model": model_name,
+                    "context_window": api_config.get("context_window", 128000),
+                    "thinking_budget": api_config.get("thinking_budget", 10000),
+                })
 
         elif mode == "cli":
             cli_config = provider["cli"]
