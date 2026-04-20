@@ -462,6 +462,12 @@ class AgentLoop:
                         {"role": "user", "content": continuation_prompt}
                     ]
 
+                # 状态追踪：显示思考/工具调用进度
+                import sys
+                _thinking_shown = False  # 是否已显示过 thinking 指示器
+                dim_c = self.skin.color("banner_dim") if self.skin else "#B8860B"
+                accent_c = self.skin.color("ui_accent") if self.skin else "#FFBF00"
+
                 async for resp in self.model.chat(
                     messages,
                     system_prompt=self.session.system_prompt or None,
@@ -473,24 +479,35 @@ class AgentLoop:
                         finish_reason = "error"
                         break
 
-                    # 收集思考过程（流式）
+                    # 收集思考过程（流式）+ 实时反馈
                     if resp.thinking and resp.finish_reason == "thinking":
                         thinking_text += resp.thinking
                         has_thinking = True
+                        # 首次收到 thinking 时显示紧凑指示器（不占主要区域）
+                        if not _thinking_shown:
+                            _thinking_shown = True
+                            sys.stdout.write(f"\r[dim {dim_c}]🧠 思考中... [/]")
+                            sys.stdout.flush()
 
                     # 流式回复内容
                     if resp.content and resp.finish_reason == "streaming":
                         is_streaming = True
+                        # 清除之前的 thinking 指示器行，开始输出正文
+                        if _thinking_shown and not full_response:
+                            print("\r" + " " * 40 + "\r", end="", flush=True)
                         print(resp.content, end="", flush=True)
                         full_response.append(resp.content)
 
-                    # 非流式一次性响应（CLI 适配器等）
+                    # 非流式一次性响应 / tool_use 结束
                     if resp.finish_reason == "stop":
                         if resp.thinking:
                             thinking_text = resp.thinking
                             has_thinking = True
                         if resp.content:
                             full_response.append(resp.content)
+                        # 无 content 的 stop → 可能是 tool_use 或空回复
+                        elif not full_response and not is_streaming:
+                            pass  # 由下方统一处理
 
                     # P1: 检测 length 截断
                     if resp.finish_reason == "length":
@@ -585,8 +602,13 @@ class AgentLoop:
             if full_response:
                 full_response_parts.append("".join(full_response))
 
-            # 渲染非流式响应
             assistant_content = "".join(full_response)
+
+            # 清除 thinking 指示器行（如果显示了但无流式输出）
+            if _thinking_shown and not is_streaming and not assistant_content:
+                print("\r" + " " * 40 + "\r", end="", flush=True)
+
+            # 渲染非流式响应
             if assistant_content and not is_streaming and self.console:
                 border = self.skin.color("response_border") if self.skin else "#FFD700"
                 response_label = self.skin.branding("response_label", " ⚡ ADDS ") if self.skin else " ⚡ ADDS "
@@ -603,9 +625,16 @@ class AgentLoop:
             if is_streaming:
                 print()
 
-            # 思考过程显示
-            if has_thinking and thinking_text and self.console:
-                dim_c = self.skin.color("banner_dim") if self.skin else "#B8860B"
+            # 无文本输出时显示状态（tool_use / 纯工具调用场景）
+            if not assistant_content and not is_streaming:
+                if has_thinking:
+                    # 有思考但无输出 → 模型决定调用工具，显示思考摘要
+                    first_line = thinking_text.split("\n")[0][:100]
+                    self._print(f"[dim {dim_c}]💭 {first_line}{'...' if len(thinking_text) > 100 else ''}[/]")
+                # 工具调用将由外层 _run_turn 循环处理并显示结果
+
+            # 思考过程显示（有正文输出时，在正文后附上思考摘要）
+            elif has_thinking and thinking_text and self.console:
                 first_line = thinking_text.split("\n")[0][:100]
                 self._print(f"[dim {dim_c}]💭 {first_line}{'...' if len(thinking_text) > 100 else ''}[/]")
 
