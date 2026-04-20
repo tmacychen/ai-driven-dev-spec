@@ -194,21 +194,28 @@ class ADDSCli:
         """
         # 配置日志
         # 默认：日志完全静默，stdout/stderr 只输出正常交互信息
-        # Debug：日志写文件，不影响交互界面
+        # Debug：日志只写文件，不影响交互界面
+        root_logger = logging.getLogger()
+        root_logger.handlers.clear()  # 清除所有已有 handler
+
         if debug:
             log_dir = self.ai_dir / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             log_file = log_dir / "adds-debug.log"
-            logging.basicConfig(
-                level=logging.DEBUG,
-                format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-                filename=str(log_file),
-                filemode="a",
+            file_handler = logging.FileHandler(
+                str(log_file), mode="a", encoding="utf-8",
             )
+            file_handler.setLevel(logging.DEBUG)
+            file_handler.setFormatter(logging.Formatter(
+                "%(asctime)s %(levelname)s [%(name)s] %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            ))
+            root_logger.addHandler(file_handler)
+            root_logger.setLevel(logging.DEBUG)
         else:
             # 默认模式：日志不输出到 stdout/stderr
-            logging.basicConfig(level=logging.CRITICAL + 1, handlers=[logging.NullHandler()])
+            root_logger.addHandler(logging.NullHandler())
+            root_logger.setLevel(logging.CRITICAL + 1)
 
         # 延迟导入（依赖检查通过后才执行）
         from model import ModelFactory

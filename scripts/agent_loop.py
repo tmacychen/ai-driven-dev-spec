@@ -170,7 +170,7 @@ class AgentLoop:
             permission_mode=permission_mode,
         )
 
-        # 如果传入了自定义 system_prompt，覆盖默认
+        # 如果传入了自定义 system_prompt，替换默认角色
         if system_prompt:
             self.core.system_prompt = system_prompt
 

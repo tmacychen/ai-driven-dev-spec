@@ -149,32 +149,35 @@ class AgentCore:
         self.turn_count: int = 0
         self.streaming: bool = False
 
-        # 注入模型身份（防止 LLM 编造自己是什么模型）
-        model_name = model.get_model_name()
-        self.system_prompt += (
-            f"\n\n## 模型身份\n"
-            f"你是 {model_name} 大模型。当用户问你是谁、是什么模型时，"
-            f"你必须如实回答你是 {model_name}，不要编造或声称自己是其他模型。"
-        )
-        )
-
-        # 注入 Level 0 技能索引
-        skill_section = self.skill_mgr.build_level0_section()
-        if skill_section:
-            self.system_prompt += "\n\n" + skill_section
-
         # 模型锁（防止并发调用）
         self._model_lock = asyncio.Lock()
 
     # ── 初始化 ──────────────────────────────────────────
 
     def init_session(self) -> None:
-        """初始化 Session 和 Token 预算（启动时调用）"""
+        """初始化 Session 和 Token 预算（启动时调用）
+
+        在此方法中注入模型身份、技能、记忆等附加信息，
+        确保在 system_prompt 被外部覆盖后仍然生效。
+        """
         ctx_window = self.model.get_context_window()
         session_id = self.session_mgr.create_session(
             agent=self.agent_role,
             feature=self.feature,
         )
+
+        # 注入模型身份（防止 LLM 编造自己是什么模型）
+        model_name = self.model.get_model_name()
+        self.system_prompt += (
+            f"\n\n## 模型身份\n"
+            f"你是 {model_name} 大模型。当用户问你是谁、是什么模型时，"
+            f"你必须如实回答你是 {model_name}，不要编造或声称自己是其他模型。"
+        )
+
+        # 注入 Level 0 技能索引
+        skill_section = self.skill_mgr.build_level0_section()
+        if skill_section:
+            self.system_prompt += "\n\n" + skill_section
 
         # 注入上一个 session 的摘要
         prev_summary = self.session_mgr.get_prev_session_summary()
