@@ -3,3 +3,12 @@ __pycache__/
 .DS_Store
 .codebuddy/
 .venv/
+*.mem
+*.ses
+
+# Runtime data
+.ai/gateway/inbox/
+.ai/gateway/outbox/
+.ai/notifications/
+.ai/scheduler.json
+.ai/memories/SKILLS/usage_stats.json
