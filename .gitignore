@@ -11,4 +11,5 @@ __pycache__/
 .ai/gateway/outbox/
 .ai/notifications/
 .ai/scheduler.json
+.ai/settings.json
 .ai/memories/SKILLS/usage_stats.json
