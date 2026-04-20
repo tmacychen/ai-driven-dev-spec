@@ -146,17 +146,20 @@ if not pending_features:
 
 ---
 
-## P0 架构
+## 架构
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                    CLI 入口层                             │
-│  adds.py — init/start/status/route/mem/session/perm 命令  │
+│  adds.py — init/start/status/route/mem/session/skill/    │
+│            schedule/executor/gateway/fork/perm 命令        │
 ├──────────────────────────────────────────────────────────┤
 │                 Agent Loop 调度层                          │
 │  agent_loop.py — 状态机 + 路由 + 迭代控制                  │
 │  system_prompt_builder.py — 分段式 SP 构建 + 记忆注入       │
 │  compliance_tracker.py — 合规追踪                          │
+│  skill_manager.py (P1) — 技能渐进式披露                     │
+│  loop_state.py (P1) — 韧性状态机                           │
 ├────────┬──────────┬─────────────┬─────────────────────────┤
 │ P0-1   │ P0-2     │ P0-3        │ P0-4                   │
 │ 模型层  │ 压缩层   │ 记忆层       │ 权限层                  │
@@ -175,6 +178,12 @@ if not pending_features:
 │        │          │ priority_   │                         │
 │        │          │ sorter      │                         │
 ├────────┴──────────┴─────────────┴─────────────────────────┤
+│                 P2 高级特性层                              │
+│  scheduler.py (P2-1) — 定时调度系统                        │
+│  executor_backend.py (P2-2) — 执行后端隔离                  │
+│  gateway.py (P2-3) — 多平台通信网关                        │
+│  agent_fork.py (P2-4) — Fork 子 Agent                     │
+├──────────────────────────────────────────────────────────┤
 │                    基础设施层                               │
 │  .ai/sessions/ — .ses/.log/.mem 文件存储                    │
 │  .ai/memories/ — SKILLS/ + 角色化记忆                       │
@@ -253,10 +262,24 @@ ai-driven-dev-spec/
 │   │
 │   ├── permission_manager.py       # [P0-4] 权限管理器
 │   │
+│   ├── skill_manager.py            # [P1] 技能渐进式披露
+│   ├── loop_state.py              # [P1] Agent Loop 韧性状态机
+│   │
+│   ├── scheduler.py               # [P2-1] 定时调度系统
+│   ├── executor_backend.py        # [P2-2] 执行后端隔离
+│   ├── gateway.py                 # [P2-3] 多平台通信网关
+│   ├── agent_fork.py              # [P2-4] Fork 子 Agent
+│   │
 │   ├── test_p0_2.py               # P0-2 单元测试 (57 tests)
 │   ├── test_p0_3.py               # P0-3 单元测试 (74 tests)
 │   ├── test_p0_4.py               # P0-4 单元测试 (69 tests)
-│   └── test_p0_integration.py     # P0 集成测试 (25 tests)
+│   ├── test_p0_integration.py     # P0 集成测试 (25 tests)
+│   ├── test_p1_skill.py           # P1 技能测试 (30 tests)
+│   ├── test_p1_resilience.py      # P1 韧性测试 (10 tests)
+│   ├── test_p2_scheduler.py       # P2-1 调度测试 (64 tests)
+│   ├── test_p2_executor.py        # P2-2 执行后端测试 (63 tests)
+│   ├── test_p2_gateway.py         # P2-3 网关测试 (46 tests)
+│   └── test_p2_fork.py            # P2-4 Fork 测试 (26 tests)
 │
 ├── .ai/                            # 项目状态
 │   ├── CORE_GUIDELINES.md          # 核心规范
@@ -287,28 +310,29 @@ ai-driven-dev-spec/
 ## 测试结果
 
 ```
-P0 单元测试: 225 个测试 | 通过率: 100%
+P0+P1+P2 测试: 424 个测试 | 通过率: 100%
 
-✅ test_p0_2 (57 tests) - 上下文压缩层
-   TokenBudget / SessionManager / SummaryDecisionEngine / ContextCompactor
+✅ P0 单元测试 (225 tests)
+   test_p0_2 (57 tests) - 上下文压缩层
+   test_p0_3 (74 tests) - 记忆系统
+   test_p0_4 (69 tests) - 权限管理器
+   test_p0_integration (25 tests) - P0 四层协同集成测试
 
-✅ test_p0_3 (74 tests) - 记忆系统
-   MemoryManager / ConflictDetector / MemoryRetriever / MemoryDetox
-   ConsistencyGuard / RoleMemoryInjector / IndexPrioritySorter / MemoryCLI
+✅ P1 增强测试 (30+ tests)
+   test_p1_skill.py (30 tests) - 技能渐进式披露
+   test_p1_resilience.py (10 tests) - Agent Loop 韧性增强
 
-✅ test_p0_4 (69 tests) - 权限管理器
-   PermissionLevel / PermissionMode / RuleMatch / CooldownState
-   SessionOverrides / PermissionDecision / ParseToolCommand
-
-✅ test_p0_integration (25 tests) - P0 四层协同集成测试
-   场景1: 四层初始化 / 场景2: 压缩触发 / 场景3: 记忆注入
-   场景4: 权限拦截 / 场景5: 完整生命周期 / 场景6: 跨层一致性
+✅ P2 高级特性测试 (199 tests)
+   test_p2_scheduler.py (64 tests) - 定时调度系统
+   test_p2_executor.py (63 tests) - 执行后端隔离
+   test_p2_gateway.py (46 tests) - 多平台通信网关
+   test_p2_fork.py (26 tests) - Fork 子 Agent 路径
 ```
 
 运行测试：
 ```bash
 cd scripts
-python3 -m unittest test_p0_2 test_p0_3 test_p0_4 test_p0_integration -v
+python3 -m unittest test_p0_2 test_p0_3 test_p0_4 test_p0_integration test_p1_skill test_p1_resilience test_p2_scheduler test_p2_executor test_p2_gateway test_p2_fork -v
 ```
 
 ---
@@ -351,13 +375,34 @@ python3 scripts/adds.py mem status       # 记忆状态
 python3 scripts/adds.py mem audit        # 交互式审查
 python3 scripts/adds.py mem prune --module auth  # 清理记忆
 
+# 技能管理 (P1)
+python3 scripts/adds.py skill list        # 技能列表
+python3 scripts/adds.py skill view <name>  # 技能详情
+
+# 定时调度 (P2-1)
+python3 scripts/adds.py schedule add "构建" --cron "@daily" --type command --command "make build"
+python3 scripts/adds.py schedule list     # 任务列表
+python3 scripts/adds.py schedule daemon   # 守护进程
+
+# 执行后端 (P2-2)
+python3 scripts/adds.py executor list     # 后端列表
+python3 scripts/adds.py executor health   # 健康检查
+
+# 通信网关 (P2-3)
+python3 scripts/adds.py gateway list      # 渠道列表
+python3 scripts/adds.py gateway send --type notification --subject "构建完成"
+
+# Fork 子 Agent (P2-4)
+python3 scripts/adds.py fork run <task>   # 派生执行
+python3 scripts/adds.py fork parallel <task1> <task2>  # 并行执行
+
 # 权限管理
 python3 scripts/adds.py perm status      # 权限状态
 python3 scripts/adds.py perm rules       # 权限规则
 python3 scripts/adds.py perm mode auto   # 切换模式
 
 # 测试验证
-cd scripts && python3 -m unittest test_p0_2 test_p0_3 test_p0_4 test_p0_integration -v
+cd scripts && python3 -m unittest test_p0_2 test_p0_3 test_p0_4 test_p0_integration test_p1_skill test_p1_resilience test_p2_scheduler test_p2_executor test_p2_gateway test_p2_fork -v
 ```
 
 ---
@@ -383,9 +428,11 @@ cd scripts && python3 -m unittest test_p0_2 test_p0_3 test_p0_4 test_p0_integrat
 
 ---
 
-**项目状态**：✅ P0 开发完成，四层协同验证通过
+**项目状态**：✅ P0 + P1 + P2 全部完成 (15/15)
 **P0 进度**：4/4 模块已完成 + 集成测试通过
-**测试通过率**：100% (225/225)  
+**P1 进度**：2/2 功能已完成
+**P2 进度**：4/4 功能已完成
+**测试通过率**：100% (424/424)  
 
 ---
 

@@ -198,22 +198,22 @@
 
 ### 功能 15: Fork 子 Agent 路径 (P2-4)
 - **描述**: 子 Agent 派生与管理，支持并行执行和结果汇聚
-- **状态**: pending
+- **状态**: completed
 - **核心文件**: agent_fork.py
 - **依赖**: P0+P1 完成, 功能 13 (执行后端)
 - **验收标准**:
-  - [ ] AgentFork 子 Agent 派生器
-  - [ ] ForkContext 上下文传递（系统提示词 + 记忆 + 权限）
-  - [ ] 子 Agent 生命周期管理（创建/运行/等待/取消）
-  - [ ] 结果汇聚（多子 Agent 结果合并）
-  - [ ] 资源隔离（每个子 Agent 独立 session + 预算）
-  - [ ] 最大并发数限制
-  - [ ] CLI fork 子命令
-  - [ ] AgentLoop /fork 命令集成
+  - [x] AgentFork 子 Agent 派生器
+  - [x] ForkContext 上下文传递（系统提示词 + 记忆 + 权限）
+  - [x] 子 Agent 生命周期管理（创建/运行/等待/取消）
+  - [x] 结果汇聚（多子 Agent 结果合并）
+  - [x] 资源隔离（每个子 Agent 独立 session + 预算）
+  - [x] 最大并发数限制（ForkPool max_workers）
+  - [x] CLI fork 子命令（run/parallel/list/merge/stats）
+  - [x] ForkPool 并行/顺序执行
 
 ---
 
 ## 统计信息
 - 总功能数: 15
-- 已完成: 14
-- 待实现: 1 (P2)
+- 已完成: 15
+- 待实现: 0 ✅

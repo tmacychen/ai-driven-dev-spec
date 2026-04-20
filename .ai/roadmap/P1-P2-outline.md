@@ -122,12 +122,53 @@ P1: 多 Agent → 物理 index-{role}.mem + staging.mem 共享 → 有共振
 
 ---
 
-# P2 改进项（概要）
+# P2 改进项（已完成）
 
-- 执行后端隔离（Docker/SSH/远程沙箱）
-- 多平台通信网关
-- Fork 子 Agent 路径
-- 定时调度系统
+### P2-1 定时调度系统 ✅
+
+> **实现文件**: `scripts/scheduler.py`
+
+- CronExpression 解析器（5字段 + @daily/@hourly 等快捷方式）
+- TaskScheduler 调度引擎（添加/删除/暂停/恢复/守护进程）
+- AgentExecutor 任务执行器（command/agent/python 三种类型）
+- NotificationManager 通知管理（log/file/command + notify_on 过滤）
+- RetryConfig 失败重试（指数退避 + 可配置次数）
+- CLI: `adds schedule add/list/remove/run/pause/resume/history/daemon/stats`
+- AgentLoop: `/schedule` 命令集成
+- 测试: 64/64 通过
+
+### P2-2 执行后端隔离 ✅
+
+> **实现文件**: `scripts/executor_backend.py`
+
+- ExecutionBackend 抽象基类
+- LocalBackend/DockerBackend/SSHBackend 三后端
+- BackendFactory 后端选择工厂
+- SandboxPolicy 安全策略（危险/高风险命令 + 资源限制）
+- ExecutionManager 统一管理
+- CLI: `adds executor list/run/health/check`
+- 测试: 63/63 通过
+
+### P2-3 多平台通信网关 ✅
+
+> **实现文件**: `scripts/gateway.py`
+
+- MessageGateway 网关核心（消息路由 + 协议转换）
+- WebhookChannel/CLIChannel/FileChannel 三渠道
+- MessageEnvelope 标准化消息格式（6种类型 + 4种优先级）
+- AsyncMessageQueue 优先级消息队列
+- CLI: `adds gateway list/send/receive/stats/history`
+- 测试: 46/46 通过
+
+### P2-4 Fork 子 Agent 路径 ✅
+
+> **实现文件**: `scripts/agent_fork.py`
+
+- AgentFork 子 Agent 派生器
+- ForkContext 上下文传递（系统提示词 + 记忆 + 权限）
+- ForkPool 并行执行 + 结果汇聚
+- CLI: `adds fork run/parallel/list/merge/stats`
+- 测试: 26/26 通过
 
 ---
 
@@ -174,4 +215,4 @@ P1: 多 Agent → 物理 index-{role}.mem + staging.mem 共享 → 有共振
 
 ---
 
-*最后更新: 2026-04-20 (P1 功能11 Agent Loop 韧性增强已实现：7种终止条件/5种继续条件/PTL恢复/max_output_tokens续写/错误分类重试)*
+*最后更新: 2026-04-20 (P0 + P1 + P2 全部完成：15/15 功能)*

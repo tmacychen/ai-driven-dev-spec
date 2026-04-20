@@ -1,21 +1,70 @@
 # Project Progress Logs
 
 ## Current Focus
-🎉 P2 开发中 — 功能 12+13 已完成，继续 P2 剩余功能
+🎉 全部功能已完成 (P0 + P1 + P2 = 15/15)
 
 ## Overall Status
-- ✅ Completed: 13
+- ✅ Completed: 15
 - 🔄 In Progress: 0
-- ⏳ Pending: 2 (P2)
+- ⏳ Pending: 0
 - ⚠️ Blocked: 0
 - 🔴 Regression: 0
 
 ## Next Step
-P2 剩余 2 个功能：多平台通信网关 (P2-3)、Fork 子 Agent (P2-4)
+所有 P0+P1+P2 功能已实现并合并到 main。可进行整体验收测试或进入 P3 规划。
 
 ---
 
 ## Session History
+
+### [2026-04-20 15:30] Session — P2 全部功能实现 + 合并到 main
+
+**Agent**: Developer (P2)
+
+**Tasks Completed**:
+- 新增 `scripts/scheduler.py` — P2-1 定时调度系统（~750 行）
+  - CronExpression: 5字段 cron 解析 + 快捷方式 + 别名
+  - TaskScheduler: 添加/删除/暂停/恢复/执行/守护进程
+  - AgentExecutor: command/agent/python 三种类型
+  - NotificationManager: log/file/command + notify_on 过滤
+  - RetryConfig: 失败重试（指数退避 + 可配置次数）
+  - CLI schedule 子命令 + AgentLoop /schedule
+  - 测试: 64/64 通过
+- 新增 `scripts/executor_backend.py` — P2-2 执行后端隔离（~650 行）
+  - ExecutionBackend 抽象基类
+  - LocalBackend/DockerBackend/SSHBackend 三后端
+  - BackendFactory 后端选择工厂
+  - SandboxPolicy 安全策略（危险/高风险命令 + 资源限制）
+  - ExecutionManager 统一管理
+  - CLI executor 子命令
+  - 测试: 63/63 通过
+- 新增 `scripts/gateway.py` — P2-3 多平台通信网关（~550 行）
+  - MessageGateway 网关核心（路由 + 协议转换）
+  - WebhookChannel/CLIChannel/FileChannel 三渠道
+  - MessageEnvelope 标准化消息格式（6种类型 + 4种优先级）
+  - AsyncMessageQueue 优先级消息队列
+  - CLI gateway 子命令
+  - 测试: 46/46 通过
+- 新增 `scripts/agent_fork.py` — P2-4 Fork 子 Agent（~580 行）
+  - AgentFork 子 Agent 派生器
+  - ForkContext 上下文传递（系统提示词 + 记忆 + 权限）
+  - ForkPool 并行执行 + 结果汇聚
+  - CLI fork 子命令（run/parallel/list/merge/stats）
+  - 测试: 26/26 通过
+- 修改 `scripts/adds.py` — 集成 schedule/executor/gateway/fork 子命令
+- 修改 `scripts/agent_loop.py` — 集成 /schedule 命令
+- 合并到 `main` 分支：feature/P2-planning → main (Fast-forward, 9 commits)
+- 修复合并后 fork 子命令丢失问题
+
+**验证**:
+- ✅ P2 总测试: 199/199 通过 (64+63+46+26)
+- ✅ CLI adds schedule/executor/gateway/fork 子命令正常
+- ✅ 所有模块导入正常，无 lint 错误
+
+**Handoff Notes for Next Session**:
+> P0+P1+P2 全部 15 个功能已实现并合并到 main。可进行整体验收测试或进入 P3 规划。
+
+---
 
 ### [2026-04-20 14:30] Session — P2 功能 12: 定时调度系统
 

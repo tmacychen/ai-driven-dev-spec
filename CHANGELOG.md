@@ -20,6 +20,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 配置持久化（scheduler.json）
   - 测试: 64/64 通过
 
+- **P2 功能 13: 执行后端隔离** — 多后端执行 + 安全沙箱
+  - `executor_backend.py`: ExecutionBackend 抽象基类
+  - LocalBackend/DockerBackend/SSHBackend 三后端
+  - BackendFactory 后端选择工厂
+  - SandboxPolicy 安全策略（危险/高风险命令 + 资源限制）
+  - ExecutionManager 统一管理
+  - `adds executor` CLI 子命令（list/run/health/check）
+  - 测试: 63/63 通过
+
+- **P2 功能 14: 多平台通信网关** — 统一消息路由
+  - `gateway.py`: MessageGateway 网关核心
+  - WebhookChannel/CLIChannel/FileChannel 三渠道
+  - MessageEnvelope 标准化消息格式（6种类型 + 4种优先级）
+  - AsyncMessageQueue 优先级消息队列
+  - `adds gateway` CLI 子命令（list/send/receive/stats/history）
+  - 测试: 46/46 通过
+
+- **P2 功能 15: Fork 子 Agent** — 并行执行 + 结果汇聚
+  - `agent_fork.py`: AgentFork 子 Agent 派生器
+  - ForkContext 上下文传递（系统提示词 + 记忆 + 权限）
+  - ForkPool 并行/顺序执行 + 结果汇聚
+  - `adds fork` CLI 子命令（run/parallel/list/merge/stats）
+  - 测试: 26/26 通过
+
 - **P1 功能 10: 技能渐进式披露** — Level 0/1/2 三级技能加载
   - `skill_manager.py`: SkillManager 管理器（注册/加载/匹配/统计/持久化）
   - Level 0: 技能列表索引（~50 token/skill），始终注入 System Prompt

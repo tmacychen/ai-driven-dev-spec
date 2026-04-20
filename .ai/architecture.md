@@ -1,9 +1,9 @@
 # Architecture Document
 
-> ADDS P0 架构设计 — 基于改进路线图的完整架构
+> ADDS P0+P1+P2 架构设计 — 基于改进路线图的完整架构
 
-**版本**: P0
-**最后更新**: 2026-04-10
+**版本**: P2
+**最后更新**: 2026-04-20
 
 ---
 
@@ -25,13 +25,16 @@
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                    CLI 入口层                             │
-│  adds.py — init/start/status/route/mem/session 命令       │
+│  adds.py — init/start/status/route/mem/session/skill/    │
+│            schedule/executor/gateway/fork/perm 命令        │
 ├──────────────────────────────────────────────────────────┤
 │                 Agent Loop 调度层                          │
 │  agent_loop.py — 状态机 + 路由 + 迭代控制                  │
 │  system_prompt_builder.py — 分段式 SP 构建 + 记忆注入       │
 │  agents.py — 5 个 Agent 实现                              │
 │  compliance_tracker.py — 合规追踪                          │
+│  skill_manager.py (P1) — 技能渐进式披露                     │
+│  loop_state.py (P1) — 韧性状态机                           │
 ├────────┬──────────┬─────────────┬─────────────────────────┤
 │ 模型层  │ 压缩层   │ 记忆层       │ 权限层                  │
 │        │          │             │                         │
@@ -55,6 +58,12 @@
 │        │          │  sorter.py │                         │
 │        │          │ memory_cli │                         │
 ├────────┴──────────┴─────────────┴─────────────────────────┤
+│                 P2 高级特性层                              │
+│  scheduler.py (P2-1) — 定时调度系统                        │
+│  executor_backend.py (P2-2) — 执行后端隔离                  │
+│  gateway.py (P2-3) — 多平台通信网关                        │
+│  agent_fork.py (P2-4) — Fork 子 Agent                     │
+├──────────────────────────────────────────────────────────┤
 │                    基础设施层                               │
 │  .ai/sessions/ — .ses/.log/.mem 文件存储                    │
 │  .ai/memories/ — SKILLS/ + 角色化记忆 (P1)                  │
@@ -156,7 +165,21 @@ project/
 │   │
 │   ├── permission_manager.py       # 【P0-4】权限管理器
 │   │
-│   └── test_p0_integration.py      # 【P0】集成测试（25个端到端场景）
+│   ├── skill_manager.py            # 【P1】技能渐进式披露
+│   ├── loop_state.py              # 【P1】Agent Loop 韧性状态机
+│   │
+│   ├── scheduler.py               # 【P2-1】定时调度系统
+│   ├── executor_backend.py        # 【P2-2】执行后端隔离
+│   ├── gateway.py                 # 【P2-3】多平台通信网关
+│   ├── agent_fork.py              # 【P2-4】Fork 子 Agent
+│   │
+│   ├── test_p0_integration.py     # 【P0】集成测试（25个端到端场景）
+│   ├── test_p1_skill.py           # 【P1】技能测试（30 tests）
+│   ├── test_p1_resilience.py      # 【P1】韧性测试（10 tests）
+│   ├── test_p2_scheduler.py       # 【P2-1】调度测试（64 tests）
+│   ├── test_p2_executor.py        # 【P2-2】后端测试（63 tests）
+│   ├── test_p2_gateway.py         # 【P2-3】网关测试（46 tests）
+│   └── test_p2_fork.py            # 【P2-4】Fork 测试（26 tests）
 │
 ├── .ai/                            # 项目状态
 │   ├── CORE_GUIDELINES.md          # 核心规范
@@ -247,12 +270,16 @@ project/
 
 ---
 
-## P0 实施路径
+## P0+P1+P2 实施路径
 
-| Phase | 周次 | 模块 | 核心文件 |
-|-------|------|------|---------|
-| Phase 1 | 第1周 | 模型调用层 | model/ 目录 |
-| Phase 2 | 第2周 | 压缩 + Session | context_compactor.py, token_budget.py, session_manager.py |
-| Phase 3 | 第3周 | 记忆 + 权限 | memory_*.py, consistency_guard.py, permission_manager.py |
+| Phase | 模块 | 核心文件 | 状态 |
+|-------|------|---------|------|
+| P0 Phase 1 | 模型调用层 | model/ 目录 | ✅ 完成 |
+| P0 Phase 2 | 压缩 + Session | context_compactor.py, token_budget.py, session_manager.py | ✅ 完成 |
+| P0 Phase 3 | 记忆 + 权限 | memory_*.py, consistency_guard.py, permission_manager.py | ✅ 完成 |
+| P1 | 技能 + 韧性 | skill_manager.py, loop_state.py | ✅ 完成 |
+| P2 | 调度 + 后端 + 网关 + Fork | scheduler.py, executor_backend.py, gateway.py, agent_fork.py | ✅ 完成 |
+
+**总测试**: 424 个测试，100% 通过
 
 详见 [改进路线图](.ai/roadmap/README.md)
