@@ -181,18 +181,20 @@
 
 ### 功能 14: 多平台通信网关 (P2-3)
 - **描述**: 统一消息网关，支持 Webhook/API/IM 等多平台通信
-- **状态**: pending
-- **核心文件**: gateway.py, channels/
+- **状态**: completed
+- **核心文件**: gateway.py
 - **依赖**: P0+P1 完成, 功能 12 (调度系统)
 - **验收标准**:
-  - [ ] MessageGateway 网关核心（消息路由 + 协议转换）
-  - [ ] Channel 抽象基类（统一消息接口）
-  - [ ] WebhookChannel HTTP Webhook 接收
-  - [ ] CLIChannel CLI 命令行交互
-  - [ ] 通知渠道（执行结果/调度通知/权限审批）
-  - [ ] 消息格式标准化（MessageEnvelope）
-  - [ ] 异步消息处理队列
-  - [ ] CLI gateway 子命令
+  - [x] MessageGateway 网关核心（消息路由 + 协议转换）
+  - [x] Channel 抽象基类（统一消息接口）
+  - [x] WebhookChannel HTTP Webhook 接收/发送
+  - [x] CLIChannel CLI 命令行交互
+  - [x] FileChannel 文件系统交换
+  - [x] 消息格式标准化（MessageEnvelope）
+  - [x] AsyncMessageQueue 优先级消息队列
+  - [x] CLI gateway 子命令（list/send/receive/stats/history）
+  - [x] 消息处理器注册
+  - [x] 消息历史记录
 
 ### 功能 15: Fork 子 Agent 路径 (P2-4)
 - **描述**: 子 Agent 派生与管理，支持并行执行和结果汇聚
@@ -213,5 +215,5 @@
 
 ## 统计信息
 - 总功能数: 15
-- 已完成: 13
-- 待实现: 2 (P2)
+- 已完成: 14
+- 待实现: 1 (P2)

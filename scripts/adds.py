@@ -564,6 +564,10 @@ Examples:
     from executor_backend import add_executor_subparser
     add_executor_subparser(subparsers)
 
+    # gateway command (P2-3)
+    from gateway import add_gateway_subparser
+    add_gateway_subparser(subparsers)
+
     # perm command (P0-4)
     perm_parser = subparsers.add_parser("perm", help="权限管理（P0-4）")
     perm_sub = perm_parser.add_subparsers(dest="perm_command")
@@ -629,6 +633,9 @@ Examples:
     elif args.command == "executor":
         from executor_backend import handle_executor_command
         handle_executor_command(args, project_root=str(cli.project_root))
+    elif args.command == "gateway":
+        from gateway import handle_gateway_command
+        handle_gateway_command(args, project_root=str(cli.project_root))
 
 
 if __name__ == "__main__":
