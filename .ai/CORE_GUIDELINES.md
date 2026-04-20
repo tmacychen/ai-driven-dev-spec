@@ -34,15 +34,15 @@ ADDS uses a multi-agent team approach where each agent has a specific role:
 
 ### Agent Prompts
 
-Each agent has a dedicated prompt file in `.ai/prompts/`:
+每个 Agent 有内置角色提示词，通过 `adds start --role <name>` 选择：
 
-| Prompt File | Agent Role |
-|-------------|------------|
-| `pm_prompt.md` | Project Manager |
-| `architect_prompt.md` | Architect |
-| `developer_prompt.md` | Developer |
-| `tester_prompt.md` | Tester |
-| `reviewer_prompt.md` | Reviewer |
+| Role Name | Agent Role |
+|-----------|------------|
+| `pm` | Project Manager |
+| `architect` | Architect |
+| `developer` | Developer |
+| `tester` | Tester |
+| `reviewer` | Reviewer |
 
 ---
 
@@ -55,7 +55,7 @@ Each agent has a dedicated prompt file in `.ai/prompts/`:
 | `.ai/architecture.md` | Architecture design: tech stack, structure, decisions |
 | `.ai/settings.json` | Global configuration: permissions, model, compaction, memory |
 | `.ai/sessions/index.mem` | Memory index: fixed memory + session clues |
-| `app_spec.md` | Application specification: original requirements source |
+| `.ai/improvement_roadmap.md` | Improvement roadmap entry → roadmap/ directory |
 
 ---
 
@@ -94,6 +94,24 @@ Key mechanisms: Evolution (upgrade), Detox (invalidation), Role-aware injection,
 | Allow | Execute automatically |
 | Ask | User confirmation required |
 | Deny | Blocked entirely |
+
+### P1: Agent Loop Resilience
+
+| Termination | Trigger |
+|-------------|---------|
+| `completed` | User exit or model normal completion |
+| `blocking_limit` | Token hard limit + PTL recovery exhausted |
+| `aborted_streaming` | User abort (Ctrl+C) |
+| `model_error` | Model error + retries exhausted |
+| `prompt_too_long` | 413/context_length + compression recovery exhausted |
+
+| Continue | Recovery Strategy |
+|----------|-------------------|
+| `max_output_tokens` | Truncation detected → continuation prompt (max 3) |
+| `prompt_too_long` | Context overflow → Layer1 compact → Layer2 archive (max 2) |
+| `error_retry` | Environment/rate-limit error → exponential backoff (max 2) |
+
+Key file: `scripts/loop_state.py` (LoopStateMachine + ResilienceConfig)
 
 ---
 
@@ -155,11 +173,7 @@ ELSE IF any feature has status = "blocked" or "regression"
 
 ### Compression
 
-When `progress.md` grows large (>1000 lines), compress it to maintain context efficiency:
-
-```bash
-python scripts/compress_context.py --project-dir .
-```
+When `progress.md` grows large (>1000 lines), compress it to maintain context efficiency. Token budget and context compaction are handled automatically by the Agent Loop (P0-2).
 
 ### Memory
 

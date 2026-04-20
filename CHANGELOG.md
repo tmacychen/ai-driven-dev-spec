@@ -120,6 +120,30 @@ Inspired by LangChain's approach to harness engineering, which improved their co
 
 ---
 
+## [Unreleased]
+
+### Added - P1: Agent Loop Resilience ⭐
+
+- **LoopStateMachine** (`scripts/loop_state.py`)
+  - 7 termination conditions: completed, blocking_limit, aborted_streaming, model_error, prompt_too_long, image_error, hook_prevented
+  - 5 continue conditions: normal, max_output_tokens, prompt_too_long, error_retry, hook_retry
+  - Error classification: environment, model, user_abort, system, unknown
+  - Exponential backoff with jitter (configurable base/max)
+  - ResilienceConfig for all retry/timeout/threshold parameters
+
+- **Agent Loop Resilience Integration** (`scripts/agent_loop.py`)
+  - `_call_model_with_resilience()`: resilient model call with retry/continuation/PTL recovery
+  - `_try_compact_for_ptl()`: PTL recovery via Layer1 compact + Layer2 archive
+  - max_output_tokens continuation: detects `length` truncation → continuation prompt (max 3 retries)
+  - PTL recovery: detects 413/context_length → compress context → retry (max 2 retries)
+  - Environment error retry: ConnectionError/TimeoutError → exponential backoff (max 2 retries)
+  - User abort detection: KeyboardInterrupt → graceful termination
+
+- **P1 Resilience Tests** (`scripts/test_p1_resilience.py`)
+  - 10 test scenario classes covering all termination/continue/error/backoff cases
+
+---
+
 ## [3.0.1] - 2026-03-24
 
 ### Added

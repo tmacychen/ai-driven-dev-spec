@@ -73,11 +73,47 @@ P1: 多 Agent → 物理 index-{role}.mem + staging.mem 共享 → 有共振
   ✅ 协作习惯是角色间的"接口契约"，而非角色内的"知识复用"
 ```
 
-### 8.5 Agent Loop 韧性增强
+### 8.5 Agent Loop 韧性增强 ✅ 已实现
 
-- 7 种终止条件 + 5 种继续条件
-- PTL 恢复、max_output_tokens 重试
-- 错误恢复策略
+> **实现文件**: `scripts/loop_state.py` + `scripts/agent_loop.py`
+
+**7 种终止条件**:
+
+| 条件 | 触发机制 |
+|------|----------|
+| `completed` | 用户主动退出或模型正常完成 |
+| `blocking_limit` | Token 超硬限制且 PTL 恢复无效 |
+| `aborted_streaming` | 用户中止流式输出（Ctrl+C） |
+| `model_error` | 模型调用异常且重试耗尽 |
+| `prompt_too_long` | 413/context_length 错误且压缩恢复无效 |
+| `image_error` | 图片处理错误 |
+| `hook_prevented` | Stop hook 阻止继续 |
+
+**5 种继续条件**:
+
+| 条件 | 恢复策略 |
+|------|----------|
+| `normal` | 正常对话循环 |
+| `max_output_tokens` | 模型输出截断 → 续写提示，最多 3 次重试 |
+| `prompt_too_long` | 上下文超限 → Layer1 压缩 → Layer2 归档，最多 2 次重试 |
+| `error_retry` | 环境/速率错误 → 指数退避重试，最多 2 次 |
+| `hook_retry` | Hook 阻塞后重试 |
+
+**错误分类与恢复**:
+
+| 类别 | 典型错误 | 策略 |
+|------|----------|------|
+| `environment` | ConnectionError, TimeoutError, OSError | 可重试 + 退避 |
+| `model` | HTTP 413/429/500+, context_length | 413→PTL, 429→退避, 其他→终止 |
+| `user_abort` | KeyboardInterrupt | 立即终止 |
+| `system` | MemoryError | 不重试，直接终止 |
+
+**关键参数** (ResilienceConfig):
+- `max_output_tokens_retries`: 3 (续写重试次数)
+- `ptl_max_retries`: 2 (PTL 恢复次数)
+- `ptl_compression_target`: 0.60 (PTL 压缩目标利用率)
+- `error_max_retries`: 2 (通用错误重试次数)
+- `error_backoff_base`: 1.0s (指数退避基础时间)
 
 ---
 
@@ -133,4 +169,4 @@ P1: 多 Agent → 物理 index-{role}.mem + staging.mem 共享 → 有共振
 
 ---
 
-*最后更新: 2026-04-09 (P0 第四轮讨论：角色化记忆/反思协议/回归警报与元诊断(ConsistencyGuard)/强制复读机制/注意力热点(code_heat)/记忆晋升仪式(--promote)/P1记忆共振)*
+*最后更新: 2026-04-20 (P1 功能11 Agent Loop 韧性增强已实现：7种终止条件/5种继续条件/PTL恢复/max_output_tokens续写/错误分类重试)*
