@@ -1,21 +1,55 @@
 # Project Progress Logs
 
 ## Current Focus
-🎉 全部功能已完成 (P0 + P1 + P2 = 15/15)
+🔧 TUI 统一核心逻辑重构 — AgentCore 共享层提取
 
 ## Overall Status
-- ✅ Completed: 15
-- 🔄 In Progress: 0
+- ✅ Completed: 15 (P0+P1+P2 功能)
+- 🔄 In Progress: 1 (TUI 核心逻辑统一)
 - ⏳ Pending: 0
 - ⚠️ Blocked: 0
 - 🔴 Regression: 0
 
 ## Next Step
-所有 P0+P1+P2 功能已实现并合并到 main。可进行整体验收测试或进入 P3 规划。
+TUI 已通过 AgentCore 共享层获得全部 P0-P2 功能。待验证后合并到 main。
 
 ---
 
 ## Session History
+
+### [2026-04-20 21:20] Session — TUI 核心逻辑统一重构
+
+**Agent**: Developer (fix/tui-llm-debug-logging)
+
+**Tasks Completed**:
+1. TUI Debug 日志系统
+   - workspace_manager.send_message 添加完整 DEBUG 日志
+   - --debug 模式输出到 .adds.log 文件
+   - LLM 响应详情：finish_reason, content_len, thinking_len, tool_calls
+2. TUI UI 反馈增强
+   - append_thinking_chunk() — 🧠 思考过程实时显示
+   - show_tool_call() — 🔧 工具调用状态
+   - update_status() — Agent Loop 各阶段状态指示器
+   - _sanitize_display() — 过滤 LLM 输出中的内部 XML 标签
+3. TUI Agent Loop 实现
+   - 模型→工具执行→模型循环（最多8轮）
+   - 5类工具执行（read/glob/grep/write/shell）
+4. **AgentCore 共享核心层提取**（核心重构）
+   - 新增 `scripts/agent_core.py` — CLI 和 TUI 共享的核心逻辑
+   - AgentCore 包含全部 P0-P2 功能：
+     - Token 预算管理 + 两层压缩
+     - Session 管理 + .ses/.log/.mem 文件生命周期
+     - 记忆管理 + 角色感知注入 + 进化评估
+     - 权限管理（三级 + 死循环防护 + 4 种模式）
+     - 韧性增强（续写恢复、PTL 恢复、错误重试、指数退避）
+     - 技能管理（Level 0 索引注入）
+   - AgentCallbacks UI 回调接口
+   - workspace_manager.py 变为 AgentCore 的 TUI 适配层
+
+**验证**:
+- ✅ 所有导入正常，零 lint 错误
+- ✅ CLI agent_loop.py 未被破坏
+- ✅ AgentCore + AgentCallbacks 接口完整
 
 ### [2026-04-20 15:30] Session — P2 全部功能实现 + 合并到 main
 
