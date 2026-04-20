@@ -173,14 +173,13 @@ class AgentCore:
             self.system_prompt += f"\n\n## 上一次对话摘要\n{prev_summary[:2000]}"
 
         # 注入固定记忆
-        memory_injection = self.memory_mgr.get_injection_for_role(self.agent_role)
+        memory_injection = self.memory_mgr.build_memory_injection(role=self.agent_role)
         if memory_injection:
             self.system_prompt += f"\n\n## 项目经验记忆\n{memory_injection}"
 
         # Token 预算初始化
-        self.budget.reset()
         system_tokens = estimate_tokens(self.system_prompt)
-        self.budget.reserve("system_prompt", system_tokens)
+        self.budget.allocate(system_prompt=system_tokens)
         logger.info("Session initialized: %s | ctx=%d | system_tokens=%d",
                      session_id, ctx_window, system_tokens)
 
@@ -214,7 +213,7 @@ class AgentCore:
         self.session_mgr.append_message("user", user_text)
 
         # Token 预算检查
-        self.budget.reserve(f"turn_{self.turn_count}_user", estimate_tokens(user_text))
+        self.budget.track(f"turn_{self.turn_count}_user", estimate_tokens(user_text))
 
         # ── Agent Loop ──────────────────────────────
         full_response_parts: List[str] = []
@@ -323,7 +322,7 @@ class AgentCore:
                 "assistant", full_text,
                 strategy="llm_analyze", priority="high",
             )
-            self.budget.reserve(
+            self.budget.track(
                 f"turn_{self.turn_count}_assistant", estimate_tokens(full_text)
             )
 
@@ -647,25 +646,36 @@ class AgentCore:
 
     def _compact_layer1(self, cb: AgentCallbacks) -> None:
         """Layer1 实时压缩（工具输出截断）"""
-        saved = self.compactor.compact_layer1(self.messages)
-        if saved > 0 and cb.on_compact:
-            cb.on_compact("layer1", saved)
+        compressed, results = self.compactor.layer1_compress_batch(self.messages)
+        if results:
+            self.messages = compressed
+            saved = sum(r.saved_tokens for r in results if hasattr(r, 'saved_tokens'))
+            if saved > 0 and cb.on_compact:
+                cb.on_compact("layer1", saved)
 
     def _try_compact_for_ptl(self, cb: AgentCallbacks) -> bool:
-        """PTL 恢复策略：Layer2 归档 → 新 Session"""
-        # Layer1 压缩
-        saved = self.compactor.compact_layer1(self.messages)
-        if saved > 0:
-            if cb.on_compact:
-                cb.on_compact("layer1_ptl", saved)
-            logger.info("PTL: Layer1 saved %d tokens", saved)
-            return True
+        """PTL 恢复策略：Layer1 压缩 → Layer2 归档 → 新 Session"""
+        # Layer1: 压缩工具输出
+        compressed, results = self.compactor.layer1_compress_batch(self.messages)
+        if results:
+            self.messages = compressed
+            saved = sum(r.saved_tokens for r in results if hasattr(r, 'saved_tokens'))
+            if saved > 0:
+                if cb.on_compact:
+                    cb.on_compact("layer1_ptl", saved)
+                logger.info("PTL: Layer1 saved %d tokens", saved)
+                return True
 
-        # Layer2 归档
-        if self.compactor.compact_layer2(self.messages):
+        # Layer2: 归档
+        result = self.compactor.layer2_archive(model_interface=self.model)
+        if result:
             if cb.on_compact:
                 cb.on_compact("layer2", 0)
             logger.info("PTL: Layer2 archive triggered")
+            # 清空当前对话历史，开始新 session
+            self.messages.clear()
+            self.turn_count = 0
+            self.budget.reset()
             return True
 
         if cb.on_warning:
@@ -706,10 +716,23 @@ class AgentCore:
     def _evaluate_memory_evolution(self) -> None:
         """记忆进化评估"""
         try:
-            self.memory_mgr.evaluate_evolution(
-                agent_role=self.agent_role,
-                session_summary=str(self.session_mgr.get_prev_session_summary() or ""),
-            )
+            prev_summary = self.session_mgr.get_prev_session_summary() or ""
+            if prev_summary:
+                evaluations = self.memory_mgr.evaluate_and_upgrade(
+                    mem_content=prev_summary, role=self.agent_role,
+                )
+                for ev in evaluations:
+                    if ev.should_upgrade:
+                        logger.info("Memory upgraded: [%s] %s (confidence=%.2f)",
+                                    ev.category, ev.content[:40], ev.confidence)
+                # 添加记忆索引
+                from datetime import datetime
+                self.memory_mgr.add_index_entry(
+                    time=datetime.now().strftime("%m-%d %H:%M"),
+                    file=f"session_archive",
+                    summary=f"Session 归档 (agent={self.agent_role})",
+                    priority="高" if self.turn_count > 5 else "中",
+                )
         except Exception as e:
             logger.warning("Memory evolution failed: %s", e)
 
@@ -733,4 +756,5 @@ class AgentCore:
         """清空对话历史"""
         self.messages.clear()
         self.turn_count = 0
-        self.budget.reset()
+        self.budget._history = 0
+        self.budget._tool_results = 0
