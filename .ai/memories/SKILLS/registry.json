@@ -1,0 +1,47 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-04-20 14:01",
+  "skills": {
+    "code-analysis": {
+      "description": "分析代码结构、查找bug、代码审查",
+      "category": "tool",
+      "provider": "codebuddy",
+      "tags": [
+        "code",
+        "review"
+      ],
+      "version": "1.0"
+    },
+    "test-generation": {
+      "description": "编写测试、生成测试用例",
+      "category": "tool",
+      "provider": "codebuddy",
+      "tags": [
+        "testing",
+        "code"
+      ],
+      "version": "1.0"
+    },
+    "agent-loop-pattern": {
+      "description": "Agent Loop 五阶段循环模式",
+      "category": "pattern",
+      "provider": "adds",
+      "tags": [
+        "agent",
+        "loop",
+        "pattern"
+      ],
+      "version": "1.0"
+    },
+    "code-generation": {
+      "description": "生成代码、实现功能、创建文件",
+      "category": "domain",
+      "provider": "codebuddy",
+      "tags": [
+        "code",
+        "generation"
+      ],
+      "version": "1.0"
+    }
+  }
+}

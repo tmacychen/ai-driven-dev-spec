@@ -76,6 +76,16 @@ class SystemPromptBuilder:
         if memory_injection:
             sections.append(memory_injection)
         
+        # === P1: 技能渐进式披露（Level 0 索引） ===
+        skill_section = context.get('skill_level0')
+        if skill_section:
+            sections.append(skill_section)
+        
+        # === P1: 技能详情（Level 1，按需加载） ===
+        skill_level1 = context.get('skill_level1')
+        if skill_level1:
+            sections.append(skill_level1)
+        
         # 过滤空段落
         return [s for s in sections if s]
     

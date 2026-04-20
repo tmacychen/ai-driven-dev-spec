@@ -1,0 +1,9 @@
+{
+  "trigger": "当需要分析代码结构、查找bug、代码审查时",
+  "command": "codebuddy -p \"{query}\" --output-format json",
+  "input_desc": "",
+  "output_desc": "",
+  "system_prompt": null,
+  "examples": [],
+  "notes": ""
+}

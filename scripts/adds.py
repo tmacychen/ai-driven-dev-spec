@@ -552,6 +552,10 @@ Examples:
     from memory_cli import add_mem_subparser
     add_mem_subparser(subparsers)
 
+    # skill command (P1)
+    from skill_manager import add_skill_subparser
+    add_skill_subparser(subparsers)
+
     # perm command (P0-4)
     perm_parser = subparsers.add_parser("perm", help="权限管理（P0-4）")
     perm_sub = perm_parser.add_subparsers(dest="perm_command")
@@ -608,6 +612,9 @@ Examples:
         cli.perm_command(args)
     elif args.command == "mem":
         cli.mem_command(args)
+    elif args.command == "skill":
+        from skill_manager import handle_skill_command
+        handle_skill_command(args, project_root=str(cli.project_root))
 
 
 if __name__ == "__main__":

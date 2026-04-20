@@ -95,6 +95,15 @@ class AgentLoop:
         self.resilience = LoopStateMachine(config=ResilienceConfig())
         self._loop_state: Optional[LoopState] = None
 
+        # P1: 技能管理器
+        from skill_manager import SkillManager
+        self.skill_mgr = SkillManager(project_root=project_root)
+
+        # 注入 Level 0 技能索引到 system prompt
+        skill_section = self.skill_mgr.build_level0_section()
+        if skill_section:
+            self.session.system_prompt += "\n\n" + skill_section
+
         # 如果没有传入 console/skin，使用简单模式
         if self.console is None:
             try:
@@ -121,7 +130,7 @@ class AgentLoop:
             # 命令补全
             command_completer = WordCompleter(
                 ["/help", "/h", "/?", "/keys", "/quit", "/exit", "/q",
-                 "/clear", "/history", "/model", "/perm"],
+                 "/clear", "/history", "/model", "/perm", "/skill"],
                 ignore_case=True,
             )
 
@@ -215,6 +224,7 @@ class AgentLoop:
                         ("/history", "查看对话历史摘要"),
                         ("/model", "显示当前模型信息"),
                         ("/perm", "显示权限状态和统计"),
+                        ("/skill [name]", "查看技能详情（Level 1）"),
                     ]:
                         t.add_row(name, desc)
                     self.console.print(Panel(t, title=f"[bold {accent}]{help_header}[/]", border_style=dim, padding=(0, 1)))
@@ -227,6 +237,7 @@ class AgentLoop:
                     self._print(f"  /history    查看对话历史")
                     self._print(f"  /model      显示模型信息")
                     self._print(f"  /perm       显示权限状态")
+                    self._print(f"  /skill      查看技能列表/详情")
                 self._print()
                 continue
             elif cmd == "/keys":
@@ -311,6 +322,44 @@ class AgentLoop:
                         self._print(f"[{ok_c}]✅ 权限模式已切换为: {new_mode}[/]")
                     else:
                         self._print(f"  ❌ 未知模式: {new_mode}")
+                self._print()
+                continue
+            elif cmd == "/skill":
+                # P1: 技能渐进式披露
+                from skill_manager import SkillManager
+                skill_mgr = SkillManager(project_root=self.project_root)
+                parts = user_input.split()
+                if len(parts) >= 2:
+                    skill_name = parts[1]
+                    detail = skill_mgr.skill_view(skill_name)
+                    if detail:
+                        self._print(f"\n  [{label}]技能:[/] [{text}]{detail.name}[/]")
+                        self._print(f"  [{label}]触发:[/] [{text}]{detail.trigger}[/]")
+                        self._print(f"  [{label}]命令:[/] [{text}]{detail.command}[/]")
+                        if detail.input_desc:
+                            self._print(f"  [{label}]输入:[/] [{text}]{detail.input_desc}[/]")
+                        if detail.output_desc:
+                            self._print(f"  [{label}]输出:[/] [{text}]{detail.output_desc}[/]")
+                        if detail.examples:
+                            self._print(f"  [{label}]示例:[/]")
+                            for ex in detail.examples:
+                                self._print(f"    [{text}]{ex}[/]")
+                        files = skill_mgr.skill_files(skill_name)
+                        if files:
+                            self._print(f"  [{label}]参考文件:[/]")
+                            for f in files:
+                                self._print(f"    [{text}]{f.path} — {f.description}[/]")
+                    else:
+                        self._print(f"  ❌ 未找到技能: {skill_name}")
+                else:
+                    # 列出所有技能
+                    metas = skill_mgr.skills_list()
+                    if metas:
+                        self._print(f"\n  [{label}]可用技能（{len(metas)} 个）:[/]")
+                        for meta in metas:
+                            self._print(f"    [{text}]{meta.name}[/]: {meta.description}")
+                    else:
+                        self._print(f"  📭 暂无技能。使用 adds skill register 添加。")
                 self._print()
                 continue
 
