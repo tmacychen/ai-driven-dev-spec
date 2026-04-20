@@ -149,6 +149,15 @@ class AgentCore:
         self.turn_count: int = 0
         self.streaming: bool = False
 
+        # 注入模型身份（防止 LLM 编造自己是什么模型）
+        model_name = model.get_model_name()
+        self.system_prompt += (
+            f"\n\n## 模型身份\n"
+            f"你是 {model_name} 大模型。当用户问你是谁、是什么模型时，"
+            f"你必须如实回答你是 {model_name}，不要编造或声称自己是其他模型。"
+        )
+        )
+
         # 注入 Level 0 技能索引
         skill_section = self.skill_mgr.build_level0_section()
         if skill_section:
